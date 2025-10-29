@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { threeWayMerge, type ThreeWayMergeInput } from '../../lib/conflictResolution';
 import { constructAadManifest } from '../../lib/constants';
 import { decryptAEAD, encryptAEAD, fromBase64, toBase64, zeroize } from '../../lib/crypto';
@@ -86,6 +86,9 @@ export function useManifest() {
     const [isCheckingUnlock, setIsCheckingUnlock] = useState(true);
     const [aadContext, setAadContext] = useState<{ userId: string; vaultId: string } | null>(null);
     const [storeState, setStoreState] = useState<ManifestStoreState>(manifestStore.getState());
+    const aadCacheRef = useRef<Uint8Array | null>(null); // Cache AAD once, reuse
+    const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const mutateRef = useRef<(() => void) | null>(null); // Ref to store mutate function
 
     // Check keystore unlock status
     useEffect(() => {
@@ -101,6 +104,10 @@ export function useManifest() {
                             userId: context.userId,
                             vaultId: context.vaultId
                         });
+                        // Cache AAD once
+                        aadCacheRef.current = new TextEncoder().encode(
+                            constructAadManifest(context.userId, context.vaultId)
+                        );
                     }
                 }
             } catch (error) {
@@ -200,24 +207,28 @@ export function useManifest() {
         }
     }, [query.isSuccess, query.data, aadContext]);
 
-    // Mutation: Save manifest with conflict resolution
+    // Mutation: Save manifest with conflict resolution and offline handling
     const mutation = useMutation<ManifestSaveResponse, ApiError, void>({
         mutationKey: ['vault', 'manifest', 'save'],
         mutationFn: async () => {
             const saveData = manifestStore.getSaveData();
-            if (!saveData || !aadContext) {
+            if (!saveData || !aadContext || !aadCacheRef.current) {
                 throw new Error('No manifest data to save or AAD context not available');
             }
 
             const { manifest, etag, serverVersion } = saveData;
 
+            // Security: Never log decrypted manifest
+            // manifest is only used for encryption below
+
+            // Set saving status
+            manifestStore.setSaving();
+
             // Get MAK from keystore
             const mak = await keystoreManager.getMAK();
 
-            // Construct AAD for manifest
-            const aadManifest = new TextEncoder().encode(
-                constructAadManifest(aadContext.userId, aadContext.vaultId)
-            );
+            // Reuse cached AAD (built once, reused)
+            const aadManifest = aadCacheRef.current;
 
             // Serialize manifest to JSON
             const manifestJson = JSON.stringify(manifest);
@@ -268,12 +279,10 @@ export function useManifest() {
                     await handleConflict(aadContext);
                     // Retry save with merged manifest
                     const retryData = manifestStore.getSaveData();
-                    if (retryData) {
+                    if (retryData && aadCacheRef.current) {
                         // Re-encrypt merged manifest
                         const retryMak = await keystoreManager.getMAK();
-                        const retryAadManifest = new TextEncoder().encode(
-                            constructAadManifest(aadContext.userId, aadContext.vaultId)
-                        );
+                        const retryAadManifest = aadCacheRef.current; // Reuse cached AAD
                         const retryJson = JSON.stringify(retryData.manifest);
                         const retryPlaintext = new TextEncoder().encode(retryJson);
                         const { nonce: retryNonce, ciphertext: retryCiphertext } = encryptAEAD(retryPlaintext, retryMak, retryAadManifest);
@@ -294,6 +303,20 @@ export function useManifest() {
                     }
                 }
 
+                // Network errors (not 401, not 409): Keep edits, mark offline
+                if (apiError.status !== 401 && apiError.status !== 409) {
+                    // Keep edits in memory, set status 'offline'
+                    manifestStore.setOffline();
+                    throw {
+                        status: apiError.status,
+                        message: apiError.message,
+                        details: {
+                            ...(apiError.details && typeof apiError.details === 'object' ? apiError.details : {}),
+                            offline: true
+                        }
+                    } as ApiError;
+                }
+
                 throw error;
             }
         },
@@ -302,6 +325,15 @@ export function useManifest() {
                 etag: data.etag,
                 version: data.version
             });
+        },
+        onError: (error) => {
+            // On error, don't clear keys or manifest
+            // Status is already set to 'offline' or 'dirty' by the mutation function
+            const apiError = error as ApiError;
+            if (apiError.status === 401 || apiError.status === 409) {
+                // Only reset on auth/conflict errors, not network errors
+                // (network errors already set status to 'offline')
+            }
         },
     });
 
@@ -315,11 +347,14 @@ export function useManifest() {
         const nonceBytes = fromBase64(nonce);
         const ciphertextBytes = fromBase64(ciphertext);
         const mak = await keystoreManager.getMAK();
-        const aadManifest = new TextEncoder().encode(
+        const aadManifest = aadCacheRef.current || new TextEncoder().encode(
             constructAadManifest(context.userId, context.vaultId)
         );
         const plaintext = decryptAEAD(ciphertextBytes, nonceBytes, mak, aadManifest);
         const latestManifest: VaultManifest = JSON.parse(new TextDecoder().decode(plaintext));
+
+        // Security: Zeroize plaintext immediately after parsing
+        zeroize(plaintext);
 
         // Get current state
         const currentState = manifestStore.getState();
@@ -343,6 +378,48 @@ export function useManifest() {
             version,
         });
     };
+
+    // Store mutate function in ref for autosave
+    mutateRef.current = mutation.mutate;
+
+    // Autosave with debounce (800ms after last edit)
+    useEffect(() => {
+        if (storeState.status === 'dirty' && aadContext && mutateRef.current) {
+            // Clear existing timer
+            if (autosaveTimerRef.current) {
+                clearTimeout(autosaveTimerRef.current);
+            }
+
+            // Set new timer
+            autosaveTimerRef.current = setTimeout(() => {
+                if (manifestStore.getState().status === 'dirty' && mutateRef.current) {
+                    mutateRef.current();
+                }
+            }, 800);
+        }
+
+        return () => {
+            if (autosaveTimerRef.current) {
+                clearTimeout(autosaveTimerRef.current);
+            }
+        };
+    }, [storeState.status, storeState.manifest, aadContext]);
+
+    // Before unload: try best-effort save
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            const state = manifestStore.getState();
+            if (state.status === 'dirty' && mutateRef.current) {
+                // Best-effort sync save (don't await, just fire)
+                mutateRef.current();
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, []);
 
     return {
         query,

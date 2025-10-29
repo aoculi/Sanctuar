@@ -35,8 +35,13 @@ export default function Vault() {
             setMessage('Changes saved successfully');
             setTimeout(() => setMessage(null), 3000);
         } else if (mutation.isError) {
-            setMessage('Failed to save changes');
-            setTimeout(() => setMessage(null), 3000);
+            const error = mutation.error as any;
+            if (error?.details?.offline) {
+                setMessage('Working offline—will retry');
+            } else {
+                setMessage('Failed to save changes');
+                setTimeout(() => setMessage(null), 3000);
+            }
         }
     }, [mutation.isSuccess, mutation.isError]);
 
@@ -49,13 +54,17 @@ export default function Vault() {
     };
 
     const handleSave = async () => {
-        if (store.status === 'dirty') {
+        if (store.status === 'dirty' || store.status === 'offline') {
             try {
                 await mutation.mutateAsync();
             } catch (error) {
                 // Error handling done in useEffect
             }
         }
+    };
+
+    const handleRetry = () => {
+        handleSave();
     };
 
     if (isChecking) {
@@ -73,7 +82,7 @@ export default function Vault() {
             <div className={styles.header}>
                 <h2>Vault</h2>
                 <div className={styles.headerActions}>
-                    {store.status === 'dirty' && (
+                    {(store.status === 'dirty' || store.status === 'offline') && (
                         <button
                             onClick={handleSave}
                             disabled={mutation.isPending}
@@ -95,6 +104,11 @@ export default function Vault() {
             {message && (
                 <div className={message.includes('error') || message.includes('Failed') ? styles.errorMessage : styles.successMessage}>
                     {message}
+                    {store.status === 'offline' && (
+                        <button onClick={handleRetry} className={styles.retryButton}>
+                            Retry
+                        </button>
+                    )}
                 </div>
             )}
 

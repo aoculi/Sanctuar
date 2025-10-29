@@ -1,6 +1,6 @@
 import type { VaultManifest } from '../../lib/types';
 
-export type ManifestStatus = 'idle' | 'loaded' | 'dirty' | 'saving';
+export type ManifestStatus = 'idle' | 'loaded' | 'dirty' | 'saving' | 'offline';
 
 export type ManifestStoreState = {
     manifest: VaultManifest | null;
@@ -67,7 +67,7 @@ class ManifestStore {
     }
 
     markDirty(): void {
-        if (this.state.status === 'loaded') {
+        if (this.state.status === 'loaded' || this.state.status === 'offline') {
             this.state.status = 'dirty';
             this.notify();
         }
@@ -77,6 +77,20 @@ class ManifestStore {
         if (this.state.manifest) {
             this.state.manifest = updater(this.state.manifest);
             this.markDirty();
+        }
+    }
+
+    setSaving(): void {
+        if (this.state.status === 'dirty' || this.state.status === 'offline') {
+            this.state.status = 'saving';
+            this.notify();
+        }
+    }
+
+    setOffline(): void {
+        if (this.state.status === 'dirty' || this.state.status === 'saving') {
+            this.state.status = 'offline';
+            this.notify();
         }
     }
 
