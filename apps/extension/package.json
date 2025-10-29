@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@noble/hashes": "^2.0.1",
+    "@tanstack/react-query": "^5.90.5",
     "libsodium-wrappers-sumo": "^0.7.15",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
