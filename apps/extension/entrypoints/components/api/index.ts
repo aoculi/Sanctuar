@@ -55,6 +55,7 @@ export async function apiClient<T = unknown>(path: string, options: ApiClientOpt
     }
 
     let response: Response;
+
     try {
         response = await fetch(buildUrl(path), {
             method,
@@ -62,6 +63,7 @@ export async function apiClient<T = unknown>(path: string, options: ApiClientOpt
             body: requestBody,
             signal,
             credentials: 'omit',
+            mode: 'cors',
         });
     } catch (err: any) {
         throw { status: -1, message: 'Network error', details: err?.message } as ApiError;

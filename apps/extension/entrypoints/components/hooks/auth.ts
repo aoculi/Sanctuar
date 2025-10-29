@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../api';
+import { apiClient, type ApiError } from '../api';
 import { authStore, sessionManager, type KdfParams } from '../store';
 
 // Query keys
@@ -33,13 +33,16 @@ export type SessionResponse = {
 export function useLogin() {
     const queryClient = useQueryClient();
 
-    return useMutation<LoginResponse, Error, LoginInput>({
+    return useMutation<LoginResponse, ApiError, LoginInput>({
         mutationKey: ['auth', 'login'],
         mutationFn: async (input: LoginInput) => {
             const response = await apiClient<LoginResponse>('/auth/login', {
                 method: 'POST',
                 body: input,
             });
+
+            console.log('login response', response);
+            console.log('login response data', response.data);
             return response.data;
         },
         onSuccess: async (data) => {

@@ -28,6 +28,12 @@ export default function App() {
         return unsubscribe;
     }, []);
 
+    // Function to handle successful login
+    const handleLoginSuccess = () => {
+        setFlash(null);
+        setRoute('/vault');
+    };
+
     return (
         <div>
             {flash && (
@@ -41,7 +47,7 @@ export default function App() {
                     {flash}
                 </div>
             )}
-            {route === '/login' ? <Login /> : <Vault />}
+            {route === '/login' ? <Login onLoginSuccess={handleLoginSuccess} /> : <Vault />}
         </div>
     );
 }
