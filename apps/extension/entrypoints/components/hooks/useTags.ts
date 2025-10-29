@@ -3,8 +3,8 @@
  */
 import { useCallback } from 'react';
 import { generateId } from '../../lib/id';
-import type { Tag } from '../../lib/types';
-import { manifestStore } from '../store/manifest';
+import type { Bookmark, Tag } from '../../lib/types';
+import { manifestStore } from '../../store/manifest';
 import { useTagValidation } from './validation';
 import { useManifest } from './vault';
 
@@ -24,7 +24,7 @@ export function useTags() {
         const trimmedName = tag.name.trim();
 
         // Check for duplicate tag names
-        const existingTag = store.manifest.tags?.find(t => t.name.toLowerCase() === trimmedName.toLowerCase());
+        const existingTag = store.manifest.tags?.find((t: Tag) => t.name.toLowerCase() === trimmedName.toLowerCase());
         if (existingTag) {
             throw new Error('A tag with this name already exists');
         }
@@ -53,7 +53,7 @@ export function useTags() {
         const trimmedName = newName.trim();
 
         // Check for duplicate tag names (excluding current tag)
-        const existingTag = store.manifest.tags?.find(t =>
+        const existingTag = store.manifest.tags?.find((t: Tag) =>
             t.id !== id && t.name.toLowerCase() === trimmedName.toLowerCase()
         );
         if (existingTag) {
@@ -62,7 +62,7 @@ export function useTags() {
 
         manifestStore.apply(manifest => ({
             ...manifest,
-            tags: (manifest.tags || []).map(tag =>
+            tags: (manifest.tags || []).map((tag: Tag) =>
                 tag.id === id ? { ...tag, name: trimmedName } : tag
             ),
         }));
@@ -74,21 +74,21 @@ export function useTags() {
         // Remove tag from manifest
         manifestStore.apply(manifest => ({
             ...manifest,
-            tags: (manifest.tags || []).filter(tag => tag.id !== id),
+            tags: (manifest.tags || []).filter((tag: Tag) => tag.id !== id),
         }));
 
         // Remove tag from all bookmarks
         manifestStore.apply(manifest => ({
             ...manifest,
-            items: (manifest.items || []).map(bookmark => ({
+            items: (manifest.items || []).map((bookmark: Bookmark) => ({
                 ...bookmark,
-                tags: bookmark.tags.filter(tagId => tagId !== id),
+                tags: bookmark.tags.filter((tagId: string) => tagId !== id),
             })),
         }));
     }, [store.manifest]);
 
     const getTag = useCallback((id: string): Tag | undefined => {
-        return store.manifest?.tags?.find(tag => tag.id === id);
+        return store.manifest?.tags?.find((tag: Tag) => tag.id === id);
     }, [store.manifest]);
 
     return {

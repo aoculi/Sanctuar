@@ -7,8 +7,8 @@ import { threeWayMerge, type ThreeWayMergeInput } from '../../lib/conflictResolu
 import { constructAadManifest } from '../../lib/constants';
 import { decryptAEAD, encryptAEAD, fromBase64, toBase64, zeroize } from '../../lib/crypto';
 import type { ManifestV1 } from '../../lib/types';
-import { keystoreManager } from '../store';
-import { manifestStore } from '../store/manifest';
+import { keystoreManager } from '../../store';
+import { manifestStore } from '../../store/manifest';
 import { useManifestQuery, type ManifestApiResponse } from './useManifestQuery';
 
 export type SaveManifestInput = {

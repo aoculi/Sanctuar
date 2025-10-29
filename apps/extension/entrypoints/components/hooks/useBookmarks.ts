@@ -4,7 +4,7 @@
 import { useCallback } from 'react';
 import { generateId } from '../../lib/id';
 import type { Bookmark } from '../../lib/types';
-import { manifestStore } from '../store/manifest';
+import { manifestStore } from '../../store/manifest';
 import { useBookmarkValidation } from './validation';
 import { useManifest } from './vault';
 
@@ -46,7 +46,7 @@ export function useBookmarks() {
 
         // Validate input if URL or title is being updated
         if (updates.url !== undefined || updates.title !== undefined) {
-            const existingBookmark = store.manifest.items?.find(item => item.id === id);
+            const existingBookmark = store.manifest.items?.find((item: Bookmark) => item.id === id);
             if (existingBookmark) {
                 const validationData = {
                     url: updates.url ?? existingBookmark.url,
@@ -64,7 +64,7 @@ export function useBookmarks() {
         // Apply update with updated_at timestamp
         manifestStore.apply(manifest => ({
             ...manifest,
-            items: (manifest.items || []).map(item =>
+            items: (manifest.items || []).map((item: Bookmark) =>
                 item.id === id
                     ? { ...item, ...updates, updated_at: Date.now() }
                     : item
@@ -77,12 +77,12 @@ export function useBookmarks() {
 
         manifestStore.apply(manifest => ({
             ...manifest,
-            items: (manifest.items || []).filter(item => item.id !== id),
+            items: (manifest.items || []).filter((item: Bookmark) => item.id !== id),
         }));
     }, [store.manifest]);
 
     const getBookmark = useCallback((id: string): Bookmark | undefined => {
-        return store.manifest?.items?.find(item => item.id === id);
+        return store.manifest?.items?.find((item: Bookmark) => item.id === id);
     }, [store.manifest]);
 
     return {

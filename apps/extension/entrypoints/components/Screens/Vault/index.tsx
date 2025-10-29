@@ -4,6 +4,8 @@
  */
 import { useEffect, useState } from 'react';
 import type { Bookmark, Tag } from '../../../lib/types';
+import { keystoreManager } from '../../../store';
+import { manifestStore } from '../../../store/manifest';
 import { BookmarkEditModal } from '../../BookmarkEditModal';
 import { BookmarkList } from '../../BookmarkList';
 import { ManifestSizeWarning } from '../../ManifestSizeWarning';
@@ -13,8 +15,6 @@ import { Toolbar } from '../../Toolbar';
 import { VaultHeader } from '../../VaultHeader';
 import { useBookmarks, useManifestSize, useTags } from '../../hooks/bookmarks';
 import { useManifest } from '../../hooks/vault';
-import { keystoreManager } from '../../store';
-import { manifestStore } from '../../store/manifest';
 import styles from './styles.module.css';
 
 export default function Vault() {

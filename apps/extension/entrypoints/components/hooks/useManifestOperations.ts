@@ -5,8 +5,8 @@ import { useEffect, useRef, useState } from 'react';
 import { constructAadManifest } from '../../lib/constants';
 import { decryptAEAD, fromBase64, zeroize } from '../../lib/crypto';
 import type { ManifestV1 } from '../../lib/types';
-import { keystoreManager } from '../store';
-import { manifestStore, type ManifestStoreState } from '../store/manifest';
+import { keystoreManager } from '../../store';
+import { manifestStore, type ManifestStoreState } from '../../store/manifest';
 import { useManifestMutation } from './useManifestMutation';
 import { useManifestQuery } from './useManifestQuery';
 

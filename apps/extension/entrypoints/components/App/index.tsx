@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
+import { sessionManager } from '../../store';
 import { useSession } from '../hooks/auth';
 import Login from '../Screens/Login';
 import Vault from '../Screens/Vault';
-import { sessionManager } from '../store';
 
 type Route = '/login' | '/vault';
 
