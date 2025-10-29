@@ -1,10 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
+import { threeWayMerge, type ThreeWayMergeInput } from '../../lib/conflictResolution';
 import { constructAadManifest } from '../../lib/constants';
 import { decryptAEAD, encryptAEAD, fromBase64, toBase64, zeroize } from '../../lib/crypto';
 import type { VaultManifest } from '../../lib/types';
 import { apiClient, type ApiError } from '../api';
 import { keystoreManager } from '../store';
+import { manifestStore, type ManifestStoreState } from '../store/manifest';
 
 const QUERY_KEYS = {
     vault: () => ['vault'] as const,
@@ -63,34 +65,29 @@ export function useVaultMeta() {
  * useManifest - Load, decrypt, and keep an in-memory manifest
  * Returns both query and mutation hooks for manifest operations
  *
- * Enabled only if keyStore.isUnlocked() === true
+ * Uses manifestStore to keep decrypted manifest out of React Query cache.
+ * Only encrypted payloads are cached at the network layer.
  *
  * Query (C1):
  * - GET /vault/manifest
  * - If 404 → treat as "no manifest yet" (return empty manifest)
  * - Else: decrypt using MAK from keystore
- * - Return { manifest, etag, serverVersion }
- *
- * Cache policy:
- * - staleTime: 0
- * - retry: 0
- * - refetchOnWindowFocus: false
+ * - Load into manifestStore
  *
  * Mutation:
  * - Re-encrypt and PUT with optimistic concurrency
- * - Inputs: { manifest, etag, serverVersion }
- * - OnSuccess: Updates local copy and sync state
- * - OnError (409): Triggers conflict resolution flow
+ * - OnError (409): Triggers conflict resolution flow with 3-way merge
  *
- * Returns: { query, mutation }
+ * Returns: { query, mutation, store }
  */
 export function useManifest() {
     const queryClient = useQueryClient();
     const [isUnlocked, setIsUnlocked] = useState(false);
     const [isCheckingUnlock, setIsCheckingUnlock] = useState(true);
     const [aadContext, setAadContext] = useState<{ userId: string; vaultId: string } | null>(null);
+    const [storeState, setStoreState] = useState<ManifestStoreState>(manifestStore.getState());
 
-    // Check keystore unlock status (shared by both query and mutation)
+    // Check keystore unlock status
     useEffect(() => {
         const checkUnlock = async () => {
             try {
@@ -116,8 +113,16 @@ export function useManifest() {
         checkUnlock();
     }, []);
 
-    // Query: Load and decrypt manifest
-    const query = useQuery<ManifestQueryResponse | null>({
+    // Subscribe to manifest store changes
+    useEffect(() => {
+        const unsubscribe = manifestStore.subscribe(() => {
+            setStoreState(manifestStore.getState());
+        });
+        return unsubscribe;
+    }, []);
+
+    // Query: Load and decrypt manifest (only for network layer)
+    const query = useQuery<ManifestApiResponse | null>({
         queryKey: QUERY_KEYS.manifest(),
         queryFn: async () => {
             if (!isUnlocked || !aadContext) {
@@ -127,10 +132,33 @@ export function useManifest() {
             try {
                 // GET /vault/manifest
                 const response = await apiClient<ManifestApiResponse>('/vault/manifest');
+                return response.data;
+            } catch (error) {
+                // Handle 404 → treat as "no manifest yet"
+                const apiError = error as ApiError;
+                if (apiError.status === 404) {
+                    return null; // No manifest yet
+                }
+                throw error;
+            }
+        },
+        enabled: !isCheckingUnlock && isUnlocked && aadContext !== null,
+        staleTime: 0,
+        retry: 0,
+        refetchOnWindowFocus: false,
+    });
 
-                // Decrypt manifest
-                const nonce = fromBase64(response.data.nonce);
-                const ciphertext = fromBase64(response.data.ciphertext);
+    // Handle query success - decrypt and load into store
+    useEffect(() => {
+        const handleQuerySuccess = async () => {
+            if (!query.data || !aadContext) return;
+
+            const data = query.data;
+
+            if (data) {
+                // Decrypt manifest and load into store
+                const nonce = fromBase64(data.nonce);
+                const ciphertext = fromBase64(data.ciphertext);
 
                 // Get MAK from keystore
                 const mak = await keystoreManager.getMAK();
@@ -147,44 +175,41 @@ export function useManifest() {
                 const manifestText = new TextDecoder().decode(plaintext);
                 const manifest: VaultManifest = JSON.parse(manifestText);
 
-                return {
+                // Load into manifest store
+                manifestStore.load({
                     manifest,
-                    etag: response.data.etag,
-                    serverVersion: response.data.version
-                };
-            } catch (error) {
-                // Handle 404 → treat as "no manifest yet" (return empty manifest)
-                const apiError = error as ApiError;
-                if (apiError.status === 404) {
-                    // 404 handling: produce an empty manifest (version 0 locally)
-                    return {
-                        manifest: {
-                            version_counter: 0,
-                            book_index: [],
-                            chain_head: '' // Will be set on first save
-                        } as VaultManifest,
-                        etag: '',
-                        serverVersion: 0
-                    };
-                }
-                throw error;
+                    etag: data.etag,
+                    version: data.version
+                });
+            } else {
+                // No manifest yet - load empty manifest
+                manifestStore.load({
+                    manifest: {
+                        version_counter: 0,
+                        book_index: [],
+                        chain_head: ''
+                    } as VaultManifest,
+                    etag: '',
+                    version: 0
+                });
             }
-        },
-        enabled: !isCheckingUnlock && isUnlocked && aadContext !== null,
-        staleTime: 0,
-        retry: 0,
-        refetchOnWindowFocus: false,
-    });
+        };
 
-    // Mutation: Save manifest with optimistic concurrency
-    const mutation = useMutation<ManifestSaveResponse, ApiError, SaveManifestInput>({
+        if (query.isSuccess) {
+            handleQuerySuccess();
+        }
+    }, [query.isSuccess, query.data, aadContext]);
+
+    // Mutation: Save manifest with conflict resolution
+    const mutation = useMutation<ManifestSaveResponse, ApiError, void>({
         mutationKey: ['vault', 'manifest', 'save'],
-        mutationFn: async (input: SaveManifestInput) => {
-            const { manifest, etag, serverVersion } = input;
-
-            if (!aadContext) {
-                throw new Error('AAD context not available');
+        mutationFn: async () => {
+            const saveData = manifestStore.getSaveData();
+            if (!saveData || !aadContext) {
+                throw new Error('No manifest data to save or AAD context not available');
             }
+
+            const { manifest, etag, serverVersion } = saveData;
 
             // Get MAK from keystore
             const mak = await keystoreManager.getMAK();
@@ -238,56 +263,90 @@ export function useManifest() {
             } catch (error) {
                 const apiError = error as ApiError;
 
-                // OnError (409 Conflict): Trigger conflict resolution flow (section E)
+                // OnError (409 Conflict): Auto-merge and retry
                 if (apiError.status === 409) {
-                    // TODO: Implement conflict resolution flow (section E)
-                    throw {
-                        status: apiError.status,
-                        message: 'Conflict: Manifest has been modified by another client',
-                        details: {
-                            ...(apiError.details && typeof apiError.details === 'object' ? apiError.details : {}),
-                            conflict: true
-                        }
-                    } as ApiError;
+                    await handleConflict(aadContext);
+                    // Retry save with merged manifest
+                    const retryData = manifestStore.getSaveData();
+                    if (retryData) {
+                        // Re-encrypt merged manifest
+                        const retryMak = await keystoreManager.getMAK();
+                        const retryAadManifest = new TextEncoder().encode(
+                            constructAadManifest(aadContext.userId, aadContext.vaultId)
+                        );
+                        const retryJson = JSON.stringify(retryData.manifest);
+                        const retryPlaintext = new TextEncoder().encode(retryJson);
+                        const { nonce: retryNonce, ciphertext: retryCiphertext } = encryptAEAD(retryPlaintext, retryMak, retryAadManifest);
+                        zeroize(retryPlaintext);
+
+                        const retryNextVersion = retryData.serverVersion + 1;
+                        const retryResponse = await apiClient<ManifestSaveResponse>('/vault/manifest', {
+                            method: 'PUT',
+                            headers: { 'If-Match': retryData.etag },
+                            body: {
+                                version: retryNextVersion,
+                                nonce: toBase64(retryNonce),
+                                ciphertext: toBase64(retryCiphertext),
+                            }
+                        });
+                        zeroize(retryNonce, retryCiphertext);
+                        return retryResponse.data;
+                    }
                 }
 
                 throw error;
             }
         },
-        onSuccess: (data, variables) => {
-            // Update local copy: manifest.version = returned.version
-            const currentData = queryClient.getQueryData<ManifestQueryResponse | null>(
-                QUERY_KEYS.manifest()
-            );
-
-            if (currentData) {
-                // Update manifest version with returned version
-                const updatedManifest = {
-                    ...currentData.manifest,
-                    version_counter: data.version
-                };
-
-                // Update query cache with new data
-                queryClient.setQueryData<ManifestQueryResponse>(
-                    QUERY_KEYS.manifest(),
-                    {
-                        manifest: updatedManifest,
-                        etag: data.etag,
-                        serverVersion: data.version
-                    }
-                );
-            }
-
-            // Store latest { etag, serverVersion: version } in sync state
-            queryClient.setQueryData<{ etag: string; serverVersion: number }>(
-                ['vault', 'manifest', 'sync'],
-                {
-                    etag: data.etag,
-                    serverVersion: data.version
-                }
-            );
+        onSuccess: (data) => {
+            manifestStore.ackSaved({
+                etag: data.etag,
+                version: data.version
+            });
         },
     });
 
-    return { query, mutation };
+    // Conflict resolution handler - auto-merge and retry
+    const handleConflict = async (context: { userId: string; vaultId: string }) => {
+        // Fetch latest server version
+        const response = await apiClient<ManifestApiResponse>('/vault/manifest');
+        const { nonce, ciphertext, etag, version } = response.data;
+
+        // Decrypt latest server manifest
+        const nonceBytes = fromBase64(nonce);
+        const ciphertextBytes = fromBase64(ciphertext);
+        const mak = await keystoreManager.getMAK();
+        const aadManifest = new TextEncoder().encode(
+            constructAadManifest(context.userId, context.vaultId)
+        );
+        const plaintext = decryptAEAD(ciphertextBytes, nonceBytes, mak, aadManifest);
+        const latestManifest: VaultManifest = JSON.parse(new TextDecoder().decode(plaintext));
+
+        // Get current state
+        const currentState = manifestStore.getState();
+        if (!currentState.manifest || !currentState.lastKnownServerSnapshot) {
+            throw new Error('Invalid state for conflict resolution');
+        }
+
+        // Perform 3-way merge
+        const mergeInput: ThreeWayMergeInput = {
+            base: currentState.lastKnownServerSnapshot,
+            local: currentState.manifest,
+            remote: latestManifest,
+        };
+
+        const resolution = threeWayMerge(mergeInput);
+
+        // Auto-merge and update manifest (prefer remote for conflicts)
+        manifestStore.load({
+            manifest: resolution.merged,
+            etag,
+            version,
+        });
+    };
+
+    return {
+        query,
+        mutation,
+        store: storeState,
+    };
 }
