@@ -55,13 +55,13 @@ class ManifestStore {
         this.listeners.forEach(listener => listener());
     }
 
-    load(data: LoadManifestData): void {
+    load(data: LoadManifestData, baseSnapshot?: ManifestV1): void {
         this.state = {
             manifest: data.manifest,
             etag: data.etag,
             serverVersion: data.version,
             status: 'loaded',
-            lastKnownServerSnapshot: { ...data.manifest },
+            lastKnownServerSnapshot: baseSnapshot ? { ...baseSnapshot } : { ...data.manifest },
         };
         this.notify();
     }

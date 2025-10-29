@@ -1,0 +1,56 @@
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.title {
+    margin: 0;
+}
+
+.actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.saveButton {
+    padding: 8px 16px;
+    background-color: #059669;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.saveButton:hover:not(:disabled) {
+    background-color: #047857;
+}
+
+.saveButton:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+}
+
+.logoutButton {
+    padding: 8px 16px;
+    background-color: #dc2626;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.logoutButton:hover:not(:disabled) {
+    background-color: #b91c1c;
+}
+
+.logoutButtonDisabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+}

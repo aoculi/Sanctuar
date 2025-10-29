@@ -1,0 +1,22 @@
+.list {
+    margin-top: 20px;
+}
+
+.title {
+    margin: 0 0 16px 0;
+    color: #374151;
+    font-size: 18px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+}
+
+.emptyState {
+    color: #9ca3af;
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+}
