@@ -1,0 +1,13 @@
+{
+  "name": "bookmarks",
+  "version": "1.0.0",
+  "description": "",
+  "keywords": [],
+  "scripts": {
+    "dev:api": "pnpm --filter api dev",
+    "dev:ext": "pnpm --filter extension dev:firefox"
+  },
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.18.2"
+}
