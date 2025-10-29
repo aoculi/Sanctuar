@@ -3,7 +3,8 @@
  */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient, type ApiError } from '../lib/api';
-import { authStore, sessionManager } from '../store';
+import { authStore } from '../store/auth';
+import { sessionManager } from '../store/session';
 import { useUnlock } from './unlock';
 
 const QUERY_KEYS = {

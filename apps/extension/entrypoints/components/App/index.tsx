@@ -1,6 +1,6 @@
+import { sessionManager } from '@/entrypoints/store/session';
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/auth';
-import { sessionManager } from '../../store';
 import Login from '../Screens/Login';
 import Vault from '../Screens/Vault';
 
