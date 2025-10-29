@@ -7,7 +7,7 @@ import {
     isManifestSizeWarning,
     validateBookmarkInput,
     validateTagName
-} from '../../lib/validation';
+} from '../lib/validation';
 
 /**
  * Hook for bookmark validation

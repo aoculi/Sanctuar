@@ -2,7 +2,7 @@
  * Session management hook
  */
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '../../lib/api';
+import { apiClient } from '../lib/api';
 
 const QUERY_KEYS = {
     session: () => ['auth', 'session'] as const,

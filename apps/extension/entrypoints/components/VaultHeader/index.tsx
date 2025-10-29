@@ -1,8 +1,8 @@
 /**
  * Header component for Vault screen
  */
-import { useLogout } from '../hooks/auth';
-import { useManifest } from '../hooks/vault';
+import { useLogout } from '../../hooks/auth';
+import { useManifest } from '../../hooks/vault';
 import { StatusIndicator } from '../StatusIndicator';
 import styles from './styles.module.css';
 

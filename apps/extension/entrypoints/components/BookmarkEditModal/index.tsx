@@ -2,8 +2,8 @@
  * Bookmark edit modal component
  */
 import { useState } from 'react';
+import { MAX_NOTES_LENGTH, MAX_TAGS_PER_ITEM } from '../../hooks/bookmarks';
 import type { Bookmark, Tag } from '../../lib/types';
-import { MAX_NOTES_LENGTH, MAX_TAGS_PER_ITEM } from '../hooks/bookmarks';
 import styles from './styles.module.css';
 
 type Props = {

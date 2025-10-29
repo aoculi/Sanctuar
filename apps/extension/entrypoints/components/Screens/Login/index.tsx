@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react';
+import { useLoginAndUnlock } from '../../../hooks/auth';
 import { whenCryptoReady } from '../../../lib/cryptoEnv';
-import { useLoginAndUnlock } from '../../hooks/auth';
 import styles from './styles.module.css';
 
 interface LoginProps {

@@ -1,8 +1,8 @@
 /**
  * Manifest size warning component
  */
+import { useManifestSize } from '../../hooks/bookmarks';
 import type { ManifestV1 } from '../../lib/types';
-import { useManifestSize } from '../hooks/bookmarks';
 import styles from './styles.module.css';
 
 type Props = {

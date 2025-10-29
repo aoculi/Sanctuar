@@ -2,7 +2,7 @@
  * Combined login + unlock hook
  */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient, type ApiError } from '../../lib/api';
+import { apiClient, type ApiError } from '../lib/api';
 import { useUnlock } from './unlock';
 import { useLogin } from './useLogin';
 

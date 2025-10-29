@@ -2,9 +2,9 @@
  * Bookmark CRUD operations hook
  */
 import { useCallback } from 'react';
-import { generateId } from '../../lib/id';
-import type { Bookmark } from '../../lib/types';
-import { manifestStore } from '../../store/manifest';
+import { generateId } from '../lib/id';
+import type { Bookmark } from '../lib/types';
+import { manifestStore } from '../store/manifest';
 import { useBookmarkValidation } from './validation';
 import { useManifest } from './vault';
 

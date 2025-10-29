@@ -1,7 +1,7 @@
 /**
  * Message banner component
  */
-import { useManifest } from '../hooks/vault';
+import { useManifest } from '../../hooks/vault';
 import styles from './styles.module.css';
 
 type Props = {

@@ -2,7 +2,7 @@
  * Manifest query hook - handles loading and caching
  */
 import { useQuery } from '@tanstack/react-query';
-import { apiClient, type ApiError } from '../../lib/api';
+import { apiClient, type ApiError } from '../lib/api';
 
 const QUERY_KEYS = {
     manifest: () => ['vault', 'manifest'] as const,

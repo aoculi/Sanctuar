@@ -1,9 +1,9 @@
 import { useMutation } from '@tanstack/react-query';
-import { apiClient, type ApiError } from '../../lib/api';
-import { AAD_LABELS, constructAadWmk } from '../../lib/constants';
-import { decryptAEAD, deriveKeyFromPassword, deriveSubKeys, encryptAEAD, fromBase64, toBase64, zeroize } from '../../lib/crypto';
-import { whenCryptoReady } from '../../lib/cryptoEnv';
-import { authStore, keystoreManager, type AadContext } from '../../store';
+import { apiClient, type ApiError } from '../lib/api';
+import { AAD_LABELS, constructAadWmk } from '../lib/constants';
+import { decryptAEAD, deriveKeyFromPassword, deriveSubKeys, encryptAEAD, fromBase64, toBase64, zeroize } from '../lib/crypto';
+import { whenCryptoReady } from '../lib/cryptoEnv';
+import { authStore, keystoreManager, type AadContext } from '../store';
 
 export type UnlockInput = {
     password: string;

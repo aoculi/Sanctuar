@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
+import { useSession } from '../../hooks/auth';
 import { sessionManager } from '../../store';
-import { useSession } from '../hooks/auth';
 import Login from '../Screens/Login';
 import Vault from '../Screens/Vault';
 

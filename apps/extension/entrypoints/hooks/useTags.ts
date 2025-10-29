@@ -2,9 +2,9 @@
  * Tag CRUD operations hook
  */
 import { useCallback } from 'react';
-import { generateId } from '../../lib/id';
-import type { Bookmark, Tag } from '../../lib/types';
-import { manifestStore } from '../../store/manifest';
+import { generateId } from '../lib/id';
+import type { Bookmark, Tag } from '../lib/types';
+import { manifestStore } from '../store/manifest';
 import { useTagValidation } from './validation';
 import { useManifest } from './vault';
 

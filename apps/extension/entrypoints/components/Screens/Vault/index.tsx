@@ -3,6 +3,8 @@
  * Coordinates child components and manages high-level state
  */
 import { useEffect, useState } from 'react';
+import { useBookmarks, useManifestSize, useTags } from '../../../hooks/bookmarks';
+import { useManifest } from '../../../hooks/vault';
 import type { Bookmark, Tag } from '../../../lib/types';
 import { keystoreManager } from '../../../store';
 import { manifestStore } from '../../../store/manifest';
@@ -13,8 +15,6 @@ import { MessageBanner } from '../../MessageBanner';
 import { TagManager } from '../../TagManager';
 import { Toolbar } from '../../Toolbar';
 import { VaultHeader } from '../../VaultHeader';
-import { useBookmarks, useManifestSize, useTags } from '../../hooks/bookmarks';
-import { useManifest } from '../../hooks/vault';
 import styles from './styles.module.css';
 
 export default function Vault() {
