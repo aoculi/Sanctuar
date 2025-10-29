@@ -1,5 +1,5 @@
 // API client for secure extension
-import { sessionManager } from '../store';
+import { keystoreManager, sessionManager } from '../store';
 
 const API_URL = (import.meta as any).env?.VITE_API_URL ?? 'http://127.0.0.1:3000';
 
@@ -79,9 +79,11 @@ export async function apiClient<T = unknown>(path: string, options: ApiClientOpt
         }
     }
 
-    // Handle 401 - clear session and notify
+    // Handle 401 - clear session, keystore, and notify
+    // Global 401 handler clears keys and redirects to /login
     if (response.status === 401) {
         await sessionManager.clearSession();
+        await keystoreManager.zeroize();
         sessionManager.notifyListeners();
         throw {
             status: 401,

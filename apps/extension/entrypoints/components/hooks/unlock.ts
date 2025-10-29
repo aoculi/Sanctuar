@@ -58,8 +58,8 @@ export function useUnlock() {
                         const aadWmk = new TextEncoder().encode(constructAadWmk(userId, vaultId));
                         mk = decryptAEAD(ciphertext, nonce, uek, aadWmk);
                     } catch (error) {
-                        // On failure → show generic error
-                        throw new Error('Wrong password or corrupted WMK');
+                        // On failure → show generic error (do not reveal which part failed)
+                        throw new Error('Unable to unlock');
                     }
                 } else {
                     // Case 2: wrapped_mk is null (first unlock ever)
@@ -90,14 +90,25 @@ export function useUnlock() {
 
                         // Verify response format
                         if (!response.data?.ok) {
-                            throw new Error('WMK upload failed: invalid response');
+                            throw new Error('Could not initialize vault');
                         }
-                    } catch (error) {
-                        // If WMK upload fails, we should still proceed with unlock
-                        // The user can retry later or the server might handle it
-                        console.warn('Failed to upload WMK to server:', error);
-                        // Note: We continue with unlock even if upload fails
-                        // The keys are already in memory and user can retry upload later
+                    } catch (error: any) {
+                        // If WMK upload fails (network, 4xx) → show error, keep session, allow retry
+                        // Create a custom error that indicates WMK upload failure
+                        const apiError = error as ApiError;
+                        if (apiError.status === -1 || (apiError.status >= 400 && apiError.status < 500)) {
+                            throw {
+                                status: apiError.status,
+                                message: 'Could not initialize vault',
+                                details: { wmkUploadFailed: true, isFirstUnlock: true }
+                            } as ApiError;
+                        }
+                        // For 5xx errors, still throw but mark as initialization failure
+                        throw {
+                            status: apiError.status || 500,
+                            message: 'Could not initialize vault',
+                            details: { wmkUploadFailed: true, isFirstUnlock: true }
+                        } as ApiError;
                     }
                 }
 

@@ -1,5 +1,6 @@
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { whenCryptoReady } from '../../../lib/cryptoEnv';
 import { useLoginAndUnlock } from '../../hooks/auth';
 import styles from './styles.module.css';
 
@@ -13,12 +14,36 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         password: ''
     });
     const [error, setError] = useState<string | string[] | null>(null);
+    const [cryptoReady, setCryptoReady] = useState(false);
+    const [isInitializing, setIsInitializing] = useState(true);
 
     const loginMutation = useLoginAndUnlock();
+
+    // Check sodium ready state
+    useEffect(() => {
+        const checkCryptoReady = async () => {
+            try {
+                await whenCryptoReady();
+                setCryptoReady(true);
+            } catch (error) {
+                console.error('Failed to initialize crypto:', error);
+                setError('Failed to initialize encryption. Please refresh the extension.');
+            } finally {
+                setIsInitializing(false);
+            }
+        };
+
+        checkCryptoReady();
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
+
+        if (!cryptoReady) {
+            setError('Encryption not ready. Please wait...');
+            return;
+        }
 
         if (!formData.login.trim() || !formData.password.trim()) {
             setError('Please fill in all fields');
@@ -35,9 +60,20 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             console.log('Login and unlock successful:', result);
             onLoginSuccess();
         } catch (err: any) {
-            const baseMessage = err?.message || 'Login failed';
-            const details = err?.details as Record<string, string[]> | undefined;
-            if (details && typeof details === 'object') {
+            // Handle WMK upload failure differently - keep session, allow retry
+            const apiError = err as { status?: number; message?: string; details?: Record<string, any> };
+
+            if (apiError.details?.wmkUploadFailed) {
+                // WMK upload failed - show error but keep session
+                setError('Could not initialize vault. Please try again.');
+                return;
+            }
+
+            // Handle other errors
+            const baseMessage = apiError.message || 'Login failed';
+            const details = apiError.details as Record<string, string[]> | undefined;
+
+            if (details && typeof details === 'object' && !details.wmkUploadFailed) {
                 const lines: string[] = [];
                 for (const [field, messages] of Object.entries(details)) {
                     if (Array.isArray(messages) && messages.length > 0) {
@@ -112,10 +148,10 @@ export default function Login({ onLoginSuccess }: LoginProps) {
 
                 <button
                     type="submit"
-                    disabled={loginMutation.isPending}
-                    className={`${styles.button} ${loginMutation.isPending ? styles.buttonDisabled : ''}`}
+                    disabled={loginMutation.isPending || !cryptoReady || isInitializing}
+                    className={`${styles.button} ${(loginMutation.isPending || !cryptoReady || isInitializing) ? styles.buttonDisabled : ''}`}
                 >
-                    {loginMutation.isPending ? 'Logging in...' : 'Login'}
+                    {isInitializing ? 'Initializing...' : loginMutation.isPending ? 'Logging in...' : 'Login'}
                 </button>
             </form>
         </div>
