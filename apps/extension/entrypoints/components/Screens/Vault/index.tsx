@@ -15,6 +15,7 @@ import { MessageBanner } from '../../MessageBanner';
 import { TagManager } from '../../TagManager';
 import { Toolbar } from '../../Toolbar';
 import { VaultHeader } from '../../VaultHeader';
+
 import styles from './styles.module.css';
 
 export default function Vault() {
