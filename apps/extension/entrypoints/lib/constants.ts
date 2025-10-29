@@ -3,6 +3,58 @@
  * Based on Proton-level security with libsodium and HKDF
  */
 
+/**
+ * Format Documentation
+ *
+ * ============================================================================
+ * KDF FOR UEK (User Encryption Key)
+ * ============================================================================
+ * Algorithm: Argon2id
+ * Parameters:
+ *   - salt: Provided by server in kdf.salt (base64 encoded, 16 bytes when decoded)
+ *   - m: Memory cost parameter from server (kdf.m)
+ *   - t: Time cost parameter from server (kdf.t)
+ *   - p: Parallelism parameter from server (kdf.p)
+ * Output: UEK (32 bytes)
+ *
+ * Usage: Derive UEK from password using server-provided KDF parameters
+ *
+ * ============================================================================
+ * WMK (Wrapped Master Key) Format
+ * ============================================================================
+ * Format: Single base64 string
+ * Structure: nonce(24B) || ciphertext (AEAD tag included at end)
+ *
+ * Decoding:
+ *   1. Decode base64 to get binary data
+ *   2. Extract nonce: first 24 bytes
+ *   3. Extract ciphertext: remaining bytes (includes AEAD authentication tag)
+ *
+ * Encryption Details:
+ *   - Algorithm: XChaCha20-Poly1305 (AEAD)
+ *   - Key: UEK (32 bytes)
+ *   - Nonce: 24 bytes (random, included in WMK)
+ *   - AAD: See AAD_WMK format below
+ *
+ * ============================================================================
+ * AAD (Additional Authenticated Data) Labels
+ * ============================================================================
+ * Format: UTF-8 encoded string
+ *
+ * AAD_WMK (for Wrapped Master Key):
+ *   Format: user_id + "|" + vault_id + "|wmk_v1"
+ *   Example: "user123|vault456|wmk_v1"
+ *   Important: This string must be constant and versioned. Keep version in label.
+ *
+ * AAD_MANIFEST (for Manifest):
+ *   Format: user_id + "|" + vault_id + "|manifest_v1"
+ *   Example: "user123|vault456|manifest_v1"
+ *   Important: This string must match when encrypting and decrypting.
+ *
+ * Note: Always use the exact format above. The separator is "|" (pipe character).
+ *       Version labels (wmk_v1, manifest_v1) should be updated when format changes.
+ */
+
 export const FORMAT_VERSION = 1;
 
 export const KDF = {
@@ -25,7 +77,24 @@ export const AEAD = {
 
 export const AAD_LABELS = {
     manifest: 'manifest_v1' as const,
+    wmk: 'wmk_v1' as const,
 };
+
+/**
+ * Construct AAD string for WMK (Wrapped Master Key)
+ * Format: user_id + "|" + vault_id + "|wmk_v1"
+ */
+export function constructAadWmk(userId: string, vaultId: string): string {
+    return `${userId}|${vaultId}|wmk_v1`;
+}
+
+/**
+ * Construct AAD string for Manifest
+ * Format: user_id + "|" + vault_id + "|manifest_v1"
+ */
+export function constructAadManifest(userId: string, vaultId: string): string {
+    return `${userId}|${vaultId}|manifest_v1`;
+}
 
 export const KEY_DERIVATION = {
     kek_info: 'VAULT/KEK v1',
@@ -42,4 +111,3 @@ export const STORAGE_KEYS = {
     FILE_HANDLE_REF: 'vault_file_handle_ref',
     VAULT_UUID: 'vault_uuid',
 } as const;
-

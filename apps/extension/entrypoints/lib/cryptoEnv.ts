@@ -51,6 +51,7 @@ export function isCryptoReady(): boolean {
 
 /**
  * Get a promise that resolves when crypto is ready
+ * Use this to gate unlock actions: await whenCryptoReady()
  */
 export function whenCryptoReady(): Promise<void> {
     if (cryptoEnv.ready) {
@@ -58,4 +59,3 @@ export function whenCryptoReady(): Promise<void> {
     }
     return initCrypto();
 }
-
