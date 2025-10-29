@@ -1,15 +1,16 @@
 /**
  * Manifest mutation hook - handles saving and conflict resolution
  */
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { apiClient, type ApiError } from '../lib/api';
 import { threeWayMerge, type ThreeWayMergeInput } from '../lib/conflictResolution';
 import { constructAadManifest } from '../lib/constants';
-import { decryptAEAD, encryptAEAD, fromBase64, toBase64, zeroize } from '../lib/crypto';
+import { encryptAEAD, toBase64, zeroize } from '../lib/crypto';
+import { decryptManifest } from '../lib/manifestUtils';
 import type { ManifestV1 } from '../lib/types';
 import { keystoreManager } from '../store/keystore';
 import { manifestStore } from '../store/manifest';
-import { useManifestQuery, type ManifestApiResponse } from './useManifestQuery';
+import type { ManifestApiResponse } from './useManifestQuery';
 
 export type SaveManifestInput = {
     manifest: ManifestV1;
@@ -25,39 +26,14 @@ export type ManifestSaveResponse = {
 };
 
 export function useManifestMutation() {
-    const queryClient = useQueryClient();
-    const manifestQuery = useManifestQuery();
-
     // Conflict resolution handler - auto-merge and retry
     const handleConflict = async (context: { userId: string; vaultId: string }) => {
         // Fetch latest server version
         const response = await apiClient<ManifestApiResponse>('/vault/manifest');
-        const { nonce, ciphertext, etag, version } = response.data;
+        const { etag, version } = response.data;
 
         // Decrypt latest server manifest
-        const mak = await keystoreManager.getMAK();
-        const aadContext = await keystoreManager.getAadContext();
-        if (!mak || !aadContext) {
-            throw new Error('Keys not available for conflict resolution');
-        }
-
-        const aadManifest = new TextEncoder().encode(constructAadManifest(aadContext.userId, aadContext.vaultId));
-        const plaintext = decryptAEAD(fromBase64(ciphertext), fromBase64(nonce), mak, aadManifest);
-        const manifestText = new TextDecoder().decode(plaintext);
-
-        let latestManifest: ManifestV1;
-        try {
-            latestManifest = JSON.parse(manifestText);
-            if (!latestManifest.items || !Array.isArray(latestManifest.items)) {
-                latestManifest.items = [];
-            }
-            if (!latestManifest.version) {
-                latestManifest.version = version;
-            }
-        } catch (err) {
-            latestManifest = { version, items: [], tags: [] };
-        }
-        zeroize(plaintext);
+        const latestManifest = await decryptManifest(response.data);
 
         // Get current state
         const currentState = manifestStore.getState();
