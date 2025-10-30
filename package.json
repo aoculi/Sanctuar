@@ -10,5 +10,8 @@
   },
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.18.2"
+  "packageManager": "pnpm@10.18.2",
+  "dependencies": {
+    "hash-wasm": "^4.12.0"
+  }
 }

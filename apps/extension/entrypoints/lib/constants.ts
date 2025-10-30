@@ -11,7 +11,7 @@
  * ============================================================================
  * Algorithm: Argon2id
  * Parameters:
- *   - salt: Provided by server in kdf.salt (base64 encoded, 16 bytes when decoded)
+ *   - salt: Provided by server in kdf.salt (base64 encoded, 32 bytes when decoded)
  *   - m: Memory cost parameter from server (kdf.m)
  *   - t: Time cost parameter from server (kdf.t)
  *   - p: Parallelism parameter from server (kdf.p)
@@ -62,7 +62,7 @@ export const KDF = {
     opslimit: 'MODERATE' as const,
     memlimit: 'MODERATE' as const,
     outLen: 32, // bytes
-    saltLen: 16, // bytes
+    saltLen: 32, // bytes
 };
 
 export const HKDF = {

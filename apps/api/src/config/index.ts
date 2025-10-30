@@ -77,4 +77,3 @@ export const config = {
         maxSize: 65_536, // 64 KB (ITEM_MAX_SIZE)
     },
 };
-

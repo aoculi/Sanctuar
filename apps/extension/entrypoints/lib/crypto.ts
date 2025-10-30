@@ -5,6 +5,7 @@
 
 import { hkdf } from '@noble/hashes/hkdf.js';
 import { sha256 } from '@noble/hashes/sha2.js';
+import { argon2id } from 'hash-wasm';
 import { AEAD, HKDF, KDF, KEY_DERIVATION } from './constants';
 import { getCryptoEnv } from './cryptoEnv';
 import type { VaultHeader } from './types';
@@ -38,25 +39,20 @@ export function generateRandomBytes(length: number): Uint8Array {
 /**
  * Derive master key from password using Argon2id
  * @param password - User password (UTF-8)
- * @param salt - Random salt (16 bytes)
+ * @param salt - Random salt (32 bytes)
  * @returns Master Key (32 bytes)
  */
-export function deriveKeyFromPassword(password: string, salt: Uint8Array): Uint8Array {
-    const sodium = getCryptoEnv();
-
-    // Convert opslimit and memlimit constants to actual values
-    const opslimit = sodium.crypto_pwhash_OPSLIMIT_MODERATE;
-    const memlimit = sodium.crypto_pwhash_MEMLIMIT_MODERATE;
-    const algorithm = sodium.crypto_pwhash_ALG_ARGON2ID13;
-
-    return sodium.crypto_pwhash(
-        KDF.outLen,
+export async function deriveKeyFromPassword(password: string, salt: Uint8Array): Promise<Uint8Array> {
+    const hash = await argon2id({
         password,
         salt,
-        opslimit,
-        memlimit,
-        algorithm
-    );
+        parallelism: 1,
+        iterations: 3,
+        memorySize: 512 * 1024, // in KiB
+        hashLength: KDF.outLen,
+        outputType: 'binary',
+    });
+    return hash as Uint8Array;
 }
 
 /**
@@ -200,16 +196,16 @@ export function zeroize(...data: (Uint8Array | undefined)[]): void {
  * @param header - Vault header containing salts
  * @returns Derived subkeys
  */
-export function deriveVaultKeys(
+export async function deriveVaultKeys(
     password: string,
     header: VaultHeader
-): { kek: Uint8Array; mak: Uint8Array; masterKey: Uint8Array } {
+): Promise<{ kek: Uint8Array; mak: Uint8Array; masterKey: Uint8Array }> {
     // Parse salts from header
     const kdfSalt = fromBase64(header.kdf.salt);
     const hkdfSalt = fromBase64(header.hkdf.salt);
 
     // Step 1: Derive master key from password
-    const masterKey = deriveKeyFromPassword(password, kdfSalt);
+    const masterKey = await deriveKeyFromPassword(password, kdfSalt);
 
     // Step 2: Derive subkeys from master key
     const { kek, mak } = deriveSubKeys(masterKey, hkdfSalt);

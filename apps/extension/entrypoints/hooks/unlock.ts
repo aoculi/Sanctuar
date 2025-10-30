@@ -44,7 +44,7 @@ export function useUnlock() {
             // Security: Extract password from input immediately before use
             // JavaScript strings are immutable, so we can't zeroize them, but we minimize exposure
             const kdfSalt = fromBase64(kdf.salt);
-            const uek = deriveKeyFromPassword(input.password, kdfSalt);
+            const uek = await deriveKeyFromPassword(input.password, kdfSalt);
 
             // Security: Password reference is now out of scope after UEK derivation
             // The input.password string remains in memory (immutable), but we don't retain references

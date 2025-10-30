@@ -43,7 +43,7 @@ export async function createVaultFile(
         const chainSeed = generateRandomBytes(CHAIN_SEED_LEN);
 
         // Step 2: Derive master key from password
-        const masterKey = deriveKeyFromPassword(password, kdfSalt);
+        const masterKey = await deriveKeyFromPassword(password, kdfSalt);
 
         // Step 3: Derive subkeys (KEK and MAK)
         const { kek, mak } = deriveSubKeys(masterKey, hkdfSalt);
@@ -196,7 +196,7 @@ export async function unlockVault(
     password: string
 ): Promise<{ manifest: ManifestV1; kek: Uint8Array; mak: Uint8Array }> {
     // Step 1: Derive keys from password
-    const { kek, mak, masterKey } = deriveVaultKeys(password, header);
+    const { kek, mak, masterKey } = await deriveVaultKeys(password, header);
 
     // Step 2: Extract nonce and ciphertext
     const nonce = encryptedManifest.slice(0, AEAD.nonceLen);
