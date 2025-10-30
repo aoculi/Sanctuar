@@ -61,10 +61,11 @@ export class KeyStoreManager {
      * Check if keystore is unlocked
      */
     async isUnlocked(): Promise<boolean> {
-        const response = await sendToBackground({
-            type: 'keystore:isUnlocked',
-        });
-        return Boolean(response?.unlocked);
+        const [status, context] = await Promise.all([
+            sendToBackground<{ ok: boolean; unlocked: boolean }>({ type: 'keystore:isUnlocked' }),
+            sendToBackground<{ ok: boolean; context: AadContext | null }>({ type: 'keystore:getAadContext' }),
+        ]);
+        return Boolean(status?.unlocked) && Boolean(context?.context && context.context.userId && context.context.vaultId);
     }
 
     /**

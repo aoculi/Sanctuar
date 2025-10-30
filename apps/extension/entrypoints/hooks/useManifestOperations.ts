@@ -68,13 +68,26 @@ export function useManifestOperations() {
         };
     }, [mutation]);
 
-    // Bootstrap manifest on mount if keystore is unlocked and store is empty
+    // Bootstrap manifest on mount; retry briefly until keystore is unlocked
     useEffect(() => {
-        const bootstrap = async () => {
+        let cancelled = false;
+        let retryTimer: number | null = null;
+        let attempts = 0;
+        const maxAttempts = 15; // ~4.5s total with 300ms interval
+
+        const tryBootstrap = async () => {
+            if (cancelled) return;
             try {
                 const isUnlocked = await keystoreManager.isUnlocked();
                 const current = manifestStore.getState();
-                if (!isUnlocked || current.manifest) {
+                if (!isUnlocked) {
+                    if (!cancelled && attempts < maxAttempts) {
+                        attempts += 1;
+                        retryTimer = (setTimeout(tryBootstrap, 300) as unknown) as number;
+                    }
+                    return;
+                }
+                if (current.manifest) {
                     return;
                 }
 
@@ -85,19 +98,37 @@ export function useManifestOperations() {
                     return result.data as any;
                 })());
                 if (data) {
-                    const manifest = await decryptManifest(data);
-                    manifestStore.load({ manifest, etag: data.etag, version: data.version });
+                    try {
+                        const manifest = await decryptManifest(data);
+                        manifestStore.load({ manifest, etag: data.etag, version: data.version });
+                    } catch (decryptErr) {
+                        if (!cancelled && attempts < maxAttempts) {
+                            attempts += 1;
+                            retryTimer = (setTimeout(tryBootstrap, 300) as unknown) as number;
+                        }
+                        return;
+                    }
                 } else {
                     manifestStore.load({ manifest: { version: 0, items: [], tags: [] }, etag: null as unknown as string, version: 0 });
                 }
             } catch (e: any) {
                 if (e?.status === 404) {
                     manifestStore.load({ manifest: { version: 0, items: [], tags: [] }, etag: null as unknown as string, version: 0 });
+                } else if (!cancelled && attempts < maxAttempts) {
+                    attempts += 1;
+                    retryTimer = (setTimeout(tryBootstrap, 300) as unknown) as number;
                 }
             }
         };
 
-        bootstrap();
+        tryBootstrap();
+        return () => {
+            cancelled = true;
+            if (retryTimer != null) {
+                clearTimeout(retryTimer);
+                retryTimer = null;
+            }
+        };
         // We intentionally run this only once on mount
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);

@@ -5,6 +5,7 @@ import type { ManifestApiResponse } from '../hooks/useManifestQuery';
 import { keystoreManager } from '../store/keystore';
 import { constructAadManifest } from './constants';
 import { decryptAEAD, fromBase64, zeroize } from './crypto';
+import { whenCryptoReady } from './cryptoEnv';
 import type { ManifestV1 } from './types';
 
 /**
@@ -14,6 +15,9 @@ import type { ManifestV1 } from './types';
 export async function decryptManifest(
     data: ManifestApiResponse
 ): Promise<ManifestV1> {
+    // Ensure crypto environment (libsodium) is initialized
+    await whenCryptoReady();
+
     const mak = await keystoreManager.getMAK();
     const aadContext = await keystoreManager.getAadContext();
 
