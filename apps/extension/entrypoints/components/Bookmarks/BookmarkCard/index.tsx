@@ -30,10 +30,10 @@ export function BookmarkCard({ bookmark, tags, onEdit, onDelete }: Props) {
       )}
 
       <div className={styles.content}>
-        <Text size="6" weight="regular">
+        <Text size="4" weight="regular">
           {bookmark.title || "(Untitled)"}
         </Text>
-        <Text size="3" color="gray">
+        <Text size="2" color="gray">
           {getHostname(bookmark.url)}
         </Text>
 

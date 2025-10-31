@@ -144,6 +144,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             value={formData.login}
             onChange={handleChange}
             disabled={loginMutation.isPending}
+            autoFocus
           >
             <TextField.Slot>
               <Mail height="16" width="16" />

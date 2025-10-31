@@ -1,4 +1,5 @@
 import { useBookmarks } from "@/entrypoints/hooks/useBookmarks";
+import { useState } from "react";
 import type { Bookmark, Tag } from "../../lib/types";
 import BookmarkHeader from "./BookmarkHeader";
 import { BookmarkList } from "./BookmarkList";
@@ -74,6 +75,14 @@ export default function Bookmarks({
     }
   };
 
+  if (bookmarks.length === 0) {
+    return (
+      <div className={styles.container}>
+        <MessageBanner message="No bookmarks found" onRetry={onRetry} />
+      </div>
+    );
+  }
+
   return (
     <div className={styles.container}>
       <BookmarkModal
@@ -81,6 +90,7 @@ export default function Bookmarks({
         bookmark={selectedBookmark}
         onClose={handleCloseBookmarkModal}
         onSave={handleSaveBookmark}
+        tags={tags}
       />
 
       <BookmarkHeader
