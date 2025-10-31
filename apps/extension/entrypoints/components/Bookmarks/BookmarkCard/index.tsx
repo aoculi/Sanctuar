@@ -1,10 +1,12 @@
 /**
  * Individual bookmark card component
  */
+import { Button, Text } from "@radix-ui/themes";
 import { getTagName } from "../../../lib/bookmarkUtils";
 import { formatDate, getHostname } from "../../../lib/formatUtils";
 import type { Bookmark, Tag } from "../../../lib/types";
 
+import { EllipsisVertical } from "lucide-react";
 import styles from "./styles.module.css";
 
 type Props = {
@@ -15,47 +17,46 @@ type Props = {
 };
 
 export function BookmarkCard({ bookmark, tags, onEdit, onDelete }: Props) {
+  const picture = null;
   return (
-    <div className={styles.card}>
-      <div className={styles.header}>
-        <h4 className={styles.title}>{bookmark.title || "(Untitled)"}</h4>
-        <div className={styles.actions}>
-          <button
-            onClick={() => onEdit(bookmark)}
-            className={styles.iconButton}
-            title="Edit"
-          >
-            ✏️
-          </button>
-          <button
-            onClick={() => onDelete(bookmark.id)}
-            className={styles.iconButton}
-            title="Delete"
-          >
-            🗑️
-          </button>
-        </div>
-      </div>
-      <a
-        href={bookmark.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={styles.url}
-      >
-        {getHostname(bookmark.url)}
-      </a>
-      {bookmark.tags.length > 0 && (
-        <div className={styles.tags}>
-          {bookmark.tags.map((tagId: string) => (
-            <span key={tagId} className={styles.tag}>
-              {getTagName(tagId, tags)}
-            </span>
-          ))}
+    <a
+      className={styles.card}
+      href={bookmark.url}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      {picture && (
+        <div className={styles.picture}>
+          <img src={picture} alt={bookmark?.title} />
         </div>
       )}
-      <div className={styles.meta}>
-        Updated: {formatDate(bookmark.updated_at)}
+
+      <div className={styles.content}>
+        <Text size="6" weight="regular">
+          {bookmark.title || "(Untitled)"}
+        </Text>
+        <Text size="3" color="gray">
+          {getHostname(bookmark.url)}
+        </Text>
+
+        {bookmark.tags.length > 0 && (
+          <div className={styles.tags}>
+            {bookmark.tags.map((tagId: string) => (
+              <span key={tagId} className={styles.tag}>
+                {getTagName(tagId, tags)}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <Text size="1" color="gray">
+          Updated: {formatDate(bookmark.updated_at)}
+        </Text>
       </div>
-    </div>
+
+      <Button variant="ghost" onClick={() => onEdit(bookmark)} title="Edit">
+        <EllipsisVertical height={16} width={14} />
+      </Button>
+    </a>
   );
 }

@@ -26,13 +26,14 @@ export function BookmarkList({
 
   return (
     <div className={styles.container}>
-      <Text size="2" color="gray">
+      <Text size="2" color="gray" style={{ padding: "20px 20px 0" }}>
         Bookmarks ({filteredBookmarks.length}
         {filteredBookmarks.length !== bookmarks.length
           ? ` of ${bookmarks.length}`
           : ""}
         )
       </Text>
+
       {filteredBookmarks.length === 0 ? (
         <p className={styles.emptyState}>
           {bookmarks.length === 0

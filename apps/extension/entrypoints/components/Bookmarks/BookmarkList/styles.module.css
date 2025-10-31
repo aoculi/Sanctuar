@@ -1,14 +1,7 @@
 .container {
-  padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 20px;
-}
-
-.title {
-  margin: 0 0 16px 0;
-  color: #374151;
-  font-size: 18px;
 }
 
 .list {
