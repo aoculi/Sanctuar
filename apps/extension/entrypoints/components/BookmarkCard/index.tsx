@@ -4,6 +4,7 @@
 import { getTagName } from '../../lib/bookmarkUtils';
 import { formatDate, getHostname } from '../../lib/formatUtils';
 import type { Bookmark, Tag } from '../../lib/types';
+
 import styles from './styles.module.css';
 
 type Props = {

@@ -4,6 +4,8 @@ import { useSession } from '../../hooks/auth';
 import Login from '../Screens/Login';
 import Vault from '../Screens/Vault';
 
+import styles from './styles.module.css';
+
 type Route = '/login' | '/vault';
 
 export default function App() {
@@ -68,22 +70,16 @@ export default function App() {
 
     if (isChecking) {
         return (
-            <div style={{ padding: 20, textAlign: 'center' }}>
+            <div className={styles.container}>
                 <p>Checking session...</p>
             </div>
         );
     }
 
     return (
-        <div>
+        <div className={styles.container}>
             {flash && (
-                <div style={{
-                    padding: 8,
-                    color: '#b45309',
-                    background: '#fffbeb',
-                    border: '1px solid #f59e0b',
-                    marginBottom: 8
-                }}>
+                <div className={styles.flash}>
                     {flash}
                 </div>
             )}
