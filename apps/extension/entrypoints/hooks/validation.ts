@@ -1,52 +1,52 @@
 /**
  * Validation hooks
  */
-import { useCallback } from 'react';
+import { useCallback } from "react";
 import {
-    estimateManifestSize,
-    isManifestSizeWarning,
-    validateBookmarkInput,
-    validateTagName
-} from '../lib/validation';
+  estimateManifestSize,
+  isManifestSizeWarning,
+  validateBookmarkInput,
+  validateTagName,
+} from "../lib/validation";
 
 /**
  * Hook for bookmark validation
  */
 export function useBookmarkValidation() {
-    const validateBookmark = useCallback((data: {
-        url: string;
-        title: string;
-        notes?: string;
-        tags: string[]
-    }) => {
-        return validateBookmarkInput(data);
-    }, []);
+  const validateBookmark = useCallback(
+    (data: { url: string; title: string; tags: string[] }) => {
+      return validateBookmarkInput(data);
+    },
+    []
+  );
 
-    return { validateBookmark };
+  return { validateBookmark };
 }
 
 /**
  * Hook for tag validation
  */
 export function useTagValidation() {
-    const validateTag = useCallback((name: string) => {
-        return validateTagName(name);
-    }, []);
+  const validateTag = useCallback((name: string) => {
+    return validateTagName(name);
+  }, []);
 
-    return { validateTag };
+  return { validateTag };
 }
 
 /**
  * Hook for manifest size monitoring
  */
-export function useManifestSize(manifest: {
+export function useManifestSize(
+  manifest: {
     version: number;
     items: unknown[];
     tags?: unknown[];
-    chain_head?: string
-} | null) {
-    const size = manifest ? estimateManifestSize(manifest) : 0;
-    const showWarning = isManifestSizeWarning(size);
+    chain_head?: string;
+  } | null
+) {
+  const size = manifest ? estimateManifestSize(manifest) : 0;
+  const showWarning = isManifestSizeWarning(size);
 
-    return { size, showWarning };
+  return { size, showWarning };
 }

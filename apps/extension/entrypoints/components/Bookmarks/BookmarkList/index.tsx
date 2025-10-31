@@ -1,6 +1,7 @@
 /**
  * Bookmarks list component
  */
+import { Text } from "@radix-ui/themes";
 import { filterBookmarks } from "../../../lib/bookmarkUtils";
 import type { Bookmark, Tag } from "../../../lib/types";
 import { BookmarkCard } from "../BookmarkCard";
@@ -25,13 +26,13 @@ export function BookmarkList({
 
   return (
     <div className={styles.container}>
-      <h3 className={styles.title}>
+      <Text size="2" color="gray">
         Bookmarks ({filteredBookmarks.length}
         {filteredBookmarks.length !== bookmarks.length
           ? ` of ${bookmarks.length}`
           : ""}
         )
-      </h3>
+      </Text>
       {filteredBookmarks.length === 0 ? (
         <p className={styles.emptyState}>
           {bookmarks.length === 0

@@ -3,16 +3,18 @@ import { Plus } from "lucide-react";
 import { useState } from "react";
 
 import { useTags } from "@/entrypoints/hooks/useTags";
-import type { Tag as EntityTag } from "@/entrypoints/lib/types";
+import type { Bookmark, Tag as EntityTag } from "@/entrypoints/lib/types";
 import Tag from "./Tag";
 
 import { StatusIndicator } from "../StatusIndicator";
 import styles from "./styles.module.css";
 
 export default function Tags({
+  bookmarks,
   currentTagId,
   onSelectTag,
 }: {
+  bookmarks: Bookmark[];
   currentTagId: string | null;
   onSelectTag: (id: string) => void;
 }) {
@@ -77,12 +79,12 @@ export default function Tags({
           </Button>
         </div>
 
-        {/* Sort tags button? */}
+        {/* Sort tags button? by name, by length*/}
 
         <div className={styles.list}>
           <Tag
             name="All tags"
-            count={100}
+            count={bookmarks.length}
             all={true}
             active={currentTagId === "all"}
             onClick={() => onSelectTag("all")}
@@ -98,7 +100,10 @@ export default function Tags({
                 key={tag.id}
                 onClick={() => onSelectTag(tag.id)}
                 name={tag.name}
-                count={100}
+                count={
+                  bookmarks.filter((bookmark) => bookmark.tags.includes(tag.id))
+                    .length
+                }
                 all={false}
                 active={currentTagId === tag.id}
               />

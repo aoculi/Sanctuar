@@ -1,17 +1,14 @@
-/**
- * Vault screen - Main container component
- * Coordinates child components and manages high-level state
- */
+import { Text } from "@radix-ui/themes";
+
 import { keystoreManager } from "@/entrypoints/store/keystore";
 import { manifestStore } from "@/entrypoints/store/manifest";
 import { useEffect, useState } from "react";
 import { useBookmarks, useTags } from "../../../hooks/bookmarks";
 import { useManifest } from "../../../hooks/vault";
 import type { Bookmark as BookMarkEntity } from "../../../lib/types";
-
-import { Text } from "@radix-ui/themes";
-import Bookmark from "../../Bookmark";
+import Bookmarks from "../../Bookmarks";
 import Tags from "../../Tags";
+
 import styles from "./styles.module.css";
 
 export default function Vault() {
@@ -94,7 +91,6 @@ export default function Vault() {
   const handleSaveBookmark = (data: {
     url: string;
     title: string;
-    notes?: string;
     tags: string[];
   }) => {
     try {
@@ -135,9 +131,13 @@ export default function Vault() {
           {/* MODAL: Add bookmark */}
           {/* MODAL: Edit bookmark */}
 
-          <Tags currentTagId={currentTagId} onSelectTag={onSelectTag} />
+          <Tags
+            bookmarks={bookmarks}
+            currentTagId={currentTagId}
+            onSelectTag={onSelectTag}
+          />
 
-          <Bookmark
+          <Bookmarks
             tags={tags}
             message={message}
             setMessage={setMessage}

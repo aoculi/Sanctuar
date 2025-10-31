@@ -37,7 +37,12 @@ const queryClient = new QueryClient({
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <Theme appearance="dark" radius="medium" accentColor="violet">
+      <Theme
+        appearance="dark"
+        radius="medium"
+        accentColor="violet"
+        grayColor="gray"
+      >
         <ErrorBoundary>
           <App />
         </ErrorBoundary>

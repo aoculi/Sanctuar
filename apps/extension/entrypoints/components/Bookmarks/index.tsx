@@ -6,7 +6,7 @@ import { MessageBanner } from "./MessageBanner";
 
 import styles from "./styles.module.css";
 
-export default function Bookmark({
+export default function Bookmarks({
   message,
   setMessage,
   onRetry,

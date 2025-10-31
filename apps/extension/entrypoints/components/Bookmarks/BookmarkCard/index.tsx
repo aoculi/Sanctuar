@@ -44,7 +44,6 @@ export function BookmarkCard({ bookmark, tags, onEdit, onDelete }: Props) {
       >
         {getHostname(bookmark.url)}
       </a>
-      {bookmark.notes && <p className={styles.notes}>{bookmark.notes}</p>}
       {bookmark.tags.length > 0 && (
         <div className={styles.tags}>
           {bookmark.tags.map((tagId: string) => (

@@ -1,7 +1,7 @@
 /**
  * Toolbar component
  */
-import { SearchBar } from "../Bookmark/SearchBar";
+import { SearchBar } from "../Bookmarks/SearchBar";
 import styles from "./styles.module.css";
 
 type Props = {
