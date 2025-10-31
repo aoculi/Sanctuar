@@ -10,3 +10,22 @@
 .searchBar {
   flex: 1;
 }
+.addBookmarkButton {
+  width: 35px !important;
+  height: 35px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer !important;
+  border-radius: 100px !important;
+  border: none !important;
+  padding: 5px !important;
+  background-color: var(--violet-9);
+  color: var(--text) !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  transition: background-color 0.2s ease !important;
+}
+.addBookmarkButton:hover {
+  background-color: var(--violet-10);
+}

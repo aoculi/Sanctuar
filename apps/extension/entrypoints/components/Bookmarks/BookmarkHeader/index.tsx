@@ -1,5 +1,5 @@
 import { Button, TextField } from "@radix-ui/themes";
-import { Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 
 import { useLogout } from "@/entrypoints/hooks/auth";
 
@@ -37,10 +37,12 @@ export default function BookmarkHeader({
         </TextField.Slot>
       </TextField.Root>
 
-      <Button onClick={onAddBookmark}>Add Bookmark</Button>
-      <Button onClick={handleLogout} disabled={logoutMutation.isPending}>
-        {logoutMutation.isPending ? "Logging out..." : "Logout"}
+      <Button onClick={onAddBookmark} className={styles.addBookmarkButton}>
+        <Plus strokeWidth={1} />
       </Button>
+      {/* <Button onClick={handleLogout} disabled={logoutMutation.isPending}>
+        {logoutMutation.isPending ? "Logging out..." : "Logout"}
+      </Button> */}
     </div>
   );
 }

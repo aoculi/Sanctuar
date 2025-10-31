@@ -1,5 +1,5 @@
 import { Button, DropdownMenu, Text } from "@radix-ui/themes";
-import { ArrowUpDown, Plus } from "lucide-react";
+import { ListFilter, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { useTags } from "@/entrypoints/hooks/useTags";
@@ -97,36 +97,12 @@ export default function Tags({
             Tags
           </Text>
 
-          <div className={styles.headerActions}>
-            <DropdownMenu.Root>
-              <DropdownMenu.Trigger>
-                <Button variant="ghost">
-                  <ArrowUpDown strokeWidth={1} />
-                </Button>
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Content>
-                <DropdownMenu.Item
-                  onClick={() => setSortMode("name")}
-                  disabled={sortMode === "name"}
-                >
-                  Sort by name
-                </DropdownMenu.Item>
-                <DropdownMenu.Item
-                  onClick={() => setSortMode("count")}
-                  disabled={sortMode === "count"}
-                >
-                  Sort by bookmark count
-                </DropdownMenu.Item>
-              </DropdownMenu.Content>
-            </DropdownMenu.Root>
-
-            <Button onClick={onAddTag} variant="ghost">
-              <Plus strokeWidth={1} />
-            </Button>
-          </div>
+          <Button onClick={onAddTag} variant="ghost">
+            <Plus strokeWidth={1} />
+          </Button>
         </div>
 
-        <div className={styles.list}>
+        <div className={styles.headerActions}>
           <Tag
             name="All tags"
             count={bookmarks.length}
@@ -135,6 +111,30 @@ export default function Tags({
             onClick={() => onSelectTag("all")}
           />
 
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger>
+              <Button variant="ghost">
+                <ListFilter strokeWidth={1} />
+              </Button>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content>
+              <DropdownMenu.Item
+                onClick={() => setSortMode("name")}
+                disabled={sortMode === "name"}
+              >
+                Sort by name
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                onClick={() => setSortMode("count")}
+                disabled={sortMode === "count"}
+              >
+                Sort by bookmark count
+              </DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
+        </div>
+
+        <div className={styles.list}>
           {tags.length === 0 && (
             <p className={styles.emptyState}>No tags yet</p>
           )}
