@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { useTags } from "@/entrypoints/hooks/useTags";
 import type { Bookmark, Tag as EntityTag } from "@/entrypoints/lib/types";
 import Tag from "./Tag";
+import { TagModal } from "./TagModal";
 
 import { StatusIndicator } from "../StatusIndicator";
 import styles from "./styles.module.css";
@@ -21,36 +22,41 @@ export default function Tags({
   const { tags, createTag, renameTag, deleteTag } = useTags();
   const [message, setMessage] = useState<string | null>(null);
   const [sortMode, setSortMode] = useState<"name" | "count">("name");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentTag, setCurrentTag] = useState<EntityTag | null>(null);
 
   const onAddTag = () => {
-    const name = prompt("Enter tag name:");
-    if (name && name.trim()) {
-      try {
-        createTag({ name: name.trim() });
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : "Failed to create tag";
-        setMessage(errorMessage);
-        setTimeout(() => setMessage(null), 5000);
-      }
-    }
+    setCurrentTag(null);
+    setIsModalOpen(true);
   };
 
   const onEditTag = (tag: EntityTag) => {
-    const newName = prompt("Enter new tag name:", tag.name);
-    if (newName && newName.trim() && newName !== tag.name) {
-      try {
-        renameTag(tag.id, newName.trim());
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : "Failed to rename tag";
-        setMessage(errorMessage);
-        setTimeout(() => setMessage(null), 5000);
+    setCurrentTag(tag);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveTag = async (data: { name: string }) => {
+    try {
+      if (currentTag) {
+        // Editing existing tag
+        await renameTag(currentTag.id, data.name);
+      } else {
+        // Creating new tag
+        await createTag({ name: data.name });
       }
+      setIsModalOpen(false);
+      setCurrentTag(null);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to save tag";
+      setMessage(errorMessage);
+      setTimeout(() => setMessage(null), 5000);
+      throw error; // Re-throw to let modal handle loading state
     }
   };
 
   const onDeleteTag = (id: string) => {
+    // TODO: remove the tag from all bookmarks
     if (
       confirm(
         "Are you sure you want to delete this tag? It will be removed from all bookmarks."
@@ -66,10 +72,6 @@ export default function Tags({
       }
     }
   };
-
-  {
-    /* MODAL: Edit tags */
-  }
 
   const sortedTags = useMemo(() => {
     const tagsWithCounts = tags.map((tag) => ({
@@ -146,11 +148,22 @@ export default function Tags({
                 count={count}
                 all={false}
                 active={currentTagId === tag.id}
+                onEdit={() => onEditTag(tag)}
+                onDelete={() => onDeleteTag(tag.id)}
               />
             ))}
         </div>
       </div>
       <StatusIndicator />
+      <TagModal
+        isOpen={isModalOpen}
+        tag={currentTag}
+        onClose={() => {
+          setIsModalOpen(false);
+          setCurrentTag(null);
+        }}
+        onSave={handleSaveTag}
+      />
     </div>
   );
 }

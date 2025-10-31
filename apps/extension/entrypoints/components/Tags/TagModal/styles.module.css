@@ -1,0 +1,39 @@
+.container {
+  padding: 20px;
+}
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.closeButton {
+  border-radius: 100px !important;
+  border: none !important;
+  padding: 5px !important;
+  width: 35px !important;
+  height: 35px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.saveButton {
+  cursor: pointer !important;
+}
+.spinner {
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+}
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.fieldError {
+  color: var(--red-11);
+  font-size: 12px;
+}
