@@ -67,7 +67,7 @@ class KeyStore {
    */
   getMAK(): Uint8Array {
     if (this.MAK === null) {
-      throw new Error('Keystore is locked');
+      throw new Error("Keystore is locked");
     }
     return this.MAK;
   }
@@ -78,7 +78,7 @@ class KeyStore {
    */
   getKEK(): Uint8Array {
     if (this.KEK === null) {
-      throw new Error('Keystore is locked');
+      throw new Error("Keystore is locked");
     }
     return this.KEK;
   }
@@ -92,7 +92,8 @@ class KeyStore {
 }
 
 export default defineBackground(() => {
-  let session: { token: string; userId: string; expiresAt: number } | null = null;
+  let session: { token: string; userId: string; expiresAt: number } | null =
+    null;
   let expiryTimer: number | null = null;
   const keystore = new KeyStore();
 
@@ -111,17 +112,24 @@ export default defineBackground(() => {
     }
   }
 
-  function setSession(next: { token: string; userId: string; expiresAt: number }) {
+  function setSession(next: {
+    token: string;
+    userId: string;
+    expiresAt: number;
+  }) {
     session = next;
     clearExpiryTimer();
     const delay = Math.max(0, next.expiresAt - Date.now());
-    expiryTimer = (setTimeout(() => {
+    expiryTimer = setTimeout(() => {
       // Expired
       session = null;
       expiryTimer = null;
-      broadcast({ type: 'session:expired' });
-    }, delay) as unknown) as number;
-    broadcast({ type: 'session:updated', payload: { userId: next.userId, expiresAt: next.expiresAt } });
+      broadcast({ type: "session:expired" });
+    }, delay) as unknown as number;
+    broadcast({
+      type: "session:updated",
+      payload: { userId: next.userId, expiresAt: next.expiresAt },
+    });
   }
 
   function clearSession() {
@@ -129,8 +137,8 @@ export default defineBackground(() => {
     clearExpiryTimer();
     // Zeroize keys when session is cleared
     keystore.zeroize();
-    broadcast({ type: 'session:cleared' });
-    broadcast({ type: 'auth:unauthorized' });
+    broadcast({ type: "session:cleared" });
+    broadcast({ type: "auth:unauthorized" });
   }
 
   /**
@@ -150,7 +158,7 @@ export default defineBackground(() => {
    */
   function uint8ArrayToBase64(arr: Uint8Array): string {
     // Handle large arrays by chunking to avoid stack overflow
-    let binary = '';
+    let binary = "";
     const chunkSize = 8192;
     for (let i = 0; i < arr.length; i += chunkSize) {
       const chunk = arr.subarray(i, i + chunkSize);
@@ -160,39 +168,43 @@ export default defineBackground(() => {
   }
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-    if (!message || typeof message !== 'object' || !('type' in message)) return;
+    if (!message || typeof message !== "object" || !("type" in message)) return;
 
     switch (message.type) {
-      case 'session:get': {
+      case "session:get": {
         sendResponse({ ok: true, session });
         break;
       }
-      case 'session:set': {
+      case "session:set": {
         const { token, userId, expiresAt } = message.payload || {};
-        if (typeof token === 'string' && typeof userId === 'string' && typeof expiresAt === 'number') {
+        if (
+          typeof token === "string" &&
+          typeof userId === "string" &&
+          typeof expiresAt === "number"
+        ) {
           setSession({ token, userId, expiresAt });
           sendResponse({ ok: true });
         } else {
-          sendResponse({ ok: false, error: 'invalid_payload' });
+          sendResponse({ ok: false, error: "invalid_payload" });
         }
         break;
       }
-      case 'session:clear': {
+      case "session:clear": {
         clearSession();
         sendResponse({ ok: true });
         break;
       }
-      case 'keystore:setKeys': {
+      case "keystore:setKeys": {
         const { MK, KEK, MAK, aadContext } = message.payload || {};
         if (
-          typeof MK === 'string' &&
-          typeof KEK === 'string' &&
-          typeof MAK === 'string' &&
+          typeof MK === "string" &&
+          typeof KEK === "string" &&
+          typeof MAK === "string" &&
           aadContext &&
-          typeof aadContext.userId === 'string' &&
-          typeof aadContext.vaultId === 'string' &&
-          typeof aadContext.wmkLabel === 'string' &&
-          typeof aadContext.manifestLabel === 'string'
+          typeof aadContext.userId === "string" &&
+          typeof aadContext.vaultId === "string" &&
+          typeof aadContext.wmkLabel === "string" &&
+          typeof aadContext.manifestLabel === "string"
         ) {
           try {
             keystore.setKeys({
@@ -206,20 +218,20 @@ export default defineBackground(() => {
             sendResponse({ ok: false, error: String(error) });
           }
         } else {
-          sendResponse({ ok: false, error: 'invalid_payload' });
+          sendResponse({ ok: false, error: "invalid_payload" });
         }
         break;
       }
-      case 'keystore:isUnlocked': {
+      case "keystore:isUnlocked": {
         sendResponse({ ok: true, unlocked: keystore.isUnlocked() });
         break;
       }
-      case 'keystore:zeroize': {
+      case "keystore:zeroize": {
         keystore.zeroize();
         sendResponse({ ok: true });
         break;
       }
-      case 'keystore:getMAK': {
+      case "keystore:getMAK": {
         try {
           const mak = keystore.getMAK();
           sendResponse({ ok: true, key: uint8ArrayToBase64(mak) });
@@ -228,7 +240,7 @@ export default defineBackground(() => {
         }
         break;
       }
-      case 'keystore:getKEK': {
+      case "keystore:getKEK": {
         try {
           const kek = keystore.getKEK();
           sendResponse({ ok: true, key: uint8ArrayToBase64(kek) });
@@ -237,16 +249,103 @@ export default defineBackground(() => {
         }
         break;
       }
-      case 'keystore:getAadContext': {
+      case "keystore:getAadContext": {
         const context = keystore.getAadContext();
         sendResponse({ ok: true, context });
         break;
+      }
+      case "tabs:getCurrent": {
+        // Get current active tab - background script has reliable access
+        if (!chrome.tabs) {
+          console.error("chrome.tabs is not available");
+          sendResponse({
+            ok: false,
+            error: "chrome.tabs is not available",
+          });
+          break;
+        }
+
+        if (typeof chrome.tabs.query !== "function") {
+          console.error("chrome.tabs.query is not a function", chrome.tabs);
+          sendResponse({
+            ok: false,
+            error: "chrome.tabs.query is not a function",
+          });
+          break;
+        }
+
+        // Try Promise-based API first, fallback to callback
+        try {
+          const queryOptions = { active: true, currentWindow: true };
+
+          // Try Promise-based approach (Manifest V3)
+          const queryResult = chrome.tabs.query(queryOptions);
+
+          if (queryResult && typeof queryResult.then === "function") {
+            // Promise-based API available
+            queryResult
+              .then((tabs) => {
+                if (tabs && tabs.length > 0) {
+                  const tab = tabs[0];
+                  sendResponse({
+                    ok: true,
+                    tab: {
+                      url: tab.url,
+                      title: tab.title,
+                      id: tab.id,
+                    },
+                  });
+                } else {
+                  sendResponse({ ok: false, error: "No active tab found" });
+                }
+              })
+              .catch((error) => {
+                console.error("Error in tabs:getCurrent (Promise):", error);
+                sendResponse({ ok: false, error: String(error) });
+              });
+          } else {
+            // Fallback to callback-based API
+            chrome.tabs.query(queryOptions, (tabs) => {
+              if (chrome.runtime.lastError) {
+                console.error(
+                  "chrome.runtime.lastError:",
+                  chrome.runtime.lastError
+                );
+                sendResponse({
+                  ok: false,
+                  error: chrome.runtime.lastError.message || "Unknown error",
+                });
+                return;
+              }
+
+              if (tabs && tabs.length > 0) {
+                const tab = tabs[0];
+                sendResponse({
+                  ok: true,
+                  tab: {
+                    url: tab.url,
+                    title: tab.title,
+                    id: tab.id,
+                  },
+                });
+              } else {
+                sendResponse({ ok: false, error: "No active tab found" });
+              }
+            });
+          }
+        } catch (error) {
+          console.error("Error in tabs:getCurrent:", error);
+          sendResponse({ ok: false, error: String(error) });
+        }
+
+        // Return true to indicate we'll send a response asynchronously
+        return true;
       }
       default:
         break;
     }
 
-    // Indicates we will send a response synchronously
+    // Indicates we will send a response synchronously (for non-async handlers)
     return true;
   });
 });

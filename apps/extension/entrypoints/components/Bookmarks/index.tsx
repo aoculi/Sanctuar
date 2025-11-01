@@ -26,6 +26,7 @@ export default function Bookmarks({
 
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [tmpBookmark, setTmpBookmark] = useState<Bookmark | null>(null);
   const [selectedBookmark, setSelectedBookmark] = useState<Bookmark | null>(
     null
   );
@@ -38,11 +39,13 @@ export default function Bookmarks({
   const handleCloseBookmarkModal = () => {
     setIsModalOpen(false);
     setSelectedBookmark(null);
+    setTmpBookmark(null);
   };
 
   const handleShowCreateBookmarkModal = () => {
     setIsModalOpen(true);
     setSelectedBookmark(null);
+    setTmpBookmark(null);
   };
 
   const handleSaveBookmark = (data: {
@@ -50,6 +53,7 @@ export default function Bookmarks({
     title: string;
     tags: string[];
   }) => {
+    setTmpBookmark(null);
     try {
       if (selectedBookmark) {
         updateBookmark(selectedBookmark.id, data);
@@ -66,6 +70,7 @@ export default function Bookmarks({
   };
 
   const handleDeleteBookmark = (id: string) => {
+    setTmpBookmark(null);
     if (confirm("Are you sure you want to delete this bookmark?")) {
       try {
         deleteBookmark(id);
@@ -79,6 +84,7 @@ export default function Bookmarks({
   };
 
   const handleSaveManifest = async () => {
+    setTmpBookmark(null);
     if (!(store.status === "dirty" || store.status === "offline")) return;
     if (mutation.isPending) return;
     try {
@@ -90,6 +96,56 @@ export default function Bookmarks({
       }
     } catch (error) {
       // handled in useEffect
+    }
+  };
+
+  const handleQuickAdd = async () => {
+    try {
+      // Get current tab via background script (more reliable than direct API call)
+      const response = await new Promise<any>((resolve) => {
+        chrome.runtime.sendMessage({ type: "tabs:getCurrent" }, (response) => {
+          resolve(response);
+        });
+      });
+
+      if (!response?.ok || !response?.tab) {
+        setMessage(response?.error || "Unable to get current page information");
+        return;
+      }
+
+      const tab = response.tab;
+
+      if (!tab?.url || !tab?.title) {
+        setMessage("Unable to get current page information");
+        return;
+      }
+
+      // Filter out chrome:// and other internal URLs if needed
+      if (
+        tab.url.startsWith("chrome://") ||
+        tab.url.startsWith("chrome-extension://")
+      ) {
+        setMessage("Cannot bookmark internal browser pages");
+        return;
+      }
+
+      setSelectedBookmark(null);
+      setIsModalOpen(true);
+
+      setTmpBookmark({
+        id: "", // empty id = new bookmark
+        url: tab.url,
+        title: tab.title,
+        tags: [], // explicitly set to empty array
+        created_at: 0,
+        updated_at: 0,
+      } as Bookmark);
+    } catch (error) {
+      console.log("error", error);
+
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to get current page";
+      setMessage(errorMessage);
     }
   };
 
@@ -112,12 +168,14 @@ export default function Bookmarks({
         onClose={handleCloseBookmarkModal}
         onSave={handleSaveBookmark}
         tags={tags}
+        tmp={tmpBookmark}
       />
 
       <BookmarkHeader
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         onAddBookmark={handleShowCreateBookmarkModal}
+        onQuickAdd={handleQuickAdd}
       />
 
       <MessageBanner message={message} onRetry={handleSaveManifest} />

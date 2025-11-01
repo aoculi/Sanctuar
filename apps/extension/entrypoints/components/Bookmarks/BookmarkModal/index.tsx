@@ -20,12 +20,14 @@ export const BookmarkModal = ({
   onClose,
   onSave,
   tags,
+  tmp,
 }: {
   isOpen: boolean;
   bookmark: Bookmark | null;
   onClose: () => void;
   onSave: (data: { url: string; title: string; tags: string[] }) => void;
   tags: Tag[];
+  tmp: Bookmark | null;
 }) => {
   const [url, setUrl] = useState(bookmark?.url || "");
   const [title, setTitle] = useState(bookmark?.title || "");
@@ -41,9 +43,15 @@ export const BookmarkModal = ({
   // Update form fields when bookmark prop changes or modal opens
   useEffect(() => {
     if (isOpen) {
-      setUrl(bookmark?.url || "");
-      setTitle(bookmark?.title || "");
-      setSelectedTags(bookmark?.tags || []);
+      if (tmp) {
+        setUrl(tmp.url);
+        setTitle(tmp.title);
+        setSelectedTags([]);
+      } else {
+        setUrl(bookmark?.url || "");
+        setTitle(bookmark?.title || "");
+        setSelectedTags(bookmark?.tags || []);
+      }
       setErrors({});
       setIsLoading(false);
       setTimeout(() => {
