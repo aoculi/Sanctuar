@@ -10,12 +10,7 @@ export default defineConfig({
   manifest: {
     name: "LockMark",
     description: "Secure Bookmarks Vault",
-    host_permissions: [
-      "http://127.0.0.1:3000/*",
-      "http://localhost:3000/*",
-      "http://127.0.0.1:3999/*",
-      "http://localhost:3999/*",
-    ],
+    host_permissions: ["http://127.0.0.1:3500/*", "http://localhost:3500/*"],
     permissions: ["storage", "tabs"],
     content_security_policy: {
       // Allow WebAssembly in dev (needed for hash-wasm and libsodium wrappers)

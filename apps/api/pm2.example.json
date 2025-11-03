@@ -2,17 +2,23 @@
   "apps": [
     {
       "name": "lockmark-api",
-      "script": "src/index.ts",
-      "interpreter": "bun",
-      "args": ["--env-file=.env.production"],
-      "watch": true,
       "cwd": ".",
+      "script": "src/index.ts",
+      "exec_mode": "fork",
+      "instances": 1,
+
+      "interpreter": "bun",
+      "interpreter_args": ["--env-file=.env.production"],
+
+      "watch": false,
       "ignore_watch": ["node_modules", "logs"],
+
       "env": {
         "NODE_ENV": "production",
-        "PORT": "3999"
+        "PORT": "3500",
+        "HOST": "0.0.0.0"
       },
-      "instances": 1,
+
       "autorestart": true,
       "max_memory_restart": "500M",
       "log_date_format": "YYYY-MM-DD HH:mm Z",

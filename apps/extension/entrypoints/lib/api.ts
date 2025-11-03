@@ -6,7 +6,7 @@ import { keystoreManager } from "../store/keystore";
 import { sessionManager } from "../store/session";
 
 const API_URL =
-  (import.meta as any).env?.VITE_API_URL ?? "http://127.0.0.1:3000";
+  (import.meta as any).env?.VITE_API_URL ?? "http://127.0.0.1:3500";
 
 // Simplified API client
 export type ApiClientOptions = {
