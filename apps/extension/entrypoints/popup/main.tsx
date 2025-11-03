@@ -9,6 +9,26 @@ import ErrorBoundary from "../components/ErrorBoundary";
 import "@radix-ui/themes/styles.css";
 import "../styles/globals.css";
 
+// Ensure popup window gets focus when it opens (fixes issue where popup opens behind interface)
+// This is especially important on Linux systems
+if (typeof window !== "undefined") {
+  // Focus immediately
+  window.focus();
+
+  // Also focus after a short delay to handle race conditions
+  setTimeout(() => {
+    window.focus();
+  }, 0);
+
+  // Focus on any user interaction as a fallback
+  const focusHandler = () => {
+    window.focus();
+  };
+
+  window.addEventListener("load", focusHandler);
+  document.addEventListener("DOMContentLoaded", focusHandler);
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

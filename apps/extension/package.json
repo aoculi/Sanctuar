@@ -9,8 +9,11 @@
     "dev:firefox": "wxt -b firefox",
     "build": "wxt build",
     "build:firefox": "wxt build -b firefox",
+    "build:prod": "wxt build --mode production",
+    "build:firefox:prod": "wxt build -b firefox --mode production",
     "zip": "wxt zip",
     "zip:firefox": "wxt zip -b firefox",
+    "zip:firefox:prod": "wxt zip -b firefox --mode production",
     "compile": "tsc --noEmit",
     "postinstall": "wxt prepare"
   },

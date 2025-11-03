@@ -12,7 +12,7 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
- 
+
 .output
 stats.html
 stats-*.json
@@ -29,3 +29,7 @@ web-ext.config.ts
 *.njsproj
 *.sln
 *.sw?
+apps/api/.env.production
+apps/api/prod.db
+apps/extension/assets/icon-old.png
+apps/extension/.env.production

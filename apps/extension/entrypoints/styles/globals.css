@@ -2,10 +2,15 @@
 @import url("./reset.css");
 @import url("./variables.css");
 
+html {
+  /* Ensure popup stays on top */
+  z-index: 2147483647; /* Maximum z-index value */
+}
+
 body {
   color: var(--text);
-  min-width: 700px;
-  min-height: 100vh;
+  /* min-width: 700px; */
+  /* min-height: 100vh; */
   position: relative;
-  z-index: 1000;
+  z-index: 2147483647; /* Maximum z-index value */
 }

@@ -6,10 +6,16 @@ export default defineConfig({
   autoIcons: {
     developmentIndicator: false,
   },
+
   manifest: {
     name: "LockMark",
     description: "Secure Bookmarks Vault",
-    host_permissions: ["http://127.0.0.1:3000/*", "http://localhost:3000/*"],
+    host_permissions: [
+      "http://127.0.0.1:3000/*",
+      "http://localhost:3000/*",
+      "http://127.0.0.1:3999/*",
+      "http://localhost:3999/*",
+    ],
     permissions: ["storage", "tabs"],
     content_security_policy: {
       // Allow WebAssembly in dev (needed for hash-wasm and libsodium wrappers)
@@ -17,5 +23,16 @@ export default defineConfig({
       extension_pages:
         "script-src 'self' http://localhost:3001 'wasm-unsafe-eval'; object-src 'self'",
     },
+    browser_specific_settings: {
+      chrome: {
+        id: "@lockmark",
+      },
+      gecko: {
+        id: "@lockmark",
+      },
+      edge: {
+        id: "@lockmark",
+      },
+    } as any,
   },
 });
