@@ -149,17 +149,6 @@ export default function Bookmarks({
     }
   };
 
-  if (bookmarks.length === 0) {
-    return (
-      <div className={styles.container}>
-        <MessageBanner
-          message="No bookmarks found"
-          onRetry={handleSaveManifest}
-        />
-      </div>
-    );
-  }
-
   return (
     <div className={styles.container}>
       <BookmarkModal
@@ -178,15 +167,23 @@ export default function Bookmarks({
         onQuickAdd={handleQuickAdd}
       />
 
-      <MessageBanner message={message} onRetry={handleSaveManifest} />
-
-      <BookmarkList
-        bookmarks={bookmarks}
-        tags={tags}
-        searchQuery={searchQuery}
-        onEdit={handleShowBookmarkModal}
-        onDelete={handleDeleteBookmark}
-      />
+      {bookmarks.length === 0 ? (
+        <MessageBanner
+          message="No bookmarks found"
+          onRetry={handleSaveManifest}
+        />
+      ) : (
+        <>
+          <MessageBanner message={message} onRetry={handleSaveManifest} />
+          <BookmarkList
+            bookmarks={bookmarks}
+            tags={tags}
+            searchQuery={searchQuery}
+            onEdit={handleShowBookmarkModal}
+            onDelete={handleDeleteBookmark}
+          />
+        </>
+      )}
     </div>
   );
 }

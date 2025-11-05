@@ -27,6 +27,17 @@ This is a monorepo managed with `pnpm` workspaces. To get started, you'll need t
 - [pnpm](https://pnpm.io) (package manager)
 - Node.js 18+ (for the extension)
 
+> **⚠️ Warning: Extension Installation Limitations**
+>
+> Currently, the extension can only be installed without extension signature verification on:
+>
+> - **Firefox ZEN** (fork of Firefox)
+> - **Firefox Nightly**
+>
+> Chrome/Chromium compatibility for unsigned extensions has not been tested yet.
+>
+> For standard Firefox releases, you would need to sign the extension through Mozilla's Add-on Developer Hub. See the [Extension README](./apps/extension/README.md) for more details on Firefox installation.
+
 ### Quick Start
 
 1. **Install dependencies:**

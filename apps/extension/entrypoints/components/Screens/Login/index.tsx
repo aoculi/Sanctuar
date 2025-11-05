@@ -1,5 +1,5 @@
 import { Button, Callout, Heading, TextField } from "@radix-ui/themes";
-import { AlertCircle, KeyRound, Mail } from "lucide-react";
+import { AlertCircle, KeyRound, Loader2, Mail } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { useLoginAndUnlock } from "../../../hooks/auth";
@@ -168,6 +168,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
           </TextField.Root>
 
           <Button type="submit" disabled={disabled}>
+            {initializing && <Loader2 className={styles.spinner} />}
             {isInitializing
               ? "Initializing..."
               : loginMutation.isPending

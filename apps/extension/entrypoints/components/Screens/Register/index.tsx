@@ -1,5 +1,5 @@
 import { Button, Callout, Heading, TextField } from "@radix-ui/themes";
-import { AlertCircle, KeyRound, Mail } from "lucide-react";
+import { AlertCircle, KeyRound, Loader2, Mail } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { useRegisterAndLogin } from "../../../hooks/auth";
@@ -167,6 +167,7 @@ export default function Register({ onRegisterSuccess }: RegisterProps) {
           </TextField.Root>
 
           <Button type="submit" disabled={disabled}>
+            {initializing && <Loader2 className={styles.spinner} />}
             {isInitializing
               ? "Initializing..."
               : registerMutation.isPending
