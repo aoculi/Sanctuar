@@ -71,7 +71,7 @@ export default function App() {
   // Listen for auth events
   useEffect(() => {
     const unsubscribe = sessionManager.onUnauthorized(() => {
-      setFlash("Session expired");
+      if (route !== "/login") setFlash("Session expired");
       setRoute("/login");
     });
 

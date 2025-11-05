@@ -124,7 +124,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             <Callout.Icon>
               <AlertCircle />
             </Callout.Icon>
-            <Callout.Text>
+            <div>
               {Array.isArray(error) ? (
                 <ul>
                   {error.map((line, idx) => (
@@ -134,7 +134,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
               ) : (
                 error
               )}
-            </Callout.Text>
+            </div>
           </Callout.Root>
         )}
 

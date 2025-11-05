@@ -123,7 +123,7 @@ export default function Register({ onRegisterSuccess }: RegisterProps) {
             <Callout.Icon>
               <AlertCircle />
             </Callout.Icon>
-            <Callout.Text>
+            <div>
               {Array.isArray(error) ? (
                 <ul>
                   {error.map((line, idx) => (
@@ -133,7 +133,7 @@ export default function Register({ onRegisterSuccess }: RegisterProps) {
               ) : (
                 error
               )}
-            </Callout.Text>
+            </div>
           </Callout.Root>
         )}
 
