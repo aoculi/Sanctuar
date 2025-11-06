@@ -55,8 +55,6 @@
  *       Version labels (wmk_v1, manifest_v1) should be updated when format changes.
  */
 
-export const FORMAT_VERSION = 1;
-
 export const KDF = {
   algo: "argon2id" as const,
   opslimit: "MODERATE" as const,
@@ -101,14 +99,7 @@ export const KEY_DERIVATION = {
   mak_info: "VAULT/MAK v1",
 };
 
-export const CHAIN_SEED_LEN = 32; // bytes
-
-// File format marker: two newlines separate header from encrypted payload
-export const FILE_SEPARATOR = "\n\n";
-
 // Storage keys for chrome.storage.local
 export const STORAGE_KEYS = {
-  FILE_HANDLE_REF: "vault_file_handle_ref",
-  VAULT_UUID: "vault_uuid",
   SETTINGS: "settings",
 } as const;

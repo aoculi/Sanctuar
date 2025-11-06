@@ -8,7 +8,6 @@ import { sha256 } from '@noble/hashes/sha2.js';
 import { argon2id } from 'hash-wasm';
 import { AEAD, HKDF, KDF, KEY_DERIVATION } from './constants';
 import { getCryptoEnv } from './cryptoEnv';
-import type { VaultHeader } from './types';
 
 /**
  * Generate a random UUID v4
@@ -152,17 +151,6 @@ export function decryptAEAD(
 }
 
 /**
- * Construct AAD (Additional Authenticated Data) for manifest encryption
- * @param vaultUuid - Vault UUID
- * @param label - Context label (e.g., "manifest_v1")
- * @returns AAD as Uint8Array
- */
-export function constructAAD(vaultUuid: string, label: string): Uint8Array {
-    const aadString = vaultUuid + label;
-    return new TextEncoder().encode(aadString);
-}
-
-/**
  * Convert Uint8Array to base64 string
  */
 export function toBase64(data: Uint8Array): string {
@@ -188,27 +176,4 @@ export function zeroize(...data: (Uint8Array | undefined)[]): void {
             item.fill(0);
         }
     }
-}
-
-/**
- * Full key derivation pipeline: password → MK → KEK + MAK
- * @param password - User password
- * @param header - Vault header containing salts
- * @returns Derived subkeys
- */
-export async function deriveVaultKeys(
-    password: string,
-    header: VaultHeader
-): Promise<{ kek: Uint8Array; mak: Uint8Array; masterKey: Uint8Array }> {
-    // Parse salts from header
-    const kdfSalt = fromBase64(header.kdf.salt);
-    const hkdfSalt = fromBase64(header.hkdf.salt);
-
-    // Step 1: Derive master key from password
-    const masterKey = await deriveKeyFromPassword(password, kdfSalt);
-
-    // Step 2: Derive subkeys from master key
-    const { kek, mak } = deriveSubKeys(masterKey, hkdfSalt);
-
-    return { kek, mak, masterKey };
 }
