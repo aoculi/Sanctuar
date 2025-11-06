@@ -8,7 +8,7 @@ import Vault from "../Screens/Vault";
 
 import styles from "./styles.module.css";
 
-type Route = "/login" | "/register" | "/vault" | "/settings";
+export type Route = "/login" | "/register" | "/vault" | "/settings";
 
 type NavigationContextType = {
   navigate: (route: Route) => void;

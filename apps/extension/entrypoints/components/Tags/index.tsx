@@ -1,12 +1,11 @@
 import { Button, DropdownMenu, Text } from "@radix-ui/themes";
-import { ListFilter, LockKeyhole, Menu, Plus, Settings } from "lucide-react";
+import { ListFilter, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import { useLogout } from "@/entrypoints/hooks/auth";
 import { useTags } from "@/entrypoints/hooks/useTags";
 import type { Bookmark, Tag as EntityTag } from "@/entrypoints/lib/types";
 import { settingsStore } from "@/entrypoints/store/settings";
-import { useNavigation } from "../App";
+import Menu from "../Menu";
 import { StatusIndicator } from "../StatusIndicator";
 import Tag from "./Tag";
 import { TagModal } from "./TagModal";
@@ -22,9 +21,7 @@ export default function Tags({
   currentTagId: string | null;
   onSelectTag: (id: string) => void;
 }) {
-  const logoutMutation = useLogout();
   const { tags, createTag, renameTag, deleteTag } = useTags();
-  const { navigate } = useNavigation();
   const [message, setMessage] = useState<string | null>(null);
   const [sortMode, setSortMode] = useState<"name" | "count">("name");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -33,11 +30,15 @@ export default function Tags({
 
   // Subscribe to settings changes
   useEffect(() => {
-    const currentState = settingsStore.getState();
-    setShowHiddenTags(currentState.showHiddenTags);
+    const loadSettings = async () => {
+      const currentState = await settingsStore.getState();
+      setShowHiddenTags(currentState.showHiddenTags);
+    };
 
-    const unsubscribe = settingsStore.subscribe(() => {
-      const state = settingsStore.getState();
+    loadSettings();
+
+    const unsubscribe = settingsStore.subscribe(async () => {
+      const state = await settingsStore.getState();
       setShowHiddenTags(state.showHiddenTags);
     });
 
@@ -91,18 +92,6 @@ export default function Tags({
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await logoutMutation.mutateAsync();
-    } catch (err) {
-      // Error handling done via logoutMutation.error in UI
-    }
-  };
-
-  const handleSettings = () => {
-    navigate("/settings");
-  };
-
   const sortedTags = useMemo(() => {
     let tagsWithCounts = tags.map((tag) => ({
       tag,
@@ -129,24 +118,7 @@ export default function Tags({
       <div className={styles.content}>
         <div className={styles.header}>
           <div className={styles.headerLeft}>
-            <DropdownMenu.Root>
-              <DropdownMenu.Trigger>
-                <Button variant="soft" className={styles.menuButton}>
-                  <Menu strokeWidth={1} size={18} />
-                </Button>
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Content>
-                <DropdownMenu.Item onClick={handleSettings}>
-                  <Settings strokeWidth={1} size={18} /> Settings
-                </DropdownMenu.Item>
-                <DropdownMenu.Item onClick={handleLogout}>
-                  <LockKeyhole strokeWidth={1} size={18} />
-                  {logoutMutation.isPending
-                    ? "Logging out..."
-                    : "Lock extension"}
-                </DropdownMenu.Item>
-              </DropdownMenu.Content>
-            </DropdownMenu.Root>
+            <Menu isConnected={true} />
 
             <Text size="4" color="violet">
               Tags

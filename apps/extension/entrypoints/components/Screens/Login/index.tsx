@@ -6,6 +6,7 @@ import { useLoginAndUnlock } from "../../../hooks/auth";
 import { whenCryptoReady } from "../../../lib/cryptoEnv";
 import { useNavigation } from "../../App";
 
+import Menu from "../../Menu";
 import styles from "./styles.module.css";
 
 interface LoginProps {
@@ -115,10 +116,12 @@ export default function Login({ onLoginSuccess }: LoginProps) {
   return (
     <div className={styles.container}>
       <div className={styles.special} />
+      <div className={styles.menu}>
+        <Menu />
+      </div>
 
       <div className={styles.content}>
         <Heading size="8">LockMark</Heading>
-
         {error && (
           <Callout.Root color="red">
             <Callout.Icon>
@@ -137,7 +140,6 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             </div>
           </Callout.Root>
         )}
-
         <form onSubmit={handleSubmit} className={styles.form}>
           <TextField.Root
             size="3"
@@ -176,7 +178,6 @@ export default function Login({ onLoginSuccess }: LoginProps) {
               : "Unlock Vault"}
           </Button>
         </form>
-
         <div className={styles.registerLink}>
           <Button variant="ghost" onClick={() => navigate("/register")}>
             Not registered? Create an account

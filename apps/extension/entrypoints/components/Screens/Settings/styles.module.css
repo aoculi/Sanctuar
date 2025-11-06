@@ -2,6 +2,14 @@
   width: 100%;
   overflow: hidden;
   background-color: var(--background);
+  position: relative;
+}
+
+.menu {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 3;
 }
 
 .content {

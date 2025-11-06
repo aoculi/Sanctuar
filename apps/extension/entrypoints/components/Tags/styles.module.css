@@ -29,18 +29,7 @@
   align-items: center;
   gap: 10px;
 }
-.menuButton {
-  flex-shrink: 0;
-  border-radius: 100px !important;
-  border: none !important;
-  padding: 3px !important;
-  width: 35px !important;
-  height: 35px !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer !important;
-}
+
 .headerActions {
   display: flex;
   gap: 20px;

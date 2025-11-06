@@ -3,10 +3,12 @@
  */
 import { Text } from "@radix-ui/themes";
 import { useEffect, useMemo, useState } from "react";
+
 import { filterBookmarks } from "../../../lib/bookmarkUtils";
 import type { Bookmark, Tag } from "../../../lib/types";
 import { settingsStore } from "../../../store/settings";
 import { BookmarkCard } from "../BookmarkCard";
+
 import styles from "./styles.module.css";
 
 type Props = {
@@ -28,11 +30,15 @@ export function BookmarkList({
 
   // Subscribe to settings changes
   useEffect(() => {
-    const currentState = settingsStore.getState();
-    setShowHiddenTags(currentState.showHiddenTags);
+    const loadSettings = async () => {
+      const currentState = await settingsStore.getState();
+      setShowHiddenTags(currentState.showHiddenTags);
+    };
 
-    const unsubscribe = settingsStore.subscribe(() => {
-      const state = settingsStore.getState();
+    loadSettings();
+
+    const unsubscribe = settingsStore.subscribe(async () => {
+      const state = await settingsStore.getState();
       setShowHiddenTags(state.showHiddenTags);
     });
 

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRegisterAndLogin } from "../../../hooks/auth";
 import { whenCryptoReady } from "../../../lib/cryptoEnv";
 import { useNavigation } from "../../App";
+import Menu from "../../Menu";
 
 import styles from "./styles.module.css";
 
@@ -114,6 +115,10 @@ export default function Register({ onRegisterSuccess }: RegisterProps) {
   return (
     <div className={styles.container}>
       <div className={styles.special} />
+
+      <div className={styles.menu}>
+        <Menu />
+      </div>
 
       <div className={styles.content}>
         <Heading size="8">LockMark</Heading>
