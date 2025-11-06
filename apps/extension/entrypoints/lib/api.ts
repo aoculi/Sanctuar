@@ -4,9 +4,7 @@
 
 import { keystoreManager } from "../store/keystore";
 import { sessionManager } from "../store/session";
-
-const API_URL =
-  (import.meta as any).env?.VITE_API_URL ?? "http://127.0.0.1:3500";
+import { settingsStore } from "../store/settings";
 
 // Simplified API client
 export type ApiClientOptions = {
@@ -27,11 +25,26 @@ export type ApiError = {
   details?: unknown;
 };
 
-function buildUrl(path: string): string {
+async function getApiUrl(): Promise<string> {
+  const settings = await settingsStore.getState();
+  if (!settings.apiUrl || settings.apiUrl.trim() === "") {
+    throw {
+      status: -1,
+      message:
+        "API URL is not configured. Please set the API Base URL in Settings.",
+      details:
+        "The API URL must be defined in the extension settings before making API calls.",
+    } as ApiError;
+  }
+  return settings.apiUrl.trim();
+}
+
+async function buildUrl(path: string): Promise<string> {
   if (!path.startsWith("/")) {
     path = `/${path}`;
   }
-  return `${API_URL}${path}`;
+  const apiUrl = await getApiUrl();
+  return `${apiUrl}${path}`;
 }
 
 async function getAuthHeader(): Promise<string | undefined> {
@@ -65,7 +78,8 @@ export async function apiClient<T = unknown>(
   let response: Response;
 
   try {
-    response = await fetch(buildUrl(path), {
+    const url = await buildUrl(path);
+    response = await fetch(url, {
       method,
       headers: requestHeaders,
       body: requestBody,
@@ -74,6 +88,10 @@ export async function apiClient<T = unknown>(
       mode: "cors",
     });
   } catch (err: any) {
+    // If it's already an ApiError (like missing API URL), re-throw it
+    if (err?.status === -1 && err?.message?.includes("API URL")) {
+      throw err as ApiError;
+    }
     throw {
       status: -1,
       message: "Network error",

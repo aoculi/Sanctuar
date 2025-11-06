@@ -3,6 +3,8 @@
  * Keys are never persisted and are lost on popup close or SW suspend
  */
 
+import { STORAGE_KEYS } from "@/entrypoints/lib/constants";
+
 type AadContext = {
   userId: string;
   vaultId: string;
@@ -253,6 +255,63 @@ export default defineBackground(() => {
         const context = keystore.getAadContext();
         sendResponse({ ok: true, context });
         break;
+      }
+      case "settings:get": {
+        // Get settings from chrome.storage.local
+        if (!chrome.storage || !chrome.storage.local) {
+          sendResponse({
+            ok: false,
+            error: "chrome.storage.local is not available",
+          });
+          break;
+        }
+
+        chrome.storage.local.get(STORAGE_KEYS.SETTINGS, (result) => {
+          if (chrome.runtime.lastError) {
+            sendResponse({
+              ok: false,
+              error: chrome.runtime.lastError.message || "Unknown error",
+            });
+            return;
+          }
+
+          const settings = result[STORAGE_KEYS.SETTINGS] || {
+            showHiddenTags: false,
+            apiUrl: "",
+          };
+          sendResponse({ ok: true, settings });
+        });
+
+        return true; // Indicates we'll send a response asynchronously
+      }
+      case "settings:set": {
+        // Save settings to chrome.storage.local
+        if (!chrome.storage || !chrome.storage.local) {
+          sendResponse({
+            ok: false,
+            error: "chrome.storage.local is not available",
+          });
+          break;
+        }
+
+        const settings = message.payload;
+        if (!settings || typeof settings !== "object") {
+          sendResponse({ ok: false, error: "invalid_payload" });
+          break;
+        }
+
+        chrome.storage.local.set({ [STORAGE_KEYS.SETTINGS]: settings }, () => {
+          if (chrome.runtime.lastError) {
+            sendResponse({
+              ok: false,
+              error: chrome.runtime.lastError.message || "Unknown error",
+            });
+            return;
+          }
+          sendResponse({ ok: true });
+        });
+
+        return true; // Indicates we'll send a response asynchronously
       }
       case "tabs:getCurrent": {
         // Get current active tab - background script has reliable access

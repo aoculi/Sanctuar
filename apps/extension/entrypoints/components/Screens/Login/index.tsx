@@ -23,7 +23,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
   const [isInitializing, setIsInitializing] = useState(true);
 
   const loginMutation = useLoginAndUnlock();
-  const { navigate } = useNavigation();
+  const { navigate, setFlash } = useNavigation();
 
   // Check sodium ready state
   useEffect(() => {
@@ -46,6 +46,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFlash(null);
     setError(null);
 
     if (!cryptoReady) {
@@ -68,13 +69,20 @@ export default function Login({ onLoginSuccess }: LoginProps) {
       // Security: Never log sensitive data (keys, tokens, etc.)
       onLoginSuccess();
     } catch (err: any) {
-      // Handle WMK upload failure differently - keep session, allow retry
+      // Handle API URL configuration error
       const apiError = err as {
         status?: number;
         message?: string;
         details?: Record<string, any>;
       };
 
+      if (apiError.status === -1 && apiError.message?.includes("API URL")) {
+        setFlash(apiError.message);
+        navigate("/settings");
+        return;
+      }
+
+      // Handle WMK upload failure differently - keep session, allow retry
       if (apiError.details?.wmkUploadFailed) {
         // WMK upload failed - show error but keep session
         setError("Could not initialize vault. Please try again.");

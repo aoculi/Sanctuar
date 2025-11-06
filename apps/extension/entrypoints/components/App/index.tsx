@@ -12,6 +12,7 @@ export type Route = "/login" | "/register" | "/vault" | "/settings";
 
 type NavigationContextType = {
   navigate: (route: Route) => void;
+  setFlash: (message: string | null) => void;
 };
 
 const NavigationContext = createContext<NavigationContextType | null>(null);
@@ -53,12 +54,18 @@ export default function App() {
           // No session, show login
           setRoute("/login");
         }
-      } catch (error) {
-        // On error, assume invalid session
-        console.error("Session check failed:", error);
-        await sessionManager.clearSession();
-        setRoute("/login");
-        setFlash("Session check failed");
+      } catch (error: any) {
+        // Check if it's an API URL configuration error
+        if (error?.status === -1 && error?.message?.includes("API URL")) {
+          setFlash(error.message);
+          setRoute("/settings");
+        } else {
+          // On other errors, assume invalid session
+          console.error("Session check failed:", error);
+          await sessionManager.clearSession();
+          setRoute("/login");
+          setFlash("Session check failed");
+        }
       } finally {
         setIsChecking(false);
       }
@@ -117,7 +124,7 @@ export default function App() {
   };
 
   return (
-    <NavigationContext.Provider value={{ navigate }}>
+    <NavigationContext.Provider value={{ navigate, setFlash }}>
       <div className={styles.container}>
         {flash && <div className={styles.flash}>{flash}</div>}
         {renderRoute()}

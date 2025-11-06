@@ -1,20 +1,33 @@
-import { Button, Checkbox, Flex, Heading, Text } from "@radix-ui/themes";
+import {
+  Button,
+  Checkbox,
+  Flex,
+  Heading,
+  Text,
+  TextField,
+} from "@radix-ui/themes";
 import { useEffect, useState } from "react";
 
 import { sessionManager } from "@/entrypoints/store/session";
 import { settingsStore } from "@/entrypoints/store/settings";
 import { useNavigation } from "../../App";
-
 import Menu from "../../Menu";
+
 import styles from "./styles.module.css";
 
 export default function Settings() {
-  const { navigate } = useNavigation();
-  const [showHiddenTags, setShowHiddenTags] = useState(false);
-  const [originalValue, setOriginalValue] = useState(false);
+  const [fields, setFields] = useState({
+    showHiddenTags: false,
+    apiUrl: "",
+  });
+  const [originalFields, setOriginalFields] = useState({
+    showHiddenTags: false,
+    apiUrl: "",
+  });
   const [isSaved, setIsSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
+  const { setFlash } = useNavigation();
 
   // Check session status
   useEffect(() => {
@@ -46,8 +59,14 @@ export default function Settings() {
     const loadSettings = async () => {
       setIsLoading(true);
       const currentState = await settingsStore.getState();
-      setShowHiddenTags(currentState.showHiddenTags);
-      setOriginalValue(currentState.showHiddenTags);
+      setFields({
+        showHiddenTags: currentState.showHiddenTags,
+        apiUrl: currentState.apiUrl,
+      });
+      setOriginalFields({
+        showHiddenTags: currentState.showHiddenTags,
+        apiUrl: currentState.apiUrl,
+      });
       setIsLoading(false);
     };
 
@@ -56,8 +75,14 @@ export default function Settings() {
     // Subscribe to changes
     const unsubscribe = settingsStore.subscribe(async () => {
       const state = await settingsStore.getState();
-      setShowHiddenTags(state.showHiddenTags);
-      setOriginalValue(state.showHiddenTags);
+      setFields({
+        showHiddenTags: state.showHiddenTags,
+        apiUrl: state.apiUrl,
+      });
+      setOriginalFields({
+        showHiddenTags: state.showHiddenTags,
+        apiUrl: state.apiUrl,
+      });
     });
 
     return unsubscribe;
@@ -65,13 +90,20 @@ export default function Settings() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await settingsStore.setShowHiddenTags(showHiddenTags);
-    setOriginalValue(showHiddenTags);
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 2000);
+    setFlash(null);
+    try {
+      await settingsStore.setSettings(fields);
+      setOriginalFields({ ...fields });
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 2000);
+    } catch (error) {
+      console.error("Error saving settings:", error);
+    }
   };
 
-  const hasChanged = showHiddenTags !== originalValue;
+  const hasChanged = JSON.stringify(fields) !== JSON.stringify(originalFields);
+
+  const version = chrome.runtime.getManifest().version;
 
   if (isLoading) {
     return (
@@ -88,6 +120,11 @@ export default function Settings() {
       <div className={styles.menu}>
         <Menu isConnected={isConnected} />
       </div>
+
+      <div className={styles.version}>
+        Version: {import.meta.env.WXT_VERSION} : {version}
+      </div>
+
       <div className={styles.content}>
         <Heading size="8">Settings</Heading>
 
@@ -96,14 +133,29 @@ export default function Settings() {
             <Flex gap="2" align="center">
               <Checkbox
                 style={{ paddingBottom: 10 }}
-                checked={showHiddenTags}
+                checked={fields.showHiddenTags}
                 onCheckedChange={(checked) =>
-                  setShowHiddenTags(checked === true)
+                  setFields({ ...fields, showHiddenTags: checked === true })
                 }
               />
               Display hidden tags
             </Flex>
           </Text>
+
+          <Flex direction="column" gap="2" style={{ width: "100%" }}>
+            <Text as="label" size="2" weight="medium">
+              API Base URL
+            </Text>
+            <TextField.Root
+              type="url"
+              placeholder="http://127.0.0.1:3500"
+              value={fields.apiUrl}
+              onChange={(e) => setFields({ ...fields, apiUrl: e.target.value })}
+            />
+            <Text size="1" color="gray">
+              Enter the base URL for the API endpoint
+            </Text>
+          </Flex>
 
           <Button type="submit" disabled={!hasChanged || isSaved}>
             {isSaved ? "Saved!" : "Save"}

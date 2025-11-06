@@ -75,19 +75,14 @@ To use the extension on Firefox without submitting to the Firefox Add-on Store, 
 
 The extension should now be loaded and ready to use.
 
-## Environment Configuration
+## API Configuration
 
-The extension connects to a local API server. By default, it uses `http://127.0.0.1:3500`. To use a different API URL, create a `.env` file in the extension directory and set:
+The extension connects to a local API server that you need to configure.
+By default, the API app is typically reachable at `http://127.0.0.1:3500`, but you should configure the proper API URL for your specific setup in the extension settings.
 
-```env
-VITE_API_URL=http://your-api-url:port
-```
-
-For example:
-
-```env
-VITE_API_URL=http://localhost:3500
-```
+1. **Open the extension settings** after installing the extension
+2. **Set your API URL** - Enter the URL where your API server is running
+3. **Save the settings**
 
 Make sure your API server is running and accessible at the configured URL before using the extension.
 
