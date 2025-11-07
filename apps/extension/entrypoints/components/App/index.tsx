@@ -1,5 +1,6 @@
-import { sessionManager } from "@/entrypoints/store/session";
 import { createContext, useContext, useEffect, useState } from "react";
+
+import { sessionManager } from "@/entrypoints/store/session";
 import { useSession } from "../../hooks/auth";
 import Login from "../Screens/Login";
 import Register from "../Screens/Register";

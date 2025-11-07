@@ -6,6 +6,11 @@ export default defineConfig({
   autoIcons: {
     developmentIndicator: false,
   },
+  // Disable browser reload to avoid connection errors
+  // The extension will still be built, but WXT won't try to reload it automatically
+  webExt: {
+    disabled: true,
+  },
 
   manifest: {
     name: "LockMark",
@@ -14,9 +19,10 @@ export default defineConfig({
     permissions: ["storage", "tabs"],
     content_security_policy: {
       // Allow WebAssembly in dev (needed for hash-wasm and libsodium wrappers)
-      // Include WXT dev server origin (usually 3001) in script-src
+      // Include WXT dev server origins (3000 for main server, 3001 for HMR)
+      // Allow blob: URLs for worker scripts (needed for WebAssembly workers)
       extension_pages:
-        "script-src 'self' http://localhost:3001 'wasm-unsafe-eval'; object-src 'self'",
+        "script-src 'self' http://localhost:3000 http://localhost:3001 'wasm-unsafe-eval'; object-src 'self'; worker-src 'self' blob:;",
     },
     browser_specific_settings: {
       chrome: {

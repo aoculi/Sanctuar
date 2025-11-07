@@ -20,7 +20,7 @@ export const config = {
           "JWT_SECRET environment variable is required. Run: bun run scripts/generate-jwt-secret.ts"
         );
       })(),
-    expiresIn: "20m", // 20 minutes for short-lived tokens
+    expiresIn: "1h", // 1 hour for JWT tokens (client-side auto-lock is configurable)
   },
 
   // Rate limiting configuration

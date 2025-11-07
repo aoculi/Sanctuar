@@ -6,27 +6,33 @@ import {
   Text,
   TextField,
 } from "@radix-ui/themes";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { sessionManager } from "@/entrypoints/store/session";
-import { settingsStore } from "@/entrypoints/store/settings";
+import {
+  settingsStore,
+  type AutoLockTimeout,
+} from "@/entrypoints/store/settings";
 import { useNavigation } from "../../App";
-import Menu from "../../Menu";
 
+import Menu from "../../Menu";
 import styles from "./styles.module.css";
 
 export default function Settings() {
   const [fields, setFields] = useState({
     showHiddenTags: false,
     apiUrl: "",
+    autoLockTimeout: "20min" as AutoLockTimeout,
   });
   const [originalFields, setOriginalFields] = useState({
     showHiddenTags: false,
     apiUrl: "",
+    autoLockTimeout: "20min" as AutoLockTimeout,
   });
   const [isSaved, setIsSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const { setFlash } = useNavigation();
 
   // Check session status
@@ -60,12 +66,14 @@ export default function Settings() {
       setIsLoading(true);
       const currentState = await settingsStore.getState();
       setFields({
-        showHiddenTags: currentState.showHiddenTags,
-        apiUrl: currentState.apiUrl,
+        showHiddenTags: currentState.showHiddenTags || false,
+        apiUrl: currentState.apiUrl || "",
+        autoLockTimeout: currentState.autoLockTimeout || "20min",
       });
       setOriginalFields({
-        showHiddenTags: currentState.showHiddenTags,
-        apiUrl: currentState.apiUrl,
+        showHiddenTags: currentState.showHiddenTags || false,
+        apiUrl: currentState.apiUrl || "",
+        autoLockTimeout: currentState.autoLockTimeout || "20min",
       });
       setIsLoading(false);
     };
@@ -78,10 +86,12 @@ export default function Settings() {
       setFields({
         showHiddenTags: state.showHiddenTags,
         apiUrl: state.apiUrl,
+        autoLockTimeout: state.autoLockTimeout,
       });
       setOriginalFields({
         showHiddenTags: state.showHiddenTags,
         apiUrl: state.apiUrl,
+        autoLockTimeout: state.autoLockTimeout,
       });
     });
 
@@ -102,8 +112,11 @@ export default function Settings() {
   };
 
   const hasChanged = JSON.stringify(fields) !== JSON.stringify(originalFields);
-
   const version = chrome.runtime.getManifest().version;
+  const portalContainer = useMemo(
+    () => document.getElementById("root") ?? undefined,
+    []
+  );
 
   if (isLoading) {
     return (
@@ -124,42 +137,77 @@ export default function Settings() {
       <div className={styles.version}>
         Version: {import.meta.env.WXT_VERSION} : {version}
       </div>
-
       <div className={styles.content}>
         <Heading size="8">Settings</Heading>
 
         <form onSubmit={handleSubmit} className={styles.form}>
-          <Text as="label" size="2">
-            <Flex gap="2" align="center">
-              <Checkbox
-                style={{ paddingBottom: 10 }}
-                checked={fields.showHiddenTags}
-                onCheckedChange={(checked) =>
-                  setFields({ ...fields, showHiddenTags: checked === true })
+          <div className={styles.col}>
+            <div className={styles.field}>
+              <Text as="label" size="2" weight="medium">
+                API Base URL
+              </Text>
+              <TextField.Root
+                type="url"
+                placeholder="http://127.0.0.1:3500"
+                value={fields.apiUrl}
+                onChange={(e) =>
+                  setFields({ ...fields, apiUrl: e.target.value })
                 }
               />
-              Display hidden tags
-            </Flex>
-          </Text>
+              <Text size="1" color="gray">
+                Enter the base URL for the API endpoint
+              </Text>
+            </div>
 
-          <Flex direction="column" gap="2" style={{ width: "100%" }}>
-            <Text as="label" size="2" weight="medium">
-              API Base URL
-            </Text>
-            <TextField.Root
-              type="url"
-              placeholder="http://127.0.0.1:3500"
-              value={fields.apiUrl}
-              onChange={(e) => setFields({ ...fields, apiUrl: e.target.value })}
-            />
-            <Text size="1" color="gray">
-              Enter the base URL for the API endpoint
-            </Text>
-          </Flex>
+            <div className={styles.field}>
+              <Text as="label" size="2">
+                <Flex gap="2" align="center">
+                  <Checkbox
+                    className={styles.checkbox}
+                    checked={fields.showHiddenTags}
+                    onCheckedChange={(checked) =>
+                      setFields({ ...fields, showHiddenTags: checked === true })
+                    }
+                  />
+                  Display hidden tags
+                </Flex>
+              </Text>
+            </div>
+          </div>
 
-          <Button type="submit" disabled={!hasChanged || isSaved}>
-            {isSaved ? "Saved!" : "Save"}
-          </Button>
+          <div className={styles.col}>
+            <div className={styles.field}>
+              <Text as="label" size="2" weight="medium">
+                Auto-lock Timeout
+              </Text>
+              <select
+                className={styles.select}
+                defaultValue={fields.autoLockTimeout}
+                onChange={(e) =>
+                  setFields((prev: any) => ({
+                    ...prev,
+                    autoLockTimeout: e.target.value,
+                  }))
+                }
+              >
+                <option value="1min">1 minute</option>
+                <option value="2min">2 minutes</option>
+                <option value="5min">5 minutes</option>
+                <option value="10min">10 minutes</option>
+                <option value="20min">20 minutes</option>
+                <option value="30min">30 minutes</option>
+                <option value="1h">1 hour</option>
+              </select>
+
+              <Text size="1" color="gray">
+                Automatically lock the vault after inactivity
+              </Text>
+            </div>
+
+            <Button type="submit" disabled={!hasChanged || isSaved}>
+              {isSaved ? "Saved!" : "Save"}
+            </Button>
+          </div>
         </form>
       </div>
     </div>

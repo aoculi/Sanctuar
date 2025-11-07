@@ -93,17 +93,123 @@ class KeyStore {
   }
 }
 
+// Constants
+const DEFAULT_AUTO_LOCK_TIMEOUT = "20min";
+const DEFAULT_AUTO_LOCK_TIMEOUT_MS = 20 * 60 * 1000; // 20 minutes in milliseconds
+
+/**
+ * Get default settings object
+ */
+function getDefaultSettings() {
+  return {
+    showHiddenTags: false,
+    apiUrl: "",
+    autoLockTimeout: DEFAULT_AUTO_LOCK_TIMEOUT,
+  };
+}
+
+/**
+ * Parse auto-lock timeout string to milliseconds
+ */
+function parseAutoLockTimeout(timeout: string): number {
+  const match = timeout.match(/^(\d+)(min|h)$/);
+  if (!match) {
+    return DEFAULT_AUTO_LOCK_TIMEOUT_MS;
+  }
+
+  const value = parseInt(match[1], 10);
+  const unit = match[2];
+
+  if (unit === "h") {
+    return value * 60 * 60 * 1000;
+  } else {
+    return value * 60 * 1000;
+  }
+}
+
+/**
+ * Get auto-lock timeout from settings
+ */
+async function getAutoLockTimeout(): Promise<number> {
+  return new Promise((resolve) => {
+    console.log("getAutoLockTimeout");
+    if (!chrome.storage?.local) {
+      console.log("chrome.storage.local is not available");
+      resolve(DEFAULT_AUTO_LOCK_TIMEOUT_MS);
+      return;
+    }
+
+    chrome.storage.local.get(STORAGE_KEYS.SETTINGS, (result) => {
+      console.log("chrome.storage.local.get", result);
+      if (chrome.runtime.lastError) {
+        console.log("chrome.runtime.lastError", chrome.runtime.lastError);
+        resolve(DEFAULT_AUTO_LOCK_TIMEOUT_MS);
+        return;
+      }
+
+      console.log(
+        "result[STORAGE_KEYS.SETTINGS]",
+        result[STORAGE_KEYS.SETTINGS]
+      );
+      const settings = result[STORAGE_KEYS.SETTINGS] || getDefaultSettings();
+      console.log("settings", settings);
+      const timeout = parseAutoLockTimeout(
+        settings.autoLockTimeout || DEFAULT_AUTO_LOCK_TIMEOUT
+      );
+      console.log("timeout", timeout);
+      resolve(timeout);
+    });
+  });
+}
+
 export default defineBackground(() => {
   let session: { token: string; userId: string; expiresAt: number } | null =
     null;
-  let expiryTimer: number | null = null;
+  let autoLockTimer: number | null = null;
   const keystore = new KeyStore();
 
-  function clearExpiryTimer() {
-    if (expiryTimer != null) {
-      clearTimeout(expiryTimer);
-      expiryTimer = null;
+  /**
+   * Lock the keystore (zeroize keys and notify)
+   */
+  function lockKeystore() {
+    keystore.zeroize();
+    broadcast({ type: "keystore:locked" });
+    broadcast({ type: "auth:unauthorized" });
+  }
+
+  function clearAutoLockTimer() {
+    console.log("clearAutoLockTimer");
+    if (autoLockTimer != null) {
+      clearTimeout(autoLockTimer);
+      autoLockTimer = null;
     }
+  }
+
+  /**
+   * Reset the auto-lock timer based on current settings
+   * This is called when:
+   * - Session is set
+   * - Settings change
+   * - User activity (keystore operations)
+   */
+  function resetAutoLockTimer() {
+    console.log("resetAutoLockTimer");
+    clearAutoLockTimer();
+
+    // Only set timer if keystore is unlocked and session exists
+    if (!keystore.isUnlocked() || !session) {
+      console.log("keystore is not unlocked or session does not exist");
+      return;
+    }
+
+    // Get timeout asynchronously and set timer
+    getAutoLockTimeout().then((timeout) => {
+      console.log("getAutoLockTimeout", timeout);
+      autoLockTimer = setTimeout(() => {
+        autoLockTimer = null;
+        lockKeystore();
+      }, timeout) as unknown as number;
+    });
   }
 
   function broadcast(message: any) {
@@ -120,14 +226,9 @@ export default defineBackground(() => {
     expiresAt: number;
   }) {
     session = next;
-    clearExpiryTimer();
-    const delay = Math.max(0, next.expiresAt - Date.now());
-    expiryTimer = setTimeout(() => {
-      // Expired
-      session = null;
-      expiryTimer = null;
-      broadcast({ type: "session:expired" });
-    }, delay) as unknown as number;
+    console.log("setSession", next);
+    // Reset auto-lock timer when session is set
+    resetAutoLockTimer();
     broadcast({
       type: "session:updated",
       payload: { userId: next.userId, expiresAt: next.expiresAt },
@@ -135,12 +236,11 @@ export default defineBackground(() => {
   }
 
   function clearSession() {
+    console.log("clearSession");
     session = null;
-    clearExpiryTimer();
-    // Zeroize keys when session is cleared
-    keystore.zeroize();
+    clearAutoLockTimer();
+    lockKeystore();
     broadcast({ type: "session:cleared" });
-    broadcast({ type: "auth:unauthorized" });
   }
 
   /**
@@ -215,6 +315,8 @@ export default defineBackground(() => {
               MAK: base64ToUint8Array(MAK),
               aadContext,
             });
+            // Reset auto-lock timer on activity (keys set = user unlocked)
+            resetAutoLockTimer();
             sendResponse({ ok: true });
           } catch (error) {
             sendResponse({ ok: false, error: String(error) });
@@ -236,6 +338,8 @@ export default defineBackground(() => {
       case "keystore:getMAK": {
         try {
           const mak = keystore.getMAK();
+          // Reset auto-lock timer on activity (keystore access)
+          resetAutoLockTimer();
           sendResponse({ ok: true, key: uint8ArrayToBase64(mak) });
         } catch (error) {
           sendResponse({ ok: false, error: String(error) });
@@ -245,6 +349,8 @@ export default defineBackground(() => {
       case "keystore:getKEK": {
         try {
           const kek = keystore.getKEK();
+          // Reset auto-lock timer on activity (keystore access)
+          resetAutoLockTimer();
           sendResponse({ ok: true, key: uint8ArrayToBase64(kek) });
         } catch (error) {
           sendResponse({ ok: false, error: String(error) });
@@ -275,10 +381,8 @@ export default defineBackground(() => {
             return;
           }
 
-          const settings = result[STORAGE_KEYS.SETTINGS] || {
-            showHiddenTags: false,
-            apiUrl: "",
-          };
+          const settings =
+            result[STORAGE_KEYS.SETTINGS] || getDefaultSettings();
           sendResponse({ ok: true, settings });
         });
 
@@ -308,6 +412,8 @@ export default defineBackground(() => {
             });
             return;
           }
+          // Reset auto-lock timer when settings change (in case timeout changed)
+          resetAutoLockTimer();
           sendResponse({ ok: true });
         });
 

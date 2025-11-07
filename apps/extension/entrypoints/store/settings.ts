@@ -2,9 +2,19 @@
  * Settings Store - Persistent settings management via background script
  */
 
+export type AutoLockTimeout =
+  | "1min"
+  | "2min"
+  | "5min"
+  | "10min"
+  | "20min"
+  | "30min"
+  | "1h";
+
 interface SettingsState {
   showHiddenTags: boolean;
   apiUrl: string;
+  autoLockTimeout: AutoLockTimeout;
 }
 
 // Background service worker communication
@@ -24,6 +34,7 @@ class SettingsStore {
   private state: SettingsState = {
     showHiddenTags: false,
     apiUrl: "",
+    autoLockTimeout: "20min",
   };
 
   private listeners: Set<() => void> = new Set();
@@ -101,6 +112,9 @@ class SettingsStore {
     }
     if (settings.apiUrl !== undefined) {
       this.state.apiUrl = settings.apiUrl;
+    }
+    if (settings.autoLockTimeout !== undefined) {
+      this.state.autoLockTimeout = settings.autoLockTimeout;
     }
     this.notify();
     // Save the complete state

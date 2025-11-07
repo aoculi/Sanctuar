@@ -2,7 +2,7 @@
   "name": "LockMark",
   "description": "Secure Bookmarks Vault",
   "private": true,
-  "version": "0.0.2",
+  "version": "0.0.3",
   "type": "module",
   "scripts": {
     "dev": "wxt",
@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@noble/hashes": "^2.0.1",
+    "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/themes": "^3.2.1",
     "@tanstack/react-query": "^5.90.5",
     "hash-wasm": "^4.11.0",
