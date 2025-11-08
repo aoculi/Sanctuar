@@ -38,3 +38,9 @@
     transform: rotate(360deg);
   }
 }
+
+.fieldError {
+  color: red;
+  font-size: 12px;
+  margin-top: -8px;
+}

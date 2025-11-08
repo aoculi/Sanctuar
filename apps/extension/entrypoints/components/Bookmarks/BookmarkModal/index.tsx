@@ -1,16 +1,10 @@
-import {
-  Button,
-  CheckboxGroup,
-  Dialog,
-  DropdownMenu,
-  Flex,
-  TextField,
-} from "@radix-ui/themes";
+import { Button, Dialog, Flex, TextField } from "@radix-ui/themes";
 import { Loader2, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { MAX_TAGS_PER_ITEM } from "@/entrypoints/lib/validation";
 import type { Bookmark, Tag } from "../../../lib/types";
+import { TagSelectorField } from "../../TagSelectorField";
 
 import styles from "./styles.module.css";
 
@@ -145,7 +139,7 @@ export const BookmarkModal = ({
 
   return (
     <Dialog.Root open={isOpen} onOpenChange={onClose}>
-      <Dialog.Content maxWidth="450px">
+      <Dialog.Content maxWidth="550px">
         <div className={styles.header}>
           <Button
             variant="solid"
@@ -156,28 +150,6 @@ export const BookmarkModal = ({
           </Button>
 
           <div className={styles.actions}>
-            <DropdownMenu.Root>
-              <DropdownMenu.Trigger>
-                <Button variant="soft">
-                  Tags
-                  <DropdownMenu.TriggerIcon />
-                </Button>
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Content>
-                <CheckboxGroup.Root
-                  value={selectedTags}
-                  name="Tags"
-                  onValueChange={setSelectedTags}
-                >
-                  {tags.map((tag) => (
-                    <CheckboxGroup.Item key={tag.id} value={tag.id}>
-                      {tag.name}
-                    </CheckboxGroup.Item>
-                  ))}
-                </CheckboxGroup.Root>
-              </DropdownMenu.Content>
-            </DropdownMenu.Root>
-
             <Button
               onClick={handleSubmit}
               disabled={!hasChanges || isLoading}
@@ -196,7 +168,7 @@ export const BookmarkModal = ({
           Make changes to your profile.
         </Dialog.Description>
 
-        <Flex direction="column" gap="3">
+        <Flex direction="column" gap="3" mb="4">
           <TextField.Root
             ref={urlField}
             size="3"
@@ -226,6 +198,16 @@ export const BookmarkModal = ({
 
           {errors.title && (
             <span className={styles.fieldError}>{errors.title}</span>
+          )}
+
+          <TagSelectorField
+            tags={tags}
+            selectedTags={selectedTags}
+            onChange={setSelectedTags}
+          />
+
+          {errors.tags && (
+            <span className={styles.fieldError}>{errors.tags}</span>
           )}
         </Flex>
       </Dialog.Content>
