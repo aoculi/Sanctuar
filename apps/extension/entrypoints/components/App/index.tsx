@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
+import { keystoreManager } from "@/entrypoints/store/keystore";
 import { sessionManager } from "@/entrypoints/store/session";
 import { useSession } from "../../hooks/auth";
 import Login from "../Screens/Login";
@@ -32,18 +33,27 @@ export default function App() {
   const [isChecking, setIsChecking] = useState(true);
   const sessionQuery = useSession();
 
-  // Check session on popup mount using GET /auth/session
+  // Check session and keystore on popup mount
   useEffect(() => {
     const checkSession = async () => {
       try {
         const session = await sessionManager.getSession();
+        const isUnlocked = await keystoreManager.isUnlocked();
+
+        // If keystore is locked, redirect to login (even if session is valid)
+        if (!isUnlocked) {
+          setRoute("/login");
+          setFlash("Vault locked - please login again");
+          setIsChecking(false);
+          return;
+        }
 
         if (session) {
           // Validate session with server
           const sessionData = await sessionQuery.refetch();
 
           if (sessionData.data?.valid) {
-            // Session is valid, proceed to vault
+            // Session is valid and keystore is unlocked, proceed to vault
             setRoute("/vault");
           } else {
             // Session invalid, clear and show login
@@ -76,11 +86,20 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run on mount
 
-  // Listen for auth events
+  // Listen for auth events (keystore locked, session expired, etc.)
   useEffect(() => {
     const unsubscribe = sessionManager.onUnauthorized(() => {
-      if (route !== "/login") setFlash("Session expired");
-      setRoute("/login");
+      // Use functional update to avoid stale closure
+      setRoute((currentRoute) => {
+        // Only redirect from protected routes (vault, settings)
+        // Don't redirect if already on login or register
+        if (currentRoute === "/vault" || currentRoute === "/settings") {
+          setFlash("Vault locked - please login again");
+          return "/login";
+        }
+        // Stay on current route if already on login/register
+        return currentRoute;
+      });
     });
 
     return unsubscribe;

@@ -2,8 +2,10 @@ import { Text } from "@radix-ui/themes";
 import { useEffect, useState } from "react";
 
 import { keystoreManager } from "@/entrypoints/store/keystore";
+import { sessionManager } from "@/entrypoints/store/session";
 import { useBookmarks, useTags } from "../../../hooks/bookmarks";
 import { useManifest } from "../../../hooks/vault";
+import { useNavigation } from "../../App";
 import Bookmarks from "../../Bookmarks";
 import Tags from "../../Tags";
 
@@ -13,15 +15,18 @@ export default function Vault() {
   const { mutation, store } = useManifest();
   const { bookmarks } = useBookmarks();
   const { tags } = useTags();
+  const { navigate } = useNavigation();
 
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [currentTagId, setCurrentTagId] = useState<string | null>("all");
 
-  // Check keystore status on mount
+  // Initialize keystore state and listen for lock events
+  // Note: App component handles initial mount check and redirect,
+  // so this component should only render if keystore is unlocked
   useEffect(() => {
-    const checkKeystoreStatus = async () => {
+    const initializeKeystore = async () => {
       try {
         const unlocked = await keystoreManager.isUnlocked();
         setIsUnlocked(unlocked);
@@ -32,8 +37,16 @@ export default function Vault() {
       }
     };
 
-    checkKeystoreStatus();
-  }, []);
+    initializeKeystore();
+
+    // Listen for runtime keystore lock events (auto-lock timeout, etc.)
+    const unsubscribe = sessionManager.onUnauthorized(() => {
+      setIsUnlocked(false);
+      navigate("/login");
+    });
+
+    return unsubscribe;
+  }, [navigate]);
 
   // Show messages for manifest operations
   useEffect(() => {
@@ -66,27 +79,24 @@ export default function Vault() {
     );
   }
 
+  // If we reach here and keystore is locked, we're redirecting (safety check)
+  if (!isUnlocked || !store.manifest) {
+    return (
+      <div className={styles.container}>
+        <Text>Redirecting to login...</Text>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.container}>
-      {isUnlocked && store.manifest ? (
-        <>
-          <Tags
-            bookmarks={bookmarks}
-            currentTagId={currentTagId}
-            onSelectTag={onSelectTag}
-          />
+      <Tags
+        bookmarks={bookmarks}
+        currentTagId={currentTagId}
+        onSelectTag={onSelectTag}
+      />
 
-          <Bookmarks tags={tags} message={message} setMessage={setMessage} />
-        </>
-      ) : (
-        <div>
-          <p className={styles.errorMessage}>🔒 Vault Locked</p>
-          <p>Your vault is locked. Please login again to unlock it.</p>
-          <p>
-            This may happen if the extension was restarted or keys were cleared.
-          </p>
-        </div>
-      )}
+      <Bookmarks tags={tags} message={message} setMessage={setMessage} />
     </div>
   );
 }
