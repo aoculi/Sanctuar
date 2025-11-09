@@ -96,7 +96,8 @@ export const TagModal = ({
 
   return (
     <Drawer
-      title={tag ? "Update tag name" : "Create a new tag"}
+      title={tag ? "Edit Tag" : "Add Tag"}
+      description={tag ? "Manage tag details" : "Create a new tag"}
       open={isOpen}
       onClose={onClose}
     >

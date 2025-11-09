@@ -141,7 +141,7 @@ export const BookmarkModal = ({
   return (
     <Drawer
       title={bookmark ? "Edit Bookmark" : "Add Bookmark"}
-      description="Make changes to your profile"
+      description="Make changes to your bookmark"
       open={isOpen}
       onClose={onClose}
     >

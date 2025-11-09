@@ -132,7 +132,6 @@ function parseAutoLockTimeout(timeout: string): number {
  */
 async function getAutoLockTimeout(): Promise<number> {
   return new Promise((resolve) => {
-    console.log("getAutoLockTimeout");
     if (!chrome.storage?.local) {
       console.log("chrome.storage.local is not available");
       resolve(DEFAULT_AUTO_LOCK_TIMEOUT_MS);
@@ -140,23 +139,16 @@ async function getAutoLockTimeout(): Promise<number> {
     }
 
     chrome.storage.local.get(STORAGE_KEYS.SETTINGS, (result) => {
-      console.log("chrome.storage.local.get", result);
       if (chrome.runtime.lastError) {
         console.log("chrome.runtime.lastError", chrome.runtime.lastError);
         resolve(DEFAULT_AUTO_LOCK_TIMEOUT_MS);
         return;
       }
 
-      console.log(
-        "result[STORAGE_KEYS.SETTINGS]",
-        result[STORAGE_KEYS.SETTINGS]
-      );
       const settings = result[STORAGE_KEYS.SETTINGS] || getDefaultSettings();
-      console.log("settings", settings);
       const timeout = parseAutoLockTimeout(
         settings.autoLockTimeout || DEFAULT_AUTO_LOCK_TIMEOUT
       );
-      console.log("timeout", timeout);
       resolve(timeout);
     });
   });
@@ -178,7 +170,6 @@ export default defineBackground(() => {
   }
 
   function clearAutoLockTimer() {
-    console.log("clearAutoLockTimer");
     if (autoLockTimer != null) {
       clearTimeout(autoLockTimer);
       autoLockTimer = null;
@@ -193,18 +184,15 @@ export default defineBackground(() => {
    * - User activity (keystore operations)
    */
   function resetAutoLockTimer() {
-    console.log("resetAutoLockTimer");
     clearAutoLockTimer();
 
     // Only set timer if keystore is unlocked and session exists
     if (!keystore.isUnlocked() || !session) {
-      console.log("keystore is not unlocked or session does not exist");
       return;
     }
 
     // Get timeout asynchronously and set timer
     getAutoLockTimeout().then((timeout) => {
-      console.log("getAutoLockTimeout", timeout);
       autoLockTimer = setTimeout(() => {
         autoLockTimer = null;
         lockKeystore();
@@ -226,7 +214,6 @@ export default defineBackground(() => {
     expiresAt: number;
   }) {
     session = next;
-    console.log("setSession", next);
     // Reset auto-lock timer when session is set
     resetAutoLockTimer();
     broadcast({
@@ -236,7 +223,6 @@ export default defineBackground(() => {
   }
 
   function clearSession() {
-    console.log("clearSession");
     session = null;
     clearAutoLockTimer();
     lockKeystore();
