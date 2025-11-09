@@ -20,7 +20,7 @@ export default function Menu({
   isConnected?: boolean;
 }) {
   const logoutMutation = useLogout();
-  const { navigate } = useNavigation();
+  const { navigate, openSettings } = useNavigation();
 
   const handleLogout = async () => {
     try {
@@ -60,7 +60,7 @@ export default function Menu({
           </DropdownMenu.Item>
         )}
 
-        <DropdownMenu.Item onClick={() => handleNavigation("/settings")}>
+        <DropdownMenu.Item onClick={openSettings}>
           <Settings strokeWidth={1} size={18} /> Settings
         </DropdownMenu.Item>
 

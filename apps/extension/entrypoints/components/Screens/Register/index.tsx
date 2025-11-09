@@ -23,7 +23,7 @@ export default function Register({ onRegisterSuccess }: RegisterProps) {
   const [isInitializing, setIsInitializing] = useState(true);
 
   const registerMutation = useRegisterAndLogin();
-  const { navigate, setFlash } = useNavigation();
+  const { navigate, setFlash, openSettings } = useNavigation();
 
   // Check sodium ready state
   useEffect(() => {
@@ -77,7 +77,7 @@ export default function Register({ onRegisterSuccess }: RegisterProps) {
 
       if (apiError.status === -1 && apiError.message?.includes("API URL")) {
         setFlash(apiError.message);
-        navigate("/settings");
+        openSettings();
         return;
       }
 

@@ -1,20 +1,22 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
 import { useSession } from "@/entrypoints/components/hooks/auth";
+import { SettingsModal } from "@/entrypoints/components/Screens/SettingsModal";
 import { keystoreManager } from "@/entrypoints/store/keystore";
 import { sessionManager } from "@/entrypoints/store/session";
+import { settingsStore } from "@/entrypoints/store/settings";
 import Login from "./Login";
 import Register from "./Register";
-import Settings from "./Settings";
 import Vault from "./Vault";
 
 import styles from "./styles.module.css";
 
-export type Route = "/login" | "/register" | "/vault" | "/settings";
+export type Route = "/login" | "/register" | "/vault";
 
 type NavigationContextType = {
   navigate: (route: Route) => void;
   setFlash: (message: string | null) => void;
+  openSettings: () => void;
 };
 
 const NavigationContext = createContext<NavigationContextType | null>(null);
@@ -31,12 +33,19 @@ export default function Screens() {
   const [route, setRoute] = useState<Route>("/login");
   const [flash, setFlash] = useState<string | null>(null);
   const [isChecking, setIsChecking] = useState(true);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const sessionQuery = useSession();
 
   // Check session and keystore on popup mount
   useEffect(() => {
     const checkSession = async () => {
       try {
+        // Check if API URL is set, if not open settings drawer
+        const settings = await settingsStore.getState();
+        if (!settings.apiUrl || settings.apiUrl.trim() === "") {
+          setIsSettingsOpen(true);
+        }
+
         const session = await sessionManager.getSession();
         const isUnlocked = await keystoreManager.isUnlocked();
 
@@ -69,7 +78,7 @@ export default function Screens() {
         // Check if it's an API URL configuration error
         if (error?.status === -1 && error?.message?.includes("API URL")) {
           setFlash(error.message);
-          setRoute("/settings");
+          setIsSettingsOpen(true);
         } else {
           // On other errors, assume invalid session
           console.error("Session check failed:", error);
@@ -91,9 +100,9 @@ export default function Screens() {
     const unsubscribe = sessionManager.onUnauthorized(() => {
       // Use functional update to avoid stale closure
       setRoute((currentRoute) => {
-        // Only redirect from protected routes (vault, settings)
+        // Only redirect from protected routes (vault)
         // Don't redirect if already on login or register
-        if (currentRoute === "/vault" || currentRoute === "/settings") {
+        if (currentRoute === "/vault") {
           setFlash("Vault locked - please login again");
           return "/login";
         }
@@ -121,6 +130,10 @@ export default function Screens() {
     setRoute(newRoute);
   };
 
+  const openSettings = () => {
+    setIsSettingsOpen(true);
+  };
+
   if (isChecking) {
     return (
       <div className={styles.container}>
@@ -135,8 +148,6 @@ export default function Screens() {
         return <Login onLoginSuccess={handleLoginSuccess} />;
       case "/register":
         return <Register onRegisterSuccess={handleRegisterSuccess} />;
-      case "/settings":
-        return <Settings />;
       case "/vault":
       default:
         return <Vault />;
@@ -144,10 +155,14 @@ export default function Screens() {
   };
 
   return (
-    <NavigationContext.Provider value={{ navigate, setFlash }}>
+    <NavigationContext.Provider value={{ navigate, setFlash, openSettings }}>
       <div className={styles.container}>
         {flash && <div className={styles.flash}>{flash}</div>}
         {renderRoute()}
+        <SettingsModal
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+        />
       </div>
     </NavigationContext.Provider>
   );

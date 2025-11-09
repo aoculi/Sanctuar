@@ -23,7 +23,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
   const [isInitializing, setIsInitializing] = useState(true);
 
   const loginMutation = useLoginAndUnlock();
-  const { navigate, setFlash } = useNavigation();
+  const { navigate, setFlash, openSettings } = useNavigation();
 
   // Check sodium ready state
   useEffect(() => {
@@ -78,7 +78,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
 
       if (apiError.status === -1 && apiError.message?.includes("API URL")) {
         setFlash(apiError.message);
-        navigate("/settings");
+        openSettings();
         return;
       }
 
