@@ -1,17 +1,11 @@
-import {
-  Button,
-  Checkbox,
-  Dialog,
-  Flex,
-  Text,
-  TextField,
-} from "@radix-ui/themes";
-import { Loader2, X } from "lucide-react";
+import { Button, Checkbox, Flex, Text, TextField } from "@radix-ui/themes";
+import { Loader2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { Tag } from "@/entrypoints/lib/types";
 import { validateTagName } from "@/entrypoints/lib/validation";
 
+import { Drawer } from "@/entrypoints/components/ui/Drawer";
 import styles from "./styles.module.css";
 
 export const TagModal = ({
@@ -101,61 +95,51 @@ export const TagModal = ({
   if (!isOpen) return null;
 
   return (
-    <Dialog.Root open={isOpen} onOpenChange={onClose}>
-      <Dialog.Content maxWidth="450px">
-        <div className={styles.header}>
-          <Button
-            variant="solid"
-            onClick={onClose}
-            className={styles.closeButton}
-          >
-            <X strokeWidth={1} />
-          </Button>
+    <Drawer
+      title={tag ? "Update tag name" : "Create a new tag"}
+      open={isOpen}
+      onClose={onClose}
+    >
+      <Flex direction="column" gap="3">
+        <TextField.Root
+          ref={nameField}
+          size="3"
+          type="text"
+          placeholder="Tag name"
+          value={name}
+          onChange={(e) => {
+            setName(e.target.value);
+            if (errors.name) setErrors({ ...errors, name: "" });
+          }}
+        />
 
-          <Button
-            onClick={handleSubmit}
-            disabled={!hasChanges || isLoading}
-            className={styles.saveButton}
-          >
-            {isLoading && <Loader2 className={styles.spinner} />}
-            {tag ? "Save" : "Create"}
-          </Button>
-        </div>
+        {errors.name && (
+          <span className={styles.fieldError}>{errors.name}</span>
+        )}
 
-        <Dialog.Description size="2" mb="4">
-          {tag ? "Update tag name" : "Create a new tag"}
-        </Dialog.Description>
+        <Text as="label" size="2">
+          <Flex gap="2">
+            <Checkbox
+              checked={hidden}
+              onCheckedChange={(checked: boolean | "indeterminate") =>
+                setHidden(checked === true)
+              }
+            />
+            Hide tag from list
+          </Flex>
+        </Text>
+      </Flex>
 
-        <Flex direction="column" gap="3">
-          <TextField.Root
-            ref={nameField}
-            size="3"
-            type="text"
-            placeholder="Tag name"
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              if (errors.name) setErrors({ ...errors, name: "" });
-            }}
-          />
-
-          {errors.name && (
-            <span className={styles.fieldError}>{errors.name}</span>
-          )}
-
-          <Text as="label" size="2">
-            <Flex gap="2">
-              <Checkbox
-                checked={hidden}
-                onCheckedChange={(checked: boolean | "indeterminate") =>
-                  setHidden(checked === true)
-                }
-              />
-              Hide tag from list
-            </Flex>
-          </Text>
-        </Flex>
-      </Dialog.Content>
-    </Dialog.Root>
+      <div className={styles.actions}>
+        <Button
+          onClick={handleSubmit}
+          disabled={!hasChanges || isLoading}
+          className={styles.saveButton}
+        >
+          {isLoading && <Loader2 className={styles.spinner} />}
+          {tag ? "Save" : "Create"}
+        </Button>
+      </div>
+    </Drawer>
   );
 };

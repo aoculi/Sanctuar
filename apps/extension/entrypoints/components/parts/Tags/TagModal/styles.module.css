@@ -1,22 +1,11 @@
 .container {
   padding: 20px;
 }
-.header {
+
+.actions {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-.closeButton {
-  border-radius: 100px !important;
-  border: none !important;
-  padding: 5px !important;
-  width: 35px !important;
-  height: 35px !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
+  justify-content: flex-end;
+  gap: 10px;
 }
 .saveButton {
   cursor: pointer !important;
@@ -33,7 +22,9 @@
     transform: rotate(360deg);
   }
 }
+
 .fieldError {
   color: var(--red-11);
   font-size: 12px;
+  margin-top: -8px;
 }

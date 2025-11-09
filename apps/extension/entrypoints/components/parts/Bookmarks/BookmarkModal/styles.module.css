@@ -2,22 +2,12 @@
   padding: 20px;
 }
 
-.closeButton {
-  border-radius: 100px !important;
-  border: none !important;
-  padding: 5px !important;
-  width: 35px !important;
-  height: 35px !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
 .actions {
   display: flex;
-  align-items: center;
+  justify-content: flex-end;
   gap: 10px;
 }
+
 .saveButton {
   cursor: pointer !important;
 }
@@ -35,7 +25,7 @@
 }
 
 .fieldError {
-  color: red;
+  color: var(--red-11);
   font-size: 12px;
   margin-top: -8px;
 }
