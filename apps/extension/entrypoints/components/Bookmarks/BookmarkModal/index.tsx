@@ -1,9 +1,10 @@
-import { Button, Dialog, Flex, TextField } from "@radix-ui/themes";
-import { Loader2, X } from "lucide-react";
+import { Button, Flex, TextField } from "@radix-ui/themes";
+import { Loader2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { MAX_TAGS_PER_ITEM } from "@/entrypoints/lib/validation";
 import type { Bookmark, Tag } from "../../../lib/types";
+import { Drawer } from "../../Drawer";
 import { TagSelectorField } from "../../TagSelectorField";
 
 import styles from "./styles.module.css";
@@ -138,79 +139,63 @@ export const BookmarkModal = ({
   if (!isOpen) return null;
 
   return (
-    <Dialog.Root open={isOpen} onOpenChange={onClose}>
-      <Dialog.Content maxWidth="550px">
-        <div className={styles.header}>
-          <Button
-            variant="solid"
-            onClick={onClose}
-            className={styles.closeButton}
-          >
-            <X strokeWidth={1} />
-          </Button>
+    <Drawer
+      title={bookmark ? "Edit Bookmark" : "Add Bookmark"}
+      description="Make changes to your profile"
+      open={isOpen}
+      onClose={onClose}
+    >
+      <Flex direction="column" gap="3" mb="4">
+        <TextField.Root
+          ref={urlField}
+          size="3"
+          type="url"
+          placeholder="https://example.com"
+          value={url}
+          onChange={(e) => {
+            setUrl(e.target.value);
+            if (errors.url) setErrors({ ...errors, url: "" });
+          }}
+        />
 
-          <div className={styles.actions}>
-            <Button
-              onClick={handleSubmit}
-              disabled={!hasChanges || isLoading}
-              className={styles.saveButton}
-            >
-              {isLoading && <Loader2 className={styles.spinner} />}
-              {bookmark ? "Save" : "Create"}
-            </Button>
-          </div>
-        </div>
+        {errors.url && <span className={styles.fieldError}>{errors.url}</span>}
 
-        <Dialog.Title>
-          {bookmark ? "Edit Bookmark" : "Add Bookmark"}
-        </Dialog.Title>
-        <Dialog.Description size="2" mb="4">
-          Make changes to your profile.
-        </Dialog.Description>
+        <TextField.Root
+          size="3"
+          type="text"
+          value={title}
+          onChange={(e) => {
+            setTitle(e.target.value);
+            if (errors.title) setErrors({ ...errors, title: "" });
+          }}
+          placeholder="Bookmark title"
+        />
 
-        <Flex direction="column" gap="3" mb="4">
-          <TextField.Root
-            ref={urlField}
-            size="3"
-            type="url"
-            placeholder="https://example.com"
-            value={url}
-            onChange={(e) => {
-              setUrl(e.target.value);
-              if (errors.url) setErrors({ ...errors, url: "" });
-            }}
-          />
+        {errors.title && (
+          <span className={styles.fieldError}>{errors.title}</span>
+        )}
 
-          {errors.url && (
-            <span className={styles.fieldError}>{errors.url}</span>
-          )}
+        <TagSelectorField
+          tags={tags}
+          selectedTags={selectedTags}
+          onChange={setSelectedTags}
+        />
 
-          <TextField.Root
-            size="3"
-            type="text"
-            value={title}
-            onChange={(e) => {
-              setTitle(e.target.value);
-              if (errors.title) setErrors({ ...errors, title: "" });
-            }}
-            placeholder="Bookmark title"
-          />
+        {errors.tags && (
+          <span className={styles.fieldError}>{errors.tags}</span>
+        )}
+      </Flex>
 
-          {errors.title && (
-            <span className={styles.fieldError}>{errors.title}</span>
-          )}
-
-          <TagSelectorField
-            tags={tags}
-            selectedTags={selectedTags}
-            onChange={setSelectedTags}
-          />
-
-          {errors.tags && (
-            <span className={styles.fieldError}>{errors.tags}</span>
-          )}
-        </Flex>
-      </Dialog.Content>
-    </Dialog.Root>
+      <div className={styles.actions}>
+        <Button
+          onClick={handleSubmit}
+          disabled={!hasChanges || isLoading}
+          className={styles.saveButton}
+        >
+          {isLoading && <Loader2 className={styles.spinner} />}
+          {bookmark ? "Save" : "Create"}
+        </Button>
+      </div>
+    </Drawer>
   );
 };

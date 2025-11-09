@@ -1,0 +1,68 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  animation: overlayShow 0.2s ease-out;
+}
+
+.content {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  padding: 30px 40px;
+  background-color: var(--background);
+  z-index: 10;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  outline: 0;
+  transform: translateX(100%);
+  animation: slideIn 0.25s ease-out forwards;
+}
+
+[data-state="closed"].content {
+  animation: slideOut 0.2s ease-in forwards;
+}
+[data-state="closed"] + .overlay {
+  animation: overlayHide 0.2s ease-in forwards;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 30px;
+}
+
+/* Radix recommends plain CSS animations; it delays unmount for exit anims */
+@keyframes overlayShow {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes overlayHide {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}

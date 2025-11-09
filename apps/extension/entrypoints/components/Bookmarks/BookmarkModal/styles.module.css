@@ -1,12 +1,7 @@
 .container {
   padding: 20px;
 }
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
+
 .closeButton {
   border-radius: 100px !important;
   border: none !important;

@@ -130,6 +130,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
 
       <div className={styles.content}>
         <Heading size="8">LockMark</Heading>
+
         {error && (
           <Callout.Root color="red">
             <Callout.Icon>
