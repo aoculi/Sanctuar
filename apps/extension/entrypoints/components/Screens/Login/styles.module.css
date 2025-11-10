@@ -26,8 +26,8 @@
 .special {
   background: radial-gradient(
     circle,
-    var(--background-light) 0%,
-    var(--background) 70%
+    var(--background-1) 0%,
+    var(--background-3) 70%
   );
 
   z-index: 1;

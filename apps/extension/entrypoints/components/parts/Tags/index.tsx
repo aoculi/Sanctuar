@@ -1,10 +1,11 @@
-import { Button, DropdownMenu, Text } from "@radix-ui/themes";
+import { DropdownMenu, IconButton, Text } from "@radix-ui/themes";
 import { ListFilter, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { useTags } from "@/entrypoints/components/hooks/useTags";
 import Menu from "@/entrypoints/components/parts/Menu";
 import { StatusIndicator } from "@/entrypoints/components/parts/StatusIndicator";
+import Background from "@/entrypoints/components/ui/Background";
 import type { Bookmark, Tag as EntityTag, Tag } from "@/entrypoints/lib/types";
 import { settingsStore } from "@/entrypoints/store/settings";
 import TagComponent from "./Tag";
@@ -119,35 +120,40 @@ export default function Tags({
 
   return (
     <div className={styles.container}>
-      <div className={styles.content}>
-        <div className={styles.header}>
-          <div className={styles.headerLeft}>
-            <Menu isConnected={true} />
+      <div className={styles.header}>
+        <div className={styles.headerLeft}>
+          <Menu isConnected={true} />
 
-            <Text size="4" color="violet">
-              Tags
-            </Text>
-          </div>
-
-          <Button onClick={onAddTag} variant="ghost">
-            <Plus strokeWidth={1} />
-          </Button>
+          <Text size="2" color="gray">
+            Lockmark
+          </Text>
         </div>
 
-        <div className={styles.headerActions}>
-          <TagComponent
-            name="All tags"
-            count={bookmarks.length}
-            all={true}
-            active={currentTagId === "all"}
-            onClick={() => onSelectTag("all")}
-          />
+        <IconButton onClick={onAddTag} size="1">
+          <Plus strokeWidth={1} size={16} />
+        </IconButton>
+        <Background tone="light" isActive={true} />
+      </div>
+
+      <div className={styles.content}>
+        <TagComponent
+          name="All tags"
+          count={bookmarks.length}
+          all={true}
+          active={currentTagId === "all"}
+          onClick={() => onSelectTag("all")}
+        />
+
+        <div className={styles.contentActions}>
+          <Text size="1" weight="medium" color="gray">
+            Tags
+          </Text>
 
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
-              <Button variant="ghost">
-                <ListFilter strokeWidth={1} size={18} />
-              </Button>
+              <IconButton variant="soft" size="1" color="gray">
+                <ListFilter strokeWidth={1} size={16} />
+              </IconButton>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content>
               <DropdownMenu.Item
@@ -186,7 +192,7 @@ export default function Tags({
             ))}
         </div>
       </div>
-      <StatusIndicator />
+
       <TagModal
         isOpen={isModalOpen}
         tag={currentTag}
@@ -196,6 +202,9 @@ export default function Tags({
         }}
         onSave={handleSaveTag}
       />
+      <div className={styles.status}>
+        <StatusIndicator />
+      </div>
     </div>
   );
 }

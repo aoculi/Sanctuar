@@ -24,7 +24,7 @@ export function StatusIndicator() {
   };
 
   return (
-    <Text size="2" color="gray">
+    <Text size="1" color="gray">
       {getStatusText()}
     </Text>
   );

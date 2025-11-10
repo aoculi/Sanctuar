@@ -1,0 +1,10 @@
+.interactible {
+  position: relative;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 10px 20px;
+  margin: 0;
+  outline: none;
+  z-index: 2;
+}

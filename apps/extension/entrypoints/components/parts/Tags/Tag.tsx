@@ -1,6 +1,7 @@
-import { Button, DropdownMenu, Text } from "@radix-ui/themes";
+import { DropdownMenu, IconButton, Text } from "@radix-ui/themes";
 import { EllipsisVertical, LineSquiggle } from "lucide-react";
 
+import Interactible from "../../ui/Interactible";
 import styles from "./styles.module.css";
 
 export default function Tag({
@@ -22,27 +23,36 @@ export default function Tag({
 }) {
   return (
     <div className={styles.tagWrapper}>
-      <Button
+      <Interactible
+        tone="light"
+        isActive={active}
         className={`${styles.tag} ${active ? "" : styles.inactive}`}
         onClick={onClick}
       >
         <div className={styles.tagLabel}>
           {all && <LineSquiggle height={16} width={16} />}
-          <Text>{name}</Text>
+          <Text size="2" weight="regular">
+            {name}
+          </Text>
         </div>
-
-        <div className={styles.tagEnd}>
-          <Text>{count}</Text>
+        <div className={`${styles.tagEnd} ${!all ? styles.countItem : ""}`}>
+          <Text size="1" color="gray">
+            {count}
+          </Text>
         </div>
-      </Button>
+      </Interactible>
 
       {!all && (onEdit || onDelete) && (
         <div className={styles.dropdownMenu}>
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
-              <Button variant="soft" size="1" className={styles.menuButton}>
-                <EllipsisVertical height={16} width={14} />
-              </Button>
+              <IconButton
+                variant="ghost"
+                size="1"
+                className={styles.menuButton}
+              >
+                <EllipsisVertical size={16} color="gray" strokeWidth={1} />
+              </IconButton>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content>
               {onEdit && (

@@ -1,4 +1,4 @@
-import { Button, DropdownMenu } from "@radix-ui/themes";
+import { DropdownMenu, IconButton } from "@radix-ui/themes";
 import {
   Bookmark,
   Key,
@@ -11,8 +11,6 @@ import {
 import { useLogout } from "@/entrypoints/components/hooks/auth";
 import type { Route } from "@/entrypoints/components/Screens";
 import { useNavigation } from "@/entrypoints/components/Screens";
-
-import styles from "./styles.module.css";
 
 export default function Menu({
   isConnected = false,
@@ -37,9 +35,9 @@ export default function Menu({
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger>
-        <Button variant="soft" className={styles.menuButton}>
-          <MenuIcon strokeWidth={1} size={18} />
-        </Button>
+        <IconButton variant="ghost" size="1">
+          <MenuIcon strokeWidth={2} size={17} color="gray" />
+        </IconButton>
       </DropdownMenu.Trigger>
       <DropdownMenu.Content>
         {!isConnected && (
