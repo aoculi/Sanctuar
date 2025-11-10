@@ -1,9 +1,10 @@
-import { Button, TextField } from "@radix-ui/themes";
+import { TextField } from "@radix-ui/themes";
 import { Search, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { Tag } from "@/entrypoints/lib/types";
 
+import Button from "../Button";
 import styles from "./styles.module.css";
 
 export const TagSelectorField = ({
@@ -126,9 +127,8 @@ export const TagSelectorField = ({
                 {selectedTagObjects.map((tag) => (
                   <Button
                     key={tag.id}
-                    variant="soft"
-                    size="1"
-                    className={styles.tagBadge}
+                    variant="ghost"
+                    size="sm"
                     onClick={(e) => handleRemoveTag(tag.id, e)}
                   >
                     <span className={styles.tagName}>{tag.name}</span>

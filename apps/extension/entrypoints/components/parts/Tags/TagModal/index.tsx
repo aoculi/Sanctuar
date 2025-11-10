@@ -1,7 +1,8 @@
-import { Button, Checkbox, Flex, TextField } from "@radix-ui/themes";
+import { Checkbox, Flex, TextField } from "@radix-ui/themes";
 import { Loader2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import Button from "@/entrypoints/components/ui/Button";
 import { Drawer } from "@/entrypoints/components/ui/Drawer";
 import Text from "@/entrypoints/components/ui/Text";
 import type { Tag } from "@/entrypoints/lib/types";
@@ -133,11 +134,7 @@ export const TagModal = ({
       </Flex>
 
       <div className={styles.actions}>
-        <Button
-          onClick={handleSubmit}
-          disabled={!hasChanges || isLoading}
-          className={styles.saveButton}
-        >
+        <Button onClick={handleSubmit} disabled={!hasChanges || isLoading}>
           {isLoading && <Loader2 className={styles.spinner} />}
           {tag ? "Save" : "Create"}
         </Button>

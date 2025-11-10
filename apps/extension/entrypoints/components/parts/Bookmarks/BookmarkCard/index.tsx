@@ -1,6 +1,7 @@
-import { Button, DropdownMenu } from "@radix-ui/themes";
+import { DropdownMenu } from "@radix-ui/themes";
 import { EllipsisVertical } from "lucide-react";
 
+import Button from "@/entrypoints/components/ui/Button";
 import Text from "@/entrypoints/components/ui/Text";
 import { getTagName } from "@/entrypoints/lib/bookmarkUtils";
 import { formatDate, getHostname } from "@/entrypoints/lib/formatUtils";
@@ -57,8 +58,8 @@ export function BookmarkCard({ bookmark, tags, onEdit, onDelete }: Props) {
 
       <DropdownMenu.Root>
         <DropdownMenu.Trigger>
-          <Button variant="soft" size="1">
-            <EllipsisVertical height={16} width={14} />
+          <Button asIcon={true} color="dark">
+            <EllipsisVertical size={16} />
           </Button>
         </DropdownMenu.Trigger>
         <DropdownMenu.Content>

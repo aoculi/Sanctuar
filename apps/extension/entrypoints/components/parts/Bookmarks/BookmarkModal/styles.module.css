@@ -4,9 +4,6 @@
   gap: 10px;
 }
 
-.saveButton {
-  cursor: pointer !important;
-}
 .spinner {
   animation: spin 1s linear infinite;
   margin-right: 8px;

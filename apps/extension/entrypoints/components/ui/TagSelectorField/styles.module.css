@@ -28,25 +28,6 @@
   align-items: center;
 }
 
-.tagBadge {
-  display: flex !important;
-  align-items: center !important;
-  gap: 4px !important;
-  padding: 2px 6px !important;
-  background-color: var(--primary) !important;
-  color: var(--text) !important;
-  border: none !important;
-  border-radius: var(--border-radius) !important;
-  font-size: 12px !important;
-  height: auto !important;
-  line-height: 1.2 !important;
-  flex-shrink: 0 !important;
-}
-
-.tagBadge:hover {
-  opacity: 0.8;
-}
-
 .tagName {
   white-space: nowrap;
 }

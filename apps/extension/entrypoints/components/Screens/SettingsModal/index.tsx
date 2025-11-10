@@ -1,7 +1,8 @@
-import { Button, Checkbox, Flex, TextField } from "@radix-ui/themes";
+import { Checkbox, Flex, TextField } from "@radix-ui/themes";
 import { useEffect, useState } from "react";
 
 import { useNavigation } from "@/entrypoints/components/Screens";
+import Button from "@/entrypoints/components/ui/Button";
 import { Drawer } from "@/entrypoints/components/ui/Drawer";
 import Text from "@/entrypoints/components/ui/Text";
 import {
@@ -174,11 +175,7 @@ export const SettingsModal = ({
         <div className={styles.version}>
           Version: {import.meta.env.WXT_VERSION} : {version}
         </div>
-        <Button
-          onClick={handleSubmit}
-          disabled={!hasChanged || isSaved}
-          className={styles.saveButton}
-        >
+        <Button onClick={handleSubmit} disabled={!hasChanged || isSaved}>
           {isSaved ? "Saved!" : "Save"}
         </Button>
       </div>

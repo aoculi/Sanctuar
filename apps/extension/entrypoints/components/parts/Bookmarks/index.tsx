@@ -44,12 +44,6 @@ export default function Bookmarks({
     setTmpBookmark(null);
   };
 
-  const handleShowCreateBookmarkModal = () => {
-    setIsModalOpen(true);
-    setSelectedBookmark(null);
-    setTmpBookmark(null);
-  };
-
   const handleSaveBookmark = (data: {
     url: string;
     title: string;
@@ -165,7 +159,6 @@ export default function Bookmarks({
       <BookmarkHeader
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        onAddBookmark={handleShowCreateBookmarkModal}
         onQuickAdd={handleQuickAdd}
       />
 

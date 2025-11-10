@@ -2,18 +2,17 @@ import { IconButton } from "@radix-ui/themes";
 import { Plus, Search } from "lucide-react";
 
 import Background from "@/entrypoints/components/ui/Background";
+
 import styles from "./styles.module.css";
 
 export default function BookmarkHeader({
   searchQuery,
   onSearchChange,
-  onAddBookmark,
-  onQuickAdd, // Add this new prop
+  onQuickAdd,
 }: {
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  onAddBookmark: () => void;
-  onQuickAdd: () => void; // Add this
+  onQuickAdd: () => void;
 }) {
   return (
     <div className={styles.container}>
@@ -40,9 +39,6 @@ export default function BookmarkHeader({
       </IconButton>
 
       <Background tone="dark" isActive={true} />
-      {/* <Button onClick={onAddBookmark} className={styles.addBookmarkButton}>
-        <Plus strokeWidth={1} />
-      </Button> */}
     </div>
   );
 }

@@ -1,11 +1,12 @@
-import { Button, Callout, TextField } from "@radix-ui/themes";
+import { Callout, TextField } from "@radix-ui/themes";
 import { AlertCircle, KeyRound, Loader2, Mail } from "lucide-react";
 
 import { useRegisterAndLogin } from "@/entrypoints/components/hooks/auth";
 import { useAuthForm } from "@/entrypoints/components/hooks/useAuthForm";
 import Menu from "@/entrypoints/components/parts/Menu";
+import Button from "@/entrypoints/components/ui/Button";
+import Text from "@/entrypoints/components/ui/Text";
 import { useNavigation } from "..";
-import Text from "../../ui/Text";
 
 import styles from "./styles.module.css";
 
@@ -91,7 +92,7 @@ export default function Register({ onRegisterSuccess }: RegisterProps) {
             </TextField.Slot>
           </TextField.Root>
 
-          <Button type="submit" disabled={disabled}>
+          <Button disabled={disabled}>
             {initializing && <Loader2 className={styles.spinner} />}
             {isInitializing
               ? "Initializing..."

@@ -1,7 +1,8 @@
-import { Button, Flex, TextField } from "@radix-ui/themes";
+import { Flex, TextField } from "@radix-ui/themes";
 import { Loader2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import Button from "@/entrypoints/components/ui/Button";
 import { Drawer } from "@/entrypoints/components/ui/Drawer";
 import { TagSelectorField } from "@/entrypoints/components/ui/TagSelectorField";
 import type { Bookmark, Tag } from "@/entrypoints/lib/types";
@@ -187,11 +188,7 @@ export const BookmarkModal = ({
       </Flex>
 
       <div className={styles.actions}>
-        <Button
-          onClick={handleSubmit}
-          disabled={!hasChanges || isLoading}
-          className={styles.saveButton}
-        >
+        <Button onClick={handleSubmit} disabled={!hasChanges || isLoading}>
           {isLoading && <Loader2 className={styles.spinner} />}
           {bookmark ? "Save" : "Create"}
         </Button>
