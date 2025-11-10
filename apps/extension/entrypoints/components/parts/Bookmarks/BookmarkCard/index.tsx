@@ -1,7 +1,7 @@
-import { DropdownMenu } from "@radix-ui/themes";
 import { EllipsisVertical } from "lucide-react";
 
 import Button from "@/entrypoints/components/ui/Button";
+import { DropdownMenu } from "@/entrypoints/components/ui/DropdownMenu";
 import Text from "@/entrypoints/components/ui/Text";
 import { getTagName } from "@/entrypoints/lib/bookmarkUtils";
 import { formatDate, getHostname } from "@/entrypoints/lib/formatUtils";

@@ -1,4 +1,3 @@
-import { DropdownMenu } from "@radix-ui/themes";
 import {
   Bookmark,
   Key,
@@ -12,6 +11,7 @@ import { useLogout } from "@/entrypoints/components/hooks/auth";
 import type { Route } from "@/entrypoints/components/Screens";
 import { useNavigation } from "@/entrypoints/components/Screens";
 import Button from "../../ui/Button";
+import { DropdownMenu } from "../../ui/DropdownMenu";
 
 export default function Menu({
   isConnected = false,

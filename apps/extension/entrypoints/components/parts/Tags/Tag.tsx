@@ -1,7 +1,7 @@
-import { DropdownMenu } from "@radix-ui/themes";
 import { EllipsisVertical, LineSquiggle } from "lucide-react";
 
 import Button from "@/entrypoints/components/ui/Button";
+import { DropdownMenu } from "@/entrypoints/components/ui/DropdownMenu";
 import Interactible from "@/entrypoints/components/ui/Interactible";
 import Text from "@/entrypoints/components/ui/Text";
 

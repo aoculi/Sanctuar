@@ -1,4 +1,3 @@
-import { DropdownMenu } from "@radix-ui/themes";
 import { ListFilter, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -7,6 +6,7 @@ import Menu from "@/entrypoints/components/parts/Menu";
 import { StatusIndicator } from "@/entrypoints/components/parts/StatusIndicator";
 import Background from "@/entrypoints/components/ui/Background";
 import Button from "@/entrypoints/components/ui/Button";
+import { DropdownMenu } from "@/entrypoints/components/ui/DropdownMenu";
 import Text from "@/entrypoints/components/ui/Text";
 import type { Bookmark, Tag as EntityTag, Tag } from "@/entrypoints/lib/types";
 import { settingsStore } from "@/entrypoints/store/settings";
