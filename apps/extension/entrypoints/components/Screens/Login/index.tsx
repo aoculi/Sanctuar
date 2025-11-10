@@ -1,10 +1,10 @@
-import { Callout } from "@radix-ui/themes";
-import { AlertCircle, KeyRound, Loader2, Mail } from "lucide-react";
+import { KeyRound, Loader2, Mail } from "lucide-react";
 
 import { useLoginAndUnlock } from "@/entrypoints/components/hooks/auth";
 import { useAuthForm } from "@/entrypoints/components/hooks/useAuthForm";
 import Menu from "@/entrypoints/components/parts/Menu";
 import Button from "@/entrypoints/components/ui/Button";
+import ErrorCallout from "@/entrypoints/components/ui/ErrorCallout";
 import Input from "@/entrypoints/components/ui/Input";
 import Text from "@/entrypoints/components/ui/Text";
 import { useNavigation } from "..";
@@ -45,24 +45,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
           LockMark
         </Text>
 
-        {error && (
-          <Callout.Root color="red">
-            <Callout.Icon>
-              <AlertCircle />
-            </Callout.Icon>
-            <div>
-              {Array.isArray(error) ? (
-                <ul>
-                  {error.map((line, idx) => (
-                    <li key={idx}>{line}</li>
-                  ))}
-                </ul>
-              ) : (
-                error
-              )}
-            </div>
-          </Callout.Root>
-        )}
+        {error && <ErrorCallout>{error}</ErrorCallout>}
 
         <form onSubmit={handleSubmit} className={styles.form}>
           <Input
