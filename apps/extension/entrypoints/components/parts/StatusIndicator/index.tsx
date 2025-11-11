@@ -1,5 +1,5 @@
 import { useManifestOperations } from "@/entrypoints/components/hooks/useManifestOperations";
-import Text from "../../ui/Text";
+import Text from "@/entrypoints/components/ui/Text";
 
 export function StatusIndicator() {
   const { store } = useManifestOperations();

@@ -2,9 +2,9 @@
  * API client for secure extension
  */
 
-import { keystoreManager } from "../store/keystore";
-import { sessionManager } from "../store/session";
-import { settingsStore } from "../store/settings";
+import { keystoreManager } from "@/entrypoints/store/keystore";
+import { sessionManager } from "@/entrypoints/store/session";
+import { settingsStore } from "@/entrypoints/store/settings";
 
 // Simplified API client
 export type ApiClientOptions = {

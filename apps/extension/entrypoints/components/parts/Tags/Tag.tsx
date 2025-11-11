@@ -2,7 +2,6 @@ import { EllipsisVertical, LineSquiggle } from "lucide-react";
 
 import Button from "@/entrypoints/components/ui/Button";
 import { DropdownMenu } from "@/entrypoints/components/ui/DropdownMenu";
-import Interactible from "@/entrypoints/components/ui/Interactible";
 import Text from "@/entrypoints/components/ui/Text";
 
 import styles from "./styles.module.css";
@@ -26,10 +25,9 @@ export default function Tag({
 }) {
   return (
     <div className={styles.tagWrapper}>
-      <Interactible
-        tone="light"
-        isActive={active}
-        className={`${styles.tag} ${active ? "" : styles.inactive}`}
+      <a
+        className={`${styles.tag} ${active ? styles.active : styles.inactive}`}
+        href="#"
         onClick={onClick}
       >
         <div className={styles.tagLabel}>
@@ -41,14 +39,14 @@ export default function Tag({
             {count}
           </Text>
         </div>
-      </Interactible>
+      </a>
 
       {!all && (onEdit || onDelete) && (
         <div className={styles.dropdownMenu}>
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
-              <Button variant="ghost" size="sm" asIcon={true} color="dark">
-                <EllipsisVertical size={18} color="gray" strokeWidth={1} />
+              <Button asIcon={true} color="dark" variant="ghost" size="sm">
+                <EllipsisVertical size={16} />
               </Button>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content>

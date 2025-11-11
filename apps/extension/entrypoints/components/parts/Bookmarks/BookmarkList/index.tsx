@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 
+import { BookmarkCard } from "@/entrypoints/components/parts/Bookmarks/BookmarkCard";
 import Text from "@/entrypoints/components/ui/Text";
 import { filterBookmarks } from "@/entrypoints/lib/bookmarkUtils";
 import type { Bookmark, Tag } from "@/entrypoints/lib/types";
 import { settingsStore } from "@/entrypoints/store/settings";
-import { BookmarkCard } from "../BookmarkCard";
 
 import styles from "./styles.module.css";
 

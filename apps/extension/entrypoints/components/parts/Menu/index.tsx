@@ -10,8 +10,8 @@ import {
 import { useLogout } from "@/entrypoints/components/hooks/auth";
 import type { Route } from "@/entrypoints/components/Screens";
 import { useNavigation } from "@/entrypoints/components/Screens";
-import Button from "../../ui/Button";
-import { DropdownMenu } from "../../ui/DropdownMenu";
+import Button from "@/entrypoints/components/ui/Button";
+import { DropdownMenu } from "@/entrypoints/components/ui/DropdownMenu";
 
 export default function Menu({
   isConnected = false,

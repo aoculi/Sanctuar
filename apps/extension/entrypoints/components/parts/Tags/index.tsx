@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useTags } from "@/entrypoints/components/hooks/useTags";
 import Menu from "@/entrypoints/components/parts/Menu";
 import { StatusIndicator } from "@/entrypoints/components/parts/StatusIndicator";
-import Background from "@/entrypoints/components/ui/Background";
 import Button from "@/entrypoints/components/ui/Button";
 import { DropdownMenu } from "@/entrypoints/components/ui/DropdownMenu";
 import Text from "@/entrypoints/components/ui/Text";
@@ -140,7 +139,6 @@ export default function Tags({
         >
           <Plus strokeWidth={1} size={18} />
         </Button>
-        <Background tone="light" isActive={true} />
       </div>
 
       <div className={styles.content}>

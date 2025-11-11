@@ -1,6 +1,5 @@
 import { Plus, Search } from "lucide-react";
 
-import Background from "@/entrypoints/components/ui/Background";
 import Button from "@/entrypoints/components/ui/Button";
 
 import styles from "./styles.module.css";
@@ -37,8 +36,6 @@ export default function BookmarkHeader({
       >
         <Plus strokeWidth={1} size={18} />
       </Button>
-
-      <Background tone="dark" isActive={true} />
     </div>
   );
 }
