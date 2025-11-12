@@ -30,7 +30,7 @@ export default function Bookmarks({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [tmpBookmark, setTmpBookmark] = useState<Bookmark | null>(null);
   const [selectedBookmark, setSelectedBookmark] = useState<Bookmark | null>(
-    null
+    null,
   );
 
   const handleShowBookmarkModal = (bookmark: Bookmark) => {
@@ -47,6 +47,7 @@ export default function Bookmarks({
   const handleSaveBookmark = (data: {
     url: string;
     title: string;
+    picture: string;
     tags: string[];
   }) => {
     setTmpBookmark(null);
@@ -131,6 +132,7 @@ export default function Bookmarks({
       setTmpBookmark({
         id: "", // empty id = new bookmark
         url: tab.url,
+        picture: tab.picture,
         title: tab.title,
         tags: [], // explicitly set to empty array
         created_at: 0,

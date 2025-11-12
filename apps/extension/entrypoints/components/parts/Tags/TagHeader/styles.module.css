@@ -1,0 +1,17 @@
+.header {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 12px;
+    height: 40px;
+    border-bottom: 1px solid var(--border);
+    background-color: var(--background-2);
+}
+
+.headerLeft {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}

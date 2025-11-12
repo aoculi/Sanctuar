@@ -19,6 +19,7 @@ export interface Bookmark {
   id: string; // nanoid
   url: string;
   title: string;
+  picture: string;
   tags: string[]; // tag ids
   created_at: number; // epoch ms
   updated_at: number; // epoch ms

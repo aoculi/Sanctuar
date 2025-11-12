@@ -18,6 +18,7 @@ export function useBookmarks() {
       const validationError = validateBookmark({
         url: bookmark.url,
         title: bookmark.title,
+        picture: bookmark.picture,
         tags: bookmark.tags,
       });
       if (validationError) {
@@ -38,7 +39,7 @@ export function useBookmarks() {
         items: [...(manifest.items || []), newBookmark],
       }));
     },
-    [store.manifest, validateBookmark]
+    [store.manifest, validateBookmark],
   );
 
   const updateBookmark = useCallback(
@@ -48,12 +49,13 @@ export function useBookmarks() {
       // Validate input if URL or title is being updated
       if (updates.url !== undefined || updates.title !== undefined) {
         const existingBookmark = store.manifest.items?.find(
-          (item: Bookmark) => item.id === id
+          (item: Bookmark) => item.id === id,
         );
         if (existingBookmark) {
           const validationData = {
             url: updates.url ?? existingBookmark.url,
             title: updates.title ?? existingBookmark.title,
+            picture: updates.picture ?? existingBookmark.picture,
             tags: updates.tags ?? existingBookmark.tags,
           };
           const validationError = validateBookmark(validationData);
@@ -69,11 +71,11 @@ export function useBookmarks() {
         items: (manifest.items || []).map((item: Bookmark) =>
           item.id === id
             ? { ...item, ...updates, updated_at: Date.now() }
-            : item
+            : item,
         ),
       }));
     },
-    [store.manifest, validateBookmark]
+    [store.manifest, validateBookmark],
   );
 
   const deleteBookmark = useCallback(
@@ -83,18 +85,18 @@ export function useBookmarks() {
       manifestStore.apply((manifest) => ({
         ...manifest,
         items: (manifest.items || []).filter(
-          (item: Bookmark) => item.id !== id
+          (item: Bookmark) => item.id !== id,
         ),
       }));
     },
-    [store.manifest]
+    [store.manifest],
   );
 
   const getBookmark = useCallback(
     (id: string): Bookmark | undefined => {
       return store.manifest?.items?.find((item: Bookmark) => item.id === id);
     },
-    [store.manifest]
+    [store.manifest],
   );
 
   return {

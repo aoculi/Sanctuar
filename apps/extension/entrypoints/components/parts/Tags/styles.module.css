@@ -1,114 +1,96 @@
 .container {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  border-right: 1px solid var(--border);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    border-right: 1px solid var(--border);
 
-  overflow-y: auto;
-  background-color: var(--background-2);
-}
-
-.header {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 12px;
-  height: 40px;
-  border-bottom: 1px solid var(--border);
-  background-color: rgba(255, 255, 255, 0.07);
-}
-
-.headerLeft {
-  display: flex;
-  align-items: center;
-  gap: 15px;
+    overflow-y: auto;
+    background-color: var(--background-2);
 }
 
 .content {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  padding: 20px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 20px 0;
 }
 
 .contentActions {
-  margin: 30px 0 10px;
-  padding: 0 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+    margin: 30px 0 10px;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .list {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  flex: 1;
-  width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    flex: 1;
+    width: 100%;
 }
 
 .tagWrapper {
-  position: relative;
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
 }
 
 .tag {
-  flex: 1;
-  display: flex;
-  justify-content: space-between;
-  flex-direction: row;
-  color: inherit;
-  text-decoration: none;
-  padding: 10px 20px;
-  align-items: center;
-  transition: background-color 0.2s ease;
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    flex-direction: row;
+    color: inherit;
+    text-decoration: none;
+    padding: 10px 20px;
+    align-items: center;
+    transition: background-color 0.2s ease;
 }
 
 .tag.active {
-  background-color: rgba(255, 255, 255, 0.07);
+    background-color: rgba(255, 255, 255, 0.07);
 }
 
 .tag.inactive {
-  background-color: transparent;
+    background-color: transparent;
 }
 
 .tag:hover,
 .tag.active:hover {
-  background-color: rgba(255, 255, 255, 0.12) !important;
+    background-color: rgba(255, 255, 255, 0.12) !important;
 }
 
 .dropdownMenu {
-  position: absolute;
-  top: 7px;
-  right: 20px;
-  z-index: 3;
+    position: absolute;
+    top: 7px;
+    right: 20px;
+    z-index: 3;
 }
 
 .tagLabel,
 .tagEnd {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 10px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
 }
 
 .tagEnd.countItem {
-  padding-right: 35px;
+    padding-right: 35px;
 }
 
 .tag.inactive {
-  background-color: var(--background-2);
+    background-color: var(--background-2);
 }
 
 .status {
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
 }

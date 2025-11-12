@@ -21,14 +21,20 @@ export const BookmarkModal = ({
   isOpen: boolean;
   bookmark: Bookmark | null;
   onClose: () => void;
-  onSave: (data: { url: string; title: string; tags: string[] }) => void;
+  onSave: (data: {
+    url: string;
+    title: string;
+    picture: string;
+    tags: string[];
+  }) => void;
   tags: Tag[];
   tmp: Bookmark | null;
 }) => {
   const [url, setUrl] = useState(bookmark?.url || "");
   const [title, setTitle] = useState(bookmark?.title || "");
+  const [picture, setPicture] = useState(bookmark?.picture || "");
   const [selectedTags, setSelectedTags] = useState<string[]>(
-    bookmark?.tags || []
+    bookmark?.tags || [],
   );
 
   const urlField = useRef<HTMLInputElement>(null);
@@ -42,10 +48,12 @@ export const BookmarkModal = ({
       if (tmp) {
         setUrl(tmp.url);
         setTitle(tmp.title);
+        setPicture(tmp.picture);
         setSelectedTags([]);
       } else {
         setUrl(bookmark?.url || "");
         setTitle(bookmark?.title || "");
+        setPicture(bookmark?.picture || "");
         setSelectedTags(bookmark?.tags || []);
       }
       setErrors({});
@@ -101,8 +109,9 @@ export const BookmarkModal = ({
         onSave({
           url: url.trim(),
           title: title.trim(),
+          picture: picture.trim(),
           tags: selectedTags,
-        })
+        }),
       );
 
       onClose();
@@ -127,6 +136,7 @@ export const BookmarkModal = ({
     // For existing bookmarks, check if any field changed
     const urlChanged = url.trim() !== bookmark.url;
     const titleChanged = title.trim() !== bookmark.title;
+    const pictureChanged = picture.trim() !== bookmark.picture;
 
     // Check if tags changed (compare arrays)
     const tagsChanged =
@@ -134,8 +144,8 @@ export const BookmarkModal = ({
       selectedTags.some((tag) => !bookmark.tags.includes(tag)) ||
       bookmark.tags.some((tag) => !selectedTags.includes(tag));
 
-    return urlChanged || titleChanged || tagsChanged;
-  }, [url, title, selectedTags, bookmark]);
+    return urlChanged || titleChanged || pictureChanged || tagsChanged;
+  }, [url, title, picture, selectedTags, bookmark]);
 
   if (!isOpen) return null;
 
@@ -147,6 +157,7 @@ export const BookmarkModal = ({
       onClose={onClose}
     >
       <div className={styles.content}>
+        <Input type="hidden" value={picture} />
         <Input
           error={errors.url}
           ref={urlField}

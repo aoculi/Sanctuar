@@ -28,7 +28,7 @@ export default function BookmarkHeader({
 
       <Button
         onClick={onQuickAdd}
-        color="light"
+        color="primary"
         variant="solid"
         size="sm"
         asIcon={true}

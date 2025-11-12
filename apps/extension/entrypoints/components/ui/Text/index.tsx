@@ -13,7 +13,7 @@ function Text({
   size?: "1" | "2" | "3" | "4" | "5" | "6";
   weight?: "light" | "regular" | "medium" | "bold";
   as?: "label" | "p" | "div" | "h1";
-  color?: "inherit" | "light" | "primary";
+  color?: "inherit" | "light" | "primary" | "white";
   style?: React.CSSProperties;
   children: React.ReactNode;
 }) {

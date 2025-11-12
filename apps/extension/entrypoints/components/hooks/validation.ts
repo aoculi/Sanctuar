@@ -12,10 +12,10 @@ import {
  */
 export function useBookmarkValidation() {
   const validateBookmark = useCallback(
-    (data: { url: string; title: string; tags: string[] }) => {
+    (data: { url: string; title: string; picture: string; tags: string[] }) => {
       return validateBookmarkInput(data);
     },
-    []
+    [],
   );
 
   return { validateBookmark };
@@ -41,7 +41,7 @@ export function useManifestSize(
     items: unknown[];
     tags?: unknown[];
     chain_head?: string;
-  } | null
+  } | null,
 ) {
   const size = manifest ? estimateManifestSize(manifest) : 0;
   const showWarning = isManifestSizeWarning(size);

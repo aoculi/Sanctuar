@@ -147,7 +147,7 @@ async function getAutoLockTimeout(): Promise<number> {
 
       const settings = result[STORAGE_KEYS.SETTINGS] || getDefaultSettings();
       const timeout = parseAutoLockTimeout(
-        settings.autoLockTimeout || DEFAULT_AUTO_LOCK_TIMEOUT
+        settings.autoLockTimeout || DEFAULT_AUTO_LOCK_TIMEOUT,
       );
       resolve(timeout);
     });
@@ -310,7 +310,7 @@ export default defineBackground(() => {
         // This ensures the timer never exceeds the JWT expiration
         const actualTimeout = Math.min(
           timeout,
-          Math.max(0, timeUntilJwtExpiration)
+          Math.max(0, timeUntilJwtExpiration),
         );
 
         // Only set timer if there's time remaining
@@ -608,12 +608,14 @@ export default defineBackground(() => {
               .then((tabs) => {
                 if (tabs && tabs.length > 0) {
                   const tab = tabs[0];
+
                   sendResponse({
                     ok: true,
                     tab: {
                       url: tab.url,
                       title: tab.title,
                       id: tab.id,
+                      picture: tab.favIconUrl,
                     },
                   });
                 } else {
@@ -630,7 +632,7 @@ export default defineBackground(() => {
               if (chrome.runtime.lastError) {
                 console.error(
                   "chrome.runtime.lastError:",
-                  chrome.runtime.lastError
+                  chrome.runtime.lastError,
                 );
                 sendResponse({
                   ok: false,
@@ -641,12 +643,14 @@ export default defineBackground(() => {
 
               if (tabs && tabs.length > 0) {
                 const tab = tabs[0];
+
                 sendResponse({
                   ok: true,
                   tab: {
                     url: tab.url,
                     title: tab.title,
                     id: tab.id,
+                    picture: tab.favIconUrl,
                   },
                 });
               } else {

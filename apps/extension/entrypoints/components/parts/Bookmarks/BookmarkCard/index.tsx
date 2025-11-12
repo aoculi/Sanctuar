@@ -17,7 +17,6 @@ type Props = {
 };
 
 export function BookmarkCard({ bookmark, tags, onEdit, onDelete }: Props) {
-  const picture = null;
   return (
     <div className={styles.component}>
       <a
@@ -26,14 +25,14 @@ export function BookmarkCard({ bookmark, tags, onEdit, onDelete }: Props) {
         target="_blank"
         rel="noopener noreferrer"
       >
-        {picture && (
+        {bookmark.picture && (
           <div className={styles.picture}>
-            <img src={picture} alt={bookmark?.title} />
+            <img src={bookmark.picture} alt={bookmark?.title} />
           </div>
         )}
 
         <div className={styles.content}>
-          <Text size="3" weight="medium" color="light">
+          <Text size="2" weight="medium" color="white">
             {bookmark.title || "(Untitled)"}
           </Text>
           <Text size="2" color="light">
