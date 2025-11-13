@@ -1,10 +1,11 @@
 .container {
+  flex-shrink: 0;
   position: relative;
   z-index: 2;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 44px;
+  height: 41px;
   border-bottom: 1px solid var(--border);
   background-color: rgba(0, 0, 0, 0.2);
 }

@@ -103,3 +103,10 @@ export const KEY_DERIVATION = {
 export const STORAGE_KEYS = {
   SETTINGS: "settings",
 } as const;
+
+// Auto-lock timer constants
+export const DEFAULT_AUTO_LOCK_TIMEOUT = "20min";
+export const DEFAULT_AUTO_LOCK_TIMEOUT_MS = 20 * 60 * 1000; // 20 minutes in milliseconds
+
+// Token refresh constants
+export const MIN_REFRESH_INTERVAL = 60 * 1000; // Minimum 1 minute between refresh attempts

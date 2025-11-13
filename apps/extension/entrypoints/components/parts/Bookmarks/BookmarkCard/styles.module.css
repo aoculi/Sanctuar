@@ -1,70 +1,71 @@
 .component {
-    position: relative;
+  position: relative;
 }
 
 .card {
-    padding: 10px 20px;
-    transition: background-color 0.2s ease;
-    display: flex;
-    flex-direction: row;
-    text-decoration: none;
+  padding: 10px 20px;
+  transition: background-color 0.2s ease;
+  display: flex;
+  flex-direction: row;
+  text-decoration: none;
 }
 
 .card:hover {
-    background-color: rgba(255, 255, 255, 0.07);
+  background-color: rgba(255, 255, 255, 0.07);
 }
 
 .picture {
-    margin: 5px 12px 0 0;
+  margin: 5px 12px 0 0;
 }
 .content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding-right: 40px;
 }
 
 .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: start;
-    margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 8px;
 }
 
 .tagsContainer {
-    display: flex;
-    flex-direction: row;
-    gap: 4px;
-    align-items: center;
-    width: 100%;
-    justify-content: space-between;
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  align-items: center;
+  width: 100%;
+  justify-content: space-between;
 }
 
 .tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin: 8px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
 }
 
 .tag {
-    display: inline-block;
-    padding: 2px 8px;
-    background-color: transparent;
-    border: 1px solid var(--primary);
-    border-radius: 12px;
-    color: white;
-    font-size: 11px;
-    font-weight: 500;
+  display: inline-block;
+  padding: 2px 8px;
+  background-color: transparent;
+  border: 1px solid var(--primary);
+  border-radius: 12px;
+  color: white;
+  font-size: 11px;
+  font-weight: 500;
 }
 
 .updatedText {
-    text-align: right;
+  text-align: right;
 }
 
 .dropdownMenu {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    z-index: 3;
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 3;
 }
