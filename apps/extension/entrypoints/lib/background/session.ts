@@ -2,21 +2,12 @@
  * Session management for background script
  */
 
+import { broadcastSessionUpdated, broadcastSessionCleared } from "./broadcast";
+
 export interface Session {
   token: string;
   userId: string;
   expiresAt: number;
-}
-
-/**
- * Broadcast a message to all extension contexts
- */
-function broadcast(message: any): void {
-  try {
-    chrome.runtime.sendMessage(message);
-  } catch {
-    // ignore
-  }
 }
 
 export class SessionManager {
@@ -39,14 +30,12 @@ export class SessionManager {
   }
 
   /**
-   * Set session
+   * Set session and broadcast update
    */
   setSession(session: Session): void {
     this.session = session;
-    broadcast({
-      type: "session:updated",
-      payload: { userId: session.userId, expiresAt: session.expiresAt },
-    });
+    broadcastSessionUpdated(session.userId, session.expiresAt);
+
     // Notify callback if set (for auto-lock timer reset)
     if (this.onSessionSetCallback) {
       this.onSessionSetCallback(session);
@@ -54,11 +43,11 @@ export class SessionManager {
   }
 
   /**
-   * Clear session
+   * Clear session and broadcast
    */
   clearSession(): void {
     this.session = null;
-    broadcast({ type: "session:cleared" });
+    broadcastSessionCleared();
   }
 
   /**
@@ -68,4 +57,3 @@ export class SessionManager {
     return this.session !== null;
   }
 }
-

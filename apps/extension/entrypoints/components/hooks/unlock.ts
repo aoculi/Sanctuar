@@ -5,8 +5,8 @@ import {
   deriveKeyFromPassword,
   deriveSubKeys,
   encryptAEAD,
-  fromBase64,
-  toBase64,
+  base64ToUint8Array,
+  uint8ArrayToBase64,
   zeroize,
 } from "@/entrypoints/lib/crypto";
 import { whenCryptoReady } from "@/entrypoints/lib/cryptoEnv";
@@ -51,7 +51,7 @@ export function useUnlock() {
       // C2. Derive UEK (client)
       // Security: Extract password from input immediately before use
       // JavaScript strings are immutable, so we can't zeroize them, but we minimize exposure
-      const kdfSalt = fromBase64(kdf.salt);
+      const kdfSalt = base64ToUint8Array(kdf.salt);
       const uek = await deriveKeyFromPassword(input.password, kdfSalt);
 
       // Security: Password reference is now out of scope after UEK derivation
@@ -66,7 +66,7 @@ export function useUnlock() {
         if (wrappedMk) {
           // Case 1: wrapped_mk is present
           try {
-            const wmkData = fromBase64(wrappedMk);
+            const wmkData = base64ToUint8Array(wrappedMk);
             const nonce = wmkData.subarray(0, 24);
             const ciphertext = wmkData.subarray(24);
 
@@ -104,7 +104,7 @@ export function useUnlock() {
           const wmk = new Uint8Array(24 + ciphertext.length);
           wmk.set(nonce, 0);
           wmk.set(ciphertext, 24);
-          const wmkBase64 = toBase64(wmk);
+          const wmkBase64 = uint8ArrayToBase64(wmk);
 
           // POST /user/wmk with the chosen WMK format
           // Only called when WMK was initially missing

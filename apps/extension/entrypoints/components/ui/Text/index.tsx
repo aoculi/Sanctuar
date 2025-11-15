@@ -12,7 +12,7 @@ function Text({
 }: {
   size?: "1" | "2" | "3" | "4" | "5" | "6";
   weight?: "light" | "regular" | "medium" | "bold";
-  as?: "label" | "p" | "div" | "h1";
+  as?: "label" | "p" | "div" | "h1" | "span";
   color?: "inherit" | "light" | "primary" | "white";
   style?: React.CSSProperties;
   children: React.ReactNode;
@@ -40,6 +40,13 @@ function Text({
       <h1 className={className} style={style}>
         {children}
       </h1>
+    );
+  }
+  if (as === "span") {
+    return (
+      <span className={className} style={style}>
+        {children}
+      </span>
     );
   }
   return (

@@ -18,40 +18,95 @@ export interface Settings {
 }
 
 /**
+ * Check if chrome.storage.local is available
+ */
+function isStorageAvailable(): boolean {
+  return !!(chrome?.storage?.local);
+}
+
+/**
  * Get value from chrome.storage.local
+ * @param key - Storage key
+ * @returns Promise resolving to the value or null if not found
  */
 export function getStorageItem<T>(key: string): Promise<T | null> {
   return new Promise((resolve) => {
-    if (!chrome.storage?.local) {
-      console.log("chrome.storage.local is not available");
+    if (!isStorageAvailable()) {
+      console.warn("chrome.storage.local is not available");
       resolve(null);
       return;
     }
 
     chrome.storage.local.get(key, (result) => {
       if (chrome.runtime.lastError) {
-        console.log("chrome.runtime.lastError", chrome.runtime.lastError);
+        console.error("Storage get error:", chrome.runtime.lastError);
         resolve(null);
         return;
       }
-      resolve(result[key] || null);
+      resolve(result[key] ?? null);
     });
   });
 }
 
 /**
  * Set value in chrome.storage.local
+ * @param key - Storage key
+ * @param value - Value to store
+ * @returns Promise resolving when storage is complete
  */
 export function setStorageItem(key: string, value: any): Promise<void> {
   return new Promise((resolve, reject) => {
-    if (!chrome.storage?.local) {
+    if (!isStorageAvailable()) {
       reject(new Error("chrome.storage.local is not available"));
       return;
     }
 
     chrome.storage.local.set({ [key]: value }, () => {
       if (chrome.runtime.lastError) {
-        reject(new Error(chrome.runtime.lastError.message || "Unknown error"));
+        reject(new Error(chrome.runtime.lastError.message || "Storage set failed"));
+        return;
+      }
+      resolve();
+    });
+  });
+}
+
+/**
+ * Remove value from chrome.storage.local
+ * @param key - Storage key to remove
+ * @returns Promise resolving when removal is complete
+ */
+export function removeStorageItem(key: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (!isStorageAvailable()) {
+      reject(new Error("chrome.storage.local is not available"));
+      return;
+    }
+
+    chrome.storage.local.remove(key, () => {
+      if (chrome.runtime.lastError) {
+        reject(new Error(chrome.runtime.lastError.message || "Storage remove failed"));
+        return;
+      }
+      resolve();
+    });
+  });
+}
+
+/**
+ * Clear all values from chrome.storage.local
+ * @returns Promise resolving when clear is complete
+ */
+export function clearStorage(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (!isStorageAvailable()) {
+      reject(new Error("chrome.storage.local is not available"));
+      return;
+    }
+
+    chrome.storage.local.clear(() => {
+      if (chrome.runtime.lastError) {
+        reject(new Error(chrome.runtime.lastError.message || "Storage clear failed"));
         return;
       }
       resolve();
@@ -113,4 +168,3 @@ export async function getAutoLockTimeout(): Promise<number> {
   );
   return timeout;
 }
-

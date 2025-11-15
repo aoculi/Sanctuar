@@ -8,11 +8,13 @@ import { sessionManager } from "@/entrypoints/store/session";
 import { settingsStore } from "@/entrypoints/store/settings";
 import type { ManifestApiResponse } from "@/entrypoints/components/hooks/useManifestQuery";
 import { constructAadManifest } from "@/entrypoints/lib/constants";
-import { decryptAEAD, fromBase64, zeroize } from "@/entrypoints/lib/crypto";
+import { decryptAEAD, base64ToUint8Array, zeroize } from "@/entrypoints/lib/crypto";
 import { whenCryptoReady } from "@/entrypoints/lib/cryptoEnv";
 import type { ManifestV1 } from "@/entrypoints/lib/types";
 
-// Simplified API client
+/**
+ * API client types
+ */
 export type ApiClientOptions = {
   method?: string;
   headers?: Record<string, string>;
@@ -31,6 +33,14 @@ export type ApiError = {
   details?: unknown;
 };
 
+/**
+ * Helper functions for API client
+ */
+
+/**
+ * Get API URL from settings
+ * @throws ApiError if API URL is not configured
+ */
 async function getApiUrl(): Promise<string> {
   const settings = await settingsStore.getState();
   if (!settings.apiUrl || settings.apiUrl.trim() === "") {
@@ -45,25 +55,73 @@ async function getApiUrl(): Promise<string> {
   return settings.apiUrl.trim();
 }
 
+/**
+ * Build full API URL from path
+ * @param path - API endpoint path
+ * @returns Full URL
+ */
 async function buildUrl(path: string): Promise<string> {
-  if (!path.startsWith("/")) {
-    path = `/${path}`;
-  }
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   const apiUrl = await getApiUrl();
-  return `${apiUrl}${path}`;
+  return `${apiUrl}${normalizedPath}`;
 }
 
+/**
+ * Get authorization header if session exists
+ * @returns Bearer token header or undefined
+ */
 async function getAuthHeader(): Promise<string | undefined> {
   const session = await sessionManager.getSession();
   return session?.token ? `Bearer ${session.token}` : undefined;
 }
 
+/**
+ * Parse response body (handles JSON and text)
+ * @param response - Fetch response
+ * @returns Parsed data
+ */
+async function parseResponseBody(response: Response): Promise<any> {
+  const text = await response.text();
+  if (text.length === 0) return null;
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
+
+/**
+ * Handle 401 Unauthorized response
+ * Clears session and keystore, then throws ApiError
+ */
+async function handle401Error(data: any): Promise<never> {
+  await sessionManager.clearSession();
+  await keystoreManager.zeroize();
+  sessionManager.notifyListeners();
+
+  throw {
+    status: 401,
+    message: data?.message || data?.error || "Unauthorized",
+    details: data?.details,
+  } as ApiError;
+}
+
+/**
+ * Main API client function
+ * Makes HTTP requests with automatic auth header injection and error handling
+ * @param path - API endpoint path
+ * @param options - Request options
+ * @returns Promise with response data and status
+ * @throws ApiError on failure
+ */
 export async function apiClient<T = unknown>(
   path: string,
   options: ApiClientOptions = {}
 ): Promise<ApiSuccess<T>> {
   const { method = "GET", headers = {}, body, signal } = options;
 
+  // Build request headers
   const requestHeaders: Record<string, string> = {
     Accept: "application/json",
     "Content-Type": "application/json",
@@ -76,13 +134,11 @@ export async function apiClient<T = unknown>(
     requestHeaders["Authorization"] = authHeader;
   }
 
-  let requestBody: string | undefined;
-  if (body !== undefined) {
-    requestBody = JSON.stringify(body);
-  }
+  // Serialize body if present
+  const requestBody = body !== undefined ? JSON.stringify(body) : undefined;
 
+  // Make request
   let response: Response;
-
   try {
     const url = await buildUrl(path);
     response = await fetch(url, {
@@ -94,7 +150,7 @@ export async function apiClient<T = unknown>(
       mode: "cors",
     });
   } catch (err: any) {
-    // If it's already an ApiError (like missing API URL), re-throw it
+    // Re-throw ApiError (e.g., missing API URL)
     if (err?.status === -1 && err?.message?.includes("API URL")) {
       throw err as ApiError;
     }
@@ -105,29 +161,15 @@ export async function apiClient<T = unknown>(
     } as ApiError;
   }
 
-  let data: any = null;
-  const text = await response.text();
-  if (text.length > 0) {
-    try {
-      data = JSON.parse(text);
-    } catch {
-      data = text;
-    }
-  }
+  // Parse response body
+  const data = await parseResponseBody(response);
 
-  // Handle 401 - clear session, keystore, and notify
-  // Global 401 handler clears keys and redirects to /login
+  // Handle 401 Unauthorized
   if (response.status === 401) {
-    await sessionManager.clearSession();
-    await keystoreManager.zeroize();
-    sessionManager.notifyListeners();
-    throw {
-      status: 401,
-      message: data?.message || data?.error || "Unauthorized",
-      details: data?.details,
-    } as ApiError;
+    await handle401Error(data);
   }
 
+  // Handle other errors
   if (!response.ok) {
     throw {
       status: response.status,
@@ -203,8 +245,8 @@ export async function decryptManifest(
     constructAadManifest(aadContext.userId, aadContext.vaultId)
   );
   const plaintext = decryptAEAD(
-    fromBase64(data.ciphertext),
-    fromBase64(data.nonce),
+    base64ToUint8Array(data.ciphertext),
+    base64ToUint8Array(data.nonce),
     mak,
     aadManifest
   );

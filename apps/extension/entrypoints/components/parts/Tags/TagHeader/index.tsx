@@ -12,9 +12,20 @@ export default function TagHeader({ onAddTag }: { onAddTag: () => void }) {
       <div className={styles.headerLeft}>
         <Menu isConnected={true} />
 
-        <Text size="2" color="light" weight="medium">
-          Lockmark
-        </Text>
+        <div>
+          <Text
+            size="3"
+            as="span"
+            color="white"
+            weight="medium"
+            style={{ marginRight: "4px" }}
+          >
+            Lock
+          </Text>
+          <Text size="3" as="span" color="primary" weight="medium">
+            Mark
+          </Text>
+        </div>
       </div>
 
       <Button

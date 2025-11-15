@@ -6,7 +6,7 @@ import {
   type ThreeWayMergeInput,
 } from "@/entrypoints/lib/conflictResolution";
 import { constructAadManifest } from "@/entrypoints/lib/constants";
-import { encryptAEAD, toBase64, zeroize } from "@/entrypoints/lib/crypto";
+import { encryptAEAD, uint8ArrayToBase64, zeroize } from "@/entrypoints/lib/crypto";
 import { decryptManifest } from "@/entrypoints/lib/api";
 import type { ManifestV1 } from "@/entrypoints/lib/types";
 import { keystoreManager } from "@/entrypoints/store/keystore";
@@ -101,8 +101,8 @@ export function useManifestMutation() {
               headers,
               body: {
                 version: manifestInput.serverVersion + 1,
-                nonce: toBase64(nonce),
-                ciphertext: toBase64(ciphertext),
+                nonce: uint8ArrayToBase64(nonce),
+                ciphertext: uint8ArrayToBase64(ciphertext),
               },
             }
           );

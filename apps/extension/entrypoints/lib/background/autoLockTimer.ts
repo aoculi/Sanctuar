@@ -3,20 +3,10 @@
  */
 
 import { getAutoLockTimeout } from "../storage";
+import { broadcastKeystoreLocked, broadcastUnauthorized } from "./broadcast";
 import type { Session } from "./session";
 import type { KeyStore } from "./keystore";
 import type { TokenRefresh } from "./tokenRefresh";
-
-/**
- * Broadcast a message to all extension contexts
- */
-function broadcast(message: any): void {
-  try {
-    chrome.runtime.sendMessage(message);
-  } catch {
-    // ignore
-  }
-}
 
 export class AutoLockTimer {
   private autoLockTimer: number | null = null;
@@ -37,8 +27,8 @@ export class AutoLockTimer {
    */
   private lockKeystore(keystore: KeyStore): void {
     keystore.zeroize();
-    broadcast({ type: "keystore:locked" });
-    broadcast({ type: "auth:unauthorized" });
+    broadcastKeystoreLocked();
+    broadcastUnauthorized();
   }
 
   /**
@@ -135,4 +125,3 @@ export class AutoLockTimer {
     }
   }
 }
-

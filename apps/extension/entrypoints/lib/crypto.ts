@@ -145,22 +145,6 @@ export function decryptAEAD(
 }
 
 /**
- * Convert Uint8Array to base64 string
- */
-export function toBase64(data: Uint8Array): string {
-  const sodium = getCryptoEnv();
-  return sodium.to_base64(data, sodium.base64_variants.ORIGINAL);
-}
-
-/**
- * Convert base64 string to Uint8Array
- */
-export function fromBase64(base64: string): Uint8Array {
-  const sodium = getCryptoEnv();
-  return sodium.from_base64(base64, sodium.base64_variants.ORIGINAL);
-}
-
-/**
  * Securely zero out sensitive data
  * @param data - Array of Uint8Arrays to wipe
  */
@@ -173,13 +157,13 @@ export function zeroize(...data: (Uint8Array | undefined)[]): void {
 }
 
 /**
- * Base64 encoding/decoding utilities using native browser APIs
- * These are alternatives to the libsodium-based toBase64/fromBase64 functions
- * and can be used when libsodium is not yet initialized.
+ * Base64 encoding/decoding utilities
+ * Uses native browser APIs for compatibility before libsodium initialization
  */
 
 /**
- * Helper to convert base64 string to Uint8Array using native browser API
+ * Convert base64 string to Uint8Array using native browser API
+ * Safe to use before libsodium is initialized
  */
 export function base64ToUint8Array(base64: string): Uint8Array {
   const binaryString = atob(base64);
@@ -191,8 +175,9 @@ export function base64ToUint8Array(base64: string): Uint8Array {
 }
 
 /**
- * Helper to convert Uint8Array to base64 string using native browser API
+ * Convert Uint8Array to base64 string using native browser API
  * Handles large arrays by chunking to avoid stack overflow
+ * Safe to use before libsodium is initialized
  */
 export function uint8ArrayToBase64(arr: Uint8Array): string {
   let binary = "";
@@ -202,4 +187,24 @@ export function uint8ArrayToBase64(arr: Uint8Array): string {
     binary += String.fromCharCode(...chunk);
   }
   return btoa(binary);
+}
+
+/**
+ * Convert Uint8Array to base64 string using libsodium
+ * Requires libsodium to be initialized
+ * @deprecated Use uint8ArrayToBase64 for consistency
+ */
+export function toBase64(data: Uint8Array): string {
+  const sodium = getCryptoEnv();
+  return sodium.to_base64(data, sodium.base64_variants.ORIGINAL);
+}
+
+/**
+ * Convert base64 string to Uint8Array using libsodium
+ * Requires libsodium to be initialized
+ * @deprecated Use base64ToUint8Array for consistency
+ */
+export function fromBase64(base64: string): Uint8Array {
+  const sodium = getCryptoEnv();
+  return sodium.from_base64(base64, sodium.base64_variants.ORIGINAL);
 }
