@@ -16,6 +16,7 @@ export type RegisterResponse = {
     m: number;
     t: number;
     p: number;
+    hkdf_salt?: string | null;
   };
 };
 

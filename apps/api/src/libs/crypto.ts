@@ -1,6 +1,6 @@
 // Cryptographic utilities for password hashing and salt generation
-import { Algorithm, hash, verify } from '@node-rs/argon2';
-import { config } from '../config';
+import { Algorithm, hash, verify } from "@node-rs/argon2";
+import { config } from "../config";
 
 /**
  * Generate a cryptographically secure random salt
@@ -8,9 +8,9 @@ import { config } from '../config';
  * @returns Base64-encoded salt
  */
 function generateSalt(length: number = 32): string {
-    const buffer = new Uint8Array(length);
-    crypto.getRandomValues(buffer);
-    return Buffer.from(buffer).toString('base64');
+  const buffer = new Uint8Array(length);
+  crypto.getRandomValues(buffer);
+  return Buffer.from(buffer).toString("base64");
 }
 
 /**
@@ -18,10 +18,10 @@ function generateSalt(length: number = 32): string {
  * @param length - Length of the salt in bytes (default: 32)
  * @returns Buffer containing random bytes
  */
-function generateSaltBuffer(length: number = 32): Buffer {
-    const buffer = new Uint8Array(length);
-    crypto.getRandomValues(buffer);
-    return Buffer.from(buffer);
+export function generateSaltBuffer(length: number = 32): Buffer {
+  const buffer = new Uint8Array(length);
+  crypto.getRandomValues(buffer);
+  return Buffer.from(buffer);
 }
 
 /**
@@ -32,17 +32,17 @@ function generateSaltBuffer(length: number = 32): Buffer {
  * @returns PHC string format (includes algorithm, params, salt, and hash)
  */
 export async function hashPassword(password: string): Promise<string> {
-    const { memoryCost, timeCost, parallelism } = config.argon2.auth;
+  const { memoryCost, timeCost, parallelism } = config.argon2.auth;
 
-    const phcString = await hash(password, {
-        algorithm: Algorithm.Argon2id,
-        memoryCost,
-        timeCost,
-        parallelism,
-        outputLen: 32, // 32 bytes hash output
-    });
+  const phcString = await hash(password, {
+    algorithm: Algorithm.Argon2id,
+    memoryCost,
+    timeCost,
+    parallelism,
+    outputLen: 32, // 32 bytes hash output
+  });
 
-    return phcString;
+  return phcString;
 }
 
 /**
@@ -51,14 +51,20 @@ export async function hashPassword(password: string): Promise<string> {
  * @param password - Plain text password to verify
  * @returns True if password matches
  */
-export async function verifyPassword(hash: string, password: string): Promise<boolean> {
-    try {
-        return await verify(hash, password);
-    } catch (error) {
-        // Never log the password or hash
-        console.error('Password verification failed:', error instanceof Error ? error.message : 'Unknown error');
-        return false;
-    }
+export async function verifyPassword(
+  hash: string,
+  password: string
+): Promise<boolean> {
+  try {
+    return await verify(hash, password);
+  } catch (error) {
+    // Never log the password or hash
+    console.error(
+      "Password verification failed:",
+      error instanceof Error ? error.message : "Unknown error"
+    );
+    return false;
+  }
 }
 
 /**
@@ -67,23 +73,28 @@ export async function verifyPassword(hash: string, password: string): Promise<bo
  * @returns KDF parameters object
  */
 export function generateKdfParams(): {
-    algo: string;
-    salt: string;
-    m: number;
-    t: number;
-    p: number;
-    saltBuffer: Buffer;
+  algo: string;
+  salt: string;
+  m: number;
+  t: number;
+  p: number;
+  saltBuffer: Buffer;
+  hkdfSalt: string;
+  hkdfSaltBuffer: Buffer;
 } {
-    const { memoryCost, timeCost, parallelism, saltLength } = config.argon2.kdf;
-    const saltBuffer = generateSaltBuffer(saltLength);
+  const { memoryCost, timeCost, parallelism, saltLength, hkdfSaltLength } =
+    config.argon2.kdf;
+  const saltBuffer = generateSaltBuffer(saltLength);
+  const hkdfSaltBuffer = generateSaltBuffer(hkdfSaltLength);
 
-    return {
-        algo: 'argon2id',
-        salt: saltBuffer.toString('base64'),
-        m: memoryCost,
-        t: timeCost,
-        p: parallelism,
-        saltBuffer, // Return raw buffer for database storage
-    };
+  return {
+    algo: "argon2id",
+    salt: saltBuffer.toString("base64"),
+    m: memoryCost,
+    t: timeCost,
+    p: parallelism,
+    saltBuffer, // Return raw buffer for database storage
+    hkdfSalt: hkdfSaltBuffer.toString("base64"),
+    hkdfSaltBuffer, // Return raw buffer for database storage
+  };
 }
-

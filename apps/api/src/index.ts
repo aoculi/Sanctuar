@@ -18,7 +18,11 @@ app.use("*", async (c, next) => {
     origin.startsWith("chrome-extension://") ||
     origin.startsWith("moz-extension://");
 
-  // Reflect the origin if allowed; otherwise use wildcard for non-credentialed requests
+  // Only allow specific origins - no wildcard fallback for security
+  if (!isAllowedOrigin && origin !== "") {
+    return c.json({ error: "Origin not allowed" }, 403);
+  }
+
   const allowOrigin = isAllowedOrigin ? origin : "*";
   const allowMethods = "GET,POST,PUT,PATCH,DELETE,OPTIONS";
   const requestHeaders = c.req.header("Access-Control-Request-Headers");

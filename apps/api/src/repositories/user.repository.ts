@@ -1,7 +1,7 @@
 // User repository - handles all database operations for users
-import { eq } from 'drizzle-orm';
-import { db } from '../database/db';
-import { NewUser, users } from '../database/schema';
+import { eq } from "drizzle-orm";
+import { db } from "../database/db";
+import { NewUser, UserRow, users } from "../database/schema";
 
 /**
  * Find a user by login (email/username)
@@ -9,13 +9,13 @@ import { NewUser, users } from '../database/schema';
  * @returns User record or undefined if not found
  */
 export async function findUserByLogin(login: string) {
-    const result = await db
-        .select()
-        .from(users)
-        .where(eq(users.login, login))
-        .limit(1);
+  const result = await db
+    .select()
+    .from(users)
+    .where(eq(users.login, login))
+    .limit(1);
 
-    return result[0];
+  return result[0];
 }
 
 /**
@@ -24,13 +24,13 @@ export async function findUserByLogin(login: string) {
  * @returns User record or undefined if not found
  */
 export async function findUserById(userId: string) {
-    const result = await db
-        .select()
-        .from(users)
-        .where(eq(users.userId, userId))
-        .limit(1);
+  const result = await db
+    .select()
+    .from(users)
+    .where(eq(users.userId, userId))
+    .limit(1);
 
-    return result[0];
+  return result[0];
 }
 
 /**
@@ -39,13 +39,13 @@ export async function findUserById(userId: string) {
  * @returns True if login exists, false otherwise
  */
 export async function loginExists(login: string): Promise<boolean> {
-    const result = await db
-        .select({ userId: users.userId })
-        .from(users)
-        .where(eq(users.login, login))
-        .limit(1);
+  const result = await db
+    .select({ userId: users.userId })
+    .from(users)
+    .where(eq(users.login, login))
+    .limit(1);
 
-    return result.length > 0;
+  return result.length > 0;
 }
 
 /**
@@ -54,10 +54,10 @@ export async function loginExists(login: string): Promise<boolean> {
  * @returns The created user record
  */
 export async function createUser(userData: NewUser) {
-    await db.insert(users).values(userData);
+  await db.insert(users).values(userData);
 
-    // Fetch and return the created user
-    return findUserById(userData.userId);
+  // Fetch and return the created user
+  return findUserById(userData.userId);
 }
 
 /**
@@ -67,17 +67,17 @@ export async function createUser(userData: NewUser) {
  * @returns The updated user record
  */
 export async function updateUserAuth(userId: string, authHash: string) {
-    const now = Date.now();
+  const now = Date.now();
 
-    await db
-        .update(users)
-        .set({
-            authHash,
-            updatedAt: now,
-        })
-        .where(eq(users.userId, userId));
+  await db
+    .update(users)
+    .set({
+      authHash,
+      updatedAt: now,
+    })
+    .where(eq(users.userId, userId));
 
-    return findUserById(userId);
+  return findUserById(userId);
 }
 
 /**
@@ -87,24 +87,24 @@ export async function updateUserAuth(userId: string, authHash: string) {
  * @returns The updated user record
  */
 export async function updateUserWmk(
-    userId: string,
-    wmkData: {
-        wmkNonce: Buffer;
-        wmkCiphertext: Buffer;
-        wmkLabel?: string;
-    }
+  userId: string,
+  wmkData: {
+    wmkNonce: Buffer;
+    wmkCiphertext: Buffer;
+    wmkLabel?: string;
+  }
 ) {
-    const now = Date.now();
+  const now = Date.now();
 
-    await db
-        .update(users)
-        .set({
-            ...wmkData,
-            updatedAt: now,
-        })
-        .where(eq(users.userId, userId));
+  await db
+    .update(users)
+    .set({
+      ...wmkData,
+      updatedAt: now,
+    })
+    .where(eq(users.userId, userId));
 
-    return findUserById(userId);
+  return findUserById(userId);
 }
 
 /**
@@ -112,6 +112,9 @@ export async function updateUserWmk(
  * @param userId - The user ID to delete
  */
 export async function deleteUser(userId: string): Promise<void> {
-    await db.delete(users).where(eq(users.userId, userId));
+  await db.delete(users).where(eq(users.userId, userId));
 }
 
+export async function updateUser(userId: string, userData: Partial<UserRow>) {
+  await db.update(users).set(userData).where(eq(users.userId, userId));
+}

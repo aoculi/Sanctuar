@@ -13,13 +13,17 @@ export const config = {
 
   // JWT session configuration
   jwt: {
-    secret:
-      process.env.JWT_SECRET ||
-      (() => {
-        throw new Error(
-          "JWT_SECRET environment variable is required. Run: bun run scripts/generate-jwt-secret.ts"
+    secret: (() => {
+      const secret = process.env.JWT_SECRET;
+      if (!secret || secret.trim() === "") {
+        console.error(
+          "FATAL ERROR: JWT_SECRET environment variable is required"
         );
-      })(),
+        console.error("Run: bun run scripts/generate-jwt-secret.ts");
+        process.exit(1);
+      }
+      return secret;
+    })(),
     expiresIn: "1h", // 1 hour for JWT tokens (client-side auto-lock is configurable)
   },
 
@@ -34,17 +38,20 @@ export const config = {
   // Argon2id parameters for AUTH (password verification)
   argon2: {
     auth: {
-      memoryCost: 524288, // 2^19 = 512 MB
+      memoryCost: 524288, // 2^19 = 512 MB in KiB
       timeCost: 3,
       parallelism: 1,
       saltLength: 32, // 32 bytes
     },
     // KDF parameters for UEK (User Encryption Key) - client-side derivation
+    // IMPORTANT: These values are sent to the client and must be in KiB units
+    // because the hash-wasm library expects memorySize in KiB
     kdf: {
-      memoryCost: 536870912, // 2^29 = 512 MB
+      memoryCost: 524288, // 512 MB in KiB (512 * 1024) - NOT bytes!
       timeCost: 3,
       parallelism: 1,
       saltLength: 32, // 32 bytes
+      hkdfSaltLength: 16, // 16 bytes for HKDF salt
     },
   },
 

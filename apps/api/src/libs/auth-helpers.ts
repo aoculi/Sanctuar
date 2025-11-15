@@ -7,6 +7,7 @@ export function formatKdfParams(user: {
   kdfM: number;
   kdfT: number;
   kdfP: number;
+  hkdfSalt: Buffer | null;
 }) {
   return {
     algo: user.kdfAlgo,
@@ -14,6 +15,7 @@ export function formatKdfParams(user: {
     m: user.kdfM,
     t: user.kdfT,
     p: user.kdfP,
+    hkdf_salt: user.hkdfSalt ? user.hkdfSalt.toString("base64") : null,
   };
 }
 

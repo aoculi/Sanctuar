@@ -3,6 +3,7 @@ import { nanoid } from "nanoid";
 import { formatKdfParams, formatWrappedMk } from "../libs/auth-helpers";
 import {
   generateKdfParams,
+  generateSaltBuffer,
   hashPassword,
   verifyPassword,
 } from "../libs/crypto";
@@ -28,6 +29,7 @@ export interface RegisterUserOutput {
     m: number;
     t: number;
     p: number;
+    hkdf_salt?: string | null;
   };
 }
 
@@ -97,6 +99,7 @@ export const registerUser = async (
       kdfM: kdfParams.m,
       kdfT: kdfParams.t,
       kdfP: kdfParams.p,
+      hkdfSalt: kdfParams.hkdfSaltBuffer,
       createdAt: now,
       updatedAt: now,
     });
@@ -113,6 +116,7 @@ export const registerUser = async (
         m: kdfParams.m,
         t: kdfParams.t,
         p: kdfParams.p,
+        hkdf_salt: kdfParams.hkdfSalt,
       },
     };
   } catch (error) {
@@ -145,6 +149,17 @@ export const loginUser = async (
     // Log failed attempt (no sensitive data)
     console.log(`Login failed for user: ${user.userId}`);
     throw createUnauthorizedError();
+  }
+
+  // Generate HKDF salt for users who don't have it
+  // Auto-generate HKDF salt ONLY for users who don't have WMK yet
+  // Users with existing WMK must continue using kdfSalt for backwards compatibility
+  if (!user.hkdfSalt && !user.wmkCiphertext) {
+    const hkdfSaltBuffer = generateSaltBuffer(16);
+    await userRepository.updateUser(user.userId, {
+      hkdfSalt: hkdfSaltBuffer,
+    });
+    user.hkdfSalt = hkdfSaltBuffer;
   }
 
   // Generate session ID and JWT ID

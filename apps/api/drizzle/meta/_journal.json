@@ -29,6 +29,13 @@
       "when": 1761656562980,
       "tag": "0003_amazing_speed",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1763187924732,
+      "tag": "0004_fair_shinobi_shaw",
+      "breakpoints": true
     }
   ]
 }

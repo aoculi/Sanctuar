@@ -23,9 +23,12 @@ export const users = sqliteTable(
         // UEK KDF (client-side) parameters we persist for future derivations
         kdfAlgo: text("kdf_algo").notNull().default("argon2id"),
         kdfSalt: blob("kdf_salt", { mode: "buffer" }).notNull(), // 16–32B raw binary
-        kdfM: integer("kdf_m").notNull().default(536870912),     // 512 MB
+        kdfM: integer("kdf_m").notNull().default(524288),        // 512 MB in KiB (512 * 1024)
         kdfT: integer("kdf_t").notNull().default(3),
         kdfP: integer("kdf_p").notNull().default(1),
+
+        // HKDF salt for deriving KEK and MAK from Master Key
+        hkdfSalt: blob("hkdf_salt", { mode: "buffer" }),         // 16B for HKDF
 
         // Wrapped Master Key (client-provided, AEAD under UEK)
         wmkNonce: blob("wmk_nonce", { mode: "buffer" }),       // 24B for XChaCha20-Poly1305

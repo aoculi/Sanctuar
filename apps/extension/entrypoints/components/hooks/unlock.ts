@@ -1,11 +1,11 @@
 import { apiClient, type ApiError } from "@/entrypoints/lib/api";
 import { AAD_LABELS, constructAadWmk } from "@/entrypoints/lib/constants";
 import {
+  base64ToUint8Array,
   decryptAEAD,
   deriveKeyFromPassword,
   deriveSubKeys,
   encryptAEAD,
-  base64ToUint8Array,
   uint8ArrayToBase64,
   zeroize,
 } from "@/entrypoints/lib/crypto";
@@ -142,8 +142,14 @@ export function useUnlock() {
         }
 
         // C4. Derive operational keys
-        // Use the same KDF salt as HKDF salt for simplicity
-        const { kek, mak } = deriveSubKeys(mk, kdfSalt);
+        // Use the HKDF salt from server (separate from KDF salt)
+        const hkdfSalt = kdf.hkdf_salt
+          ? base64ToUint8Array(kdf.hkdf_salt)
+          : kdfSalt; // Fallback to KDF salt for backwards compatibility
+        console.log("kdf.hkdf_salt", kdf.hkdf_salt);
+        console.log("hkdfSalt", hkdfSalt);
+        console.log("kdfSalt", kdfSalt);
+        const { kek, mak } = deriveSubKeys(mk, hkdfSalt);
 
         // C5. Commit keys into memory
         // Security: Use constant AAD labels from constants.ts
