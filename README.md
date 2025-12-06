@@ -1,131 +1,95 @@
 # LockMark - Secure Bookmarks Vault
 
-LockMark is a secure, end-to-end encrypted bookmark management system consisting of a browser extension and a local API server. Heavily inspired by Proton's security architecture, your bookmarks are encrypted on the client side before being stored, ensuring that only you can access them. **No clear or unencrypted data is ever saved in the database.**
+LockMark is a local-first, end-to-end encrypted bookmark manager. The React/WXT browser extension encrypts everything on your device and talks to a lightweight Bun + Hono API that only stores ciphertext in SQLite.
 
-## Project Overview
+## What you get
 
-LockMark consists of two main components:
+-   🔐 End-to-end encryption with client-side key derivation (Argon2id + XChaCha20-Poly1305)
+-   🛡️ Zero-knowledge server: only ciphertext, nonces, and Argon2id password hashes live in the database
+-   🧩 Two components: browser extension UI (`apps/extension`) and local API (`apps/api`)
+-   🗄️ SQLite via Drizzle ORM with optimistic concurrency (ETags/If-Match) for manifests and items
+-   ⚡ Local-only by default (`127.0.0.1:3500`), rate-limited auth, and JWT session revocation
 
-1. **Browser Extension** (`apps/extension/`) - A Firefox/Chrome extension built with WXT and React that provides the user interface for managing encrypted bookmarks
-2. **API Server** (`apps/api/`) - A local Bun/Hono API server that stores encrypted data using SQLite
-
-### Key Features
-
-- 🔐 **End-to-End Encryption**: All data is encrypted client-side before storage
-- 🚀 **Local-First**: Run your own API server locally - no cloud dependency
-- 🔑 **Secure Authentication**: Argon2id password hashing with client-side key derivation
-- 🛡️ **Zero-Knowledge**: The server never sees your unencrypted bookmarks
-- 📦 **Self-Hosted**: Complete control over your data
-
-## Getting Started
-
-This is a monorepo managed with `pnpm` workspaces. To get started, you'll need to set up both the API server and the browser extension.
-
-### Prerequisites
-
-- [Bun](https://bun.sh) (for the API server)
-- [pnpm](https://pnpm.io) (package manager)
-- Node.js 18+ (for the extension)
-
-> **⚠️ Warning: Extension Installation Limitations**
->
-> Currently, the extension can only be installed without extension signature verification on:
->
-> - **Firefox ZEN** (fork of Firefox)
-> - **Firefox Nightly**
->
-> Chrome/Chromium compatibility for unsigned extensions has not been tested yet.
->
-> For standard Firefox releases, you would need to sign the extension through Mozilla's Add-on Developer Hub. See the [Extension README](./apps/extension/README.md) for more details on Firefox installation.
-
-### Quick Start
-
-1. **Install dependencies:**
-
-   ```bash
-   pnpm install
-   ```
-
-2. **Set up the API server:**
-   Follow the instructions in [`apps/api/README.md`](./apps/api/README.md) to:
-
-   - Generate a JWT secret
-   - Initialize the database
-   - Start the API server
-
-3. **Set up the browser extension:**
-   Follow the instructions in [`apps/extension/README.md`](./apps/extension/README.md) to:
-   - Configure the API URL (if different from default)
-   - Build and load the extension
-
-## Development
-
-### Running Everything
-
-To run both the API server and extension in development mode:
-
-```bash
-pnpm run dev
-```
-
-This will:
-
-- Start the API server at `http://127.0.0.1:3500`
-- Start the extension development server for Firefox
-
-### Running Components Individually
-
-**API Server only:**
-
-```bash
-pnpm run dev:api
-```
-
-**Extension only:**
-
-```bash
-pnpm run dev:ext
-```
-
-## Project Structure
+## Repository layout
 
 ```
 bookmarks/
 ├── apps/
-│   ├── api/              # Backend API server (Bun + Hono)
-│   │   ├── README.md     # API setup and documentation
-│   │   └── src/
-│   │       ├── routes/   # API route handlers
-│   │       ├── services/ # Business logic
-│   │       └── ...
-│   └── extension/        # Browser extension (WXT + React)
-│       ├── README.md     # Extension setup and documentation
-│       └── entrypoints/  # Extension source code
-├── package.json          # Root package.json with workspace scripts
-└── README.md            # This file
+│   ├── api/          # Bun + Hono API (SQLite + Drizzle)
+│   └── extension/    # WXT + React browser extension
+├── package.json      # Workspace scripts
+└── pnpm-workspace.yaml
 ```
 
-## Architecture
+## Requirements
 
-### Security Model
+-   pnpm (workspace manager)
+-   Bun (to run the API)
+-   Node.js 18+ (for the extension toolchain)
+-   Firefox Nightly or Firefox ZEN for unsigned builds (Chrome/Chromium not yet tested for unsigned installs)
 
-Inspired by Proton's zero-knowledge architecture, LockMark ensures complete privacy:
+## Quick start (dev)
 
-- **Client-Side Encryption**: All bookmark data is encrypted using AES-256-GCM before being sent to the server
-- **Key Derivation**: User Encryption Keys (UEK) are derived from passwords using Argon2id
-- **Master Key Wrapping**: A random Master Key (MK) encrypts bookmarks, and the MK is wrapped with the UEK
-- **Zero-Knowledge Storage**: The server only stores encrypted blobs and cannot decrypt your data
-- **No Clear Data**: **Absolutely no unencrypted or plaintext data is saved in the database** - the server only stores encrypted ciphertext, hashed passwords (Argon2id), and metadata
+From the repo root:
 
-### Data Flow
+1. Install dependencies
 
-1. User registers/logs in → receives KDF parameters
-2. Client derives UEK from password using KDF parameters
-3. Client generates Master Key (MK) and wraps it with UEK
-4. All bookmarks are encrypted with MK before being sent to the server
-5. Server stores only encrypted data
+```bash
+pnpm install
+```
 
-## Learn More
+2. Bootstrap the API (`apps/api`)
 
-- [API Documentation](./apps/api/README.md) - Complete API setup, configuration, and available routes
-- [Extension Documentation](./apps/extension/README.md) - Extension setup, building, and Firefox installation
+```bash
+cd apps/api
+echo "DATABASE_URL=sqlite.db" > .env
+bun run generate:secret | grep '^JWT_SECRET=' >> .env
+bun run db:migrate
+```
+
+3. Run everything
+
+```bash
+cd /home/alex/Projects/bookmarks
+pnpm run dev      # API on 127.0.0.1:3500, extension dev server
+```
+
+### Run components individually
+
+-   API: `cd apps/api && bun run dev`
+-   Extension (Chrome): `cd apps/extension && pnpm run dev`
+-   Extension (Firefox): `cd apps/extension && pnpm run dev:firefox`
+
+### Building/packaging the extension
+
+See `apps/extension/README.md` for production builds and ZIP packaging commands.
+
+## Usage
+
+-   Ensure the API is running on `http://127.0.0.1:3500` (default host/port).
+-   Load the extension in your browser (unsigned loading instructions are in `apps/extension/README.md`).
+-   Open the extension settings and set the API URL if you’re not using the default.
+-   Register a new account (provides KDF params and wraps your master key), then log in.
+-   Add bookmarks/tags in the extension; the vault manifest is stored as encrypted blobs in SQLite with concurrency protection via ETags.
+
+Want to poke the API directly? Example (register):
+
+```bash
+curl -X POST http://127.0.0.1:3500/auth/register \
+  -H "content-type: application/json" \
+  -d '{"login":"alice","password":"correct horse battery staple"}'
+```
+
+## Security at a glance
+
+-   Client-side crypto: Argon2id KDF (512 MiB, 3 iterations) + XChaCha20-Poly1305 + HKDF-SHA-256; master key is wrapped with the derived UEK and only ciphertext/nonces are sent.
+-   Server storage (`apps/api/src/database/schema.ts`): Argon2id password hashes, KDF/HKDF salts, wrapped master key blob, encrypted manifest/items, and metadata—no plaintext bookmarks.
+-   Authentication: JWT sessions (HS256, 1h default) checked against a sessions table; tokens require non-revoked, non-expired sessions (`auth.middleware.ts`).
+-   Rate limiting: auth endpoints limited to 5 attempts/min per IP and per login; refresh limited to 30 per 5 minutes (`rate-limit.middleware.ts`).
+-   Network surface: binds to `127.0.0.1` by default; set `HOST`/`PORT` in `apps/api/.env` to change.
+-   Integrity/DoS guards: manifest size capped at 5 MB; item size capped at 64 KB; base64 validation and optimistic concurrency via ETags (`vault.service.ts`).
+
+## More docs
+
+-   API: `apps/api/README.md`
+-   Extension: `apps/extension/README.md`

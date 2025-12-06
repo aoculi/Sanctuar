@@ -1,104 +1,67 @@
-# LockMark - Secure Bookmarks Vault
+# LockMark Extension - Encrypted Bookmarks UI
 
-LockMark is a secure browser extension that provides an encrypted bookmark management system. It features end-to-end encryption, keeping your bookmarks safe with client-side encryption and secure storage.
+React + WXT browser extension for LockMark. Everything is encrypted on the client before it reaches the API.
 
-## Getting Started
+## What this gives you
+- Client-side crypto (Argon2id KDF + XChaCha20-Poly1305 + HKDF-SHA-256)
+- Works with the local LockMark API (`http://127.0.0.1:3500` by default)
+- Light UI for bookmarks, tags, and vault manifest sync with optimistic concurrency
 
-### Installation
+## Requirements
+- pnpm (workspace manager)
+- Node.js 18+
+- Running LockMark API (`apps/api`) on `http://127.0.0.1:3500` or your configured host
+- Firefox Nightly or Firefox ZEN for unsigned builds (Chrome/Chromium unsigned not yet tested)
 
-First, install the project dependencies:
-
+## Install dependencies
+From the repo root (preferred):
+```bash
+pnpm install
+```
+Or from `apps/extension` if you are working only here:
 ```bash
 pnpm install
 ```
 
-### Development
-
-Run the extension in development mode:
-
+## Development
 ```bash
-# For Chrome/Chromium browsers
-pnpm run dev
-
-# For Firefox
-pnpm run dev:firefox
+pnpm run dev            # Chrome/Chromium target
+pnpm run dev:firefox    # Firefox target
 ```
 
-### Building
-
-Build the extension for production:
-
+## Build & package
 ```bash
-# Build for Chrome/Chromium
-pnpm run build:prod
+pnpm run build              # Chrome build
+pnpm run build:firefox      # Firefox build
+pnpm run build:prod         # Chrome production build
+pnpm run build:firefox:prod # Firefox production build
 
-# Build for Firefox
-pnpm run build:firefox:prod
+pnpm run zip                # Chrome ZIP
+pnpm run zip:firefox        # Firefox ZIP
+pnpm run zip:firefox:prod   # Firefox production ZIP
 ```
+ZIP outputs can be loaded directly into browsers for testing or side-loading.
 
-### Creating a ZIP Package
+## Configure the API URL
+1. Start the API (`apps/api`, defaults to `http://127.0.0.1:3500`).
+2. Install/load the extension (see Firefox instructions below).
+3. Open extension settings → set API URL (if different from default) → save.
 
-To create a distributable ZIP file of the extension:
+## Firefox loading without the Add-on Store
+1. Visit `about:config` and accept the warning.
+2. Set `xpinstall.signatures.required` to `false`.
+3. Open `about:addons` → gear icon → “Install Add-on From File…” → select the ZIP (or unpacked dir).
 
-```bash
-# Create ZIP for Chrome/Chromium
-pnpm run zip
+## Usage flow
+1. Ensure the API is running and reachable.
+2. Load the extension.
+3. Register a new account (gets KDF params, wraps your master key).
+4. Log in and start adding bookmarks/tags; everything is encrypted before leaving the browser.
 
-# Create ZIP for Firefox
-pnpm run zip:firefox
-
-# Create production ZIP for Firefox
-pnpm run zip:firefox:prod
-```
-
-The ZIP file will be created in the output directory and can be loaded directly into browsers for testing or distribution.
-
-## Installing on Firefox (Without Extension Store Account)
-
-To use the extension on Firefox without submitting to the Firefox Add-on Store, you need to disable signature requirements:
-
-1. **Open Firefox Configuration:**
-
-   - Type `about:config` in the Firefox address bar
-   - Accept the warning message if prompted
-
-2. **Disable Signature Requirement:**
-
-   - Search for `xpinstall.signatures.required`
-   - Double-click to set it to `false`
-
-3. **Load the Extension:**
-   - Open `about:addons` in Firefox
-   - Click the gear icon ⚙️ (usually in the top right)
-   - Select "Install Add-on From File..."
-   - Choose the ZIP file you created (or the unpacked extension directory)
-
-The extension should now be loaded and ready to use.
-
-## API Configuration
-
-The extension connects to a local API server that you need to configure.
-By default, the API app is typically reachable at `http://127.0.0.1:3500`, but you should configure the proper API URL for your specific setup in the extension settings.
-
-1. **Open the extension settings** after installing the extension
-2. **Set your API URL** - Enter the URL where your API server is running
-3. **Save the settings**
-
-Make sure your API server is running and accessible at the configured URL before using the extension.
-
-## Available Commands
-
-- `pnpm run dev` - Start development server for Chrome
-- `pnpm run dev:firefox` - Start development server for Firefox
-- `pnpm run build` - Build extension for Chrome
-- `pnpm run build:firefox` - Build extension for Firefox
-- `pnpm run build:prod` - Build production version for Chrome
-- `pnpm run build:firefox:prod` - Build production version for Firefox
-- `pnpm run zip` - Create ZIP package for Chrome
-- `pnpm run zip:firefox` - Create ZIP package for Firefox
-- `pnpm run zip:firefox:prod` - Create production ZIP package for Firefox
-- `pnpm run compile` - Type check TypeScript without emitting files
+## Security notes (client side)
+- Argon2id KDF (512 MiB, 3 iterations) derives the User Encryption Key.
+- Master key is generated client-side, wrapped with the UEK, and only ciphertext/nonces go to the API.
+- Auto-lock/session handling uses JWT refresh + background scripts (see `entrypoints/lib/background/`).
 
 ---
-
-Built with [WXT](https://wxt.dev) - The next generation framework for building cross-browser extensions.
+Built with [WXT](https://wxt.dev).
