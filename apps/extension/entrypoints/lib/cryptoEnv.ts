@@ -45,15 +45,8 @@ export function getCryptoEnv(): typeof sodium {
 }
 
 /**
- * Check if crypto is ready
- */
-export function isCryptoReady(): boolean {
-  return cryptoEnv.ready
-}
-
-/**
- * Get a promise that resolves when crypto is ready
- * Use this to gate unlock actions: await whenCryptoReady()
+ * Resolve once the crypto environment is ready.
+ * Prefer this over manual ready checks to keep initialization consistent.
  */
 export function whenCryptoReady(): Promise<void> {
   if (cryptoEnv.ready) {

@@ -74,53 +74,6 @@ export function setStorageItem(key: string, value: any): Promise<void> {
 }
 
 /**
- * Remove value from chrome.storage.local
- * @param key - Storage key to remove
- * @returns Promise resolving when removal is complete
- */
-export function removeStorageItem(key: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (!isStorageAvailable()) {
-      reject(new Error('chrome.storage.local is not available'))
-      return
-    }
-
-    chrome.storage.local.remove(key, () => {
-      if (chrome.runtime.lastError) {
-        reject(
-          new Error(chrome.runtime.lastError.message || 'Storage remove failed')
-        )
-        return
-      }
-      resolve()
-    })
-  })
-}
-
-/**
- * Clear all values from chrome.storage.local
- * @returns Promise resolving when clear is complete
- */
-export function clearStorage(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (!isStorageAvailable()) {
-      reject(new Error('chrome.storage.local is not available'))
-      return
-    }
-
-    chrome.storage.local.clear(() => {
-      if (chrome.runtime.lastError) {
-        reject(
-          new Error(chrome.runtime.lastError.message || 'Storage clear failed')
-        )
-        return
-      }
-      resolve()
-    })
-  })
-}
-
-/**
  * Get settings from chrome.storage.local
  */
 export function getSettings(): Promise<Settings | null> {

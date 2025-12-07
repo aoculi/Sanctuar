@@ -49,11 +49,4 @@ export class SessionManager {
     this.session = null
     broadcastSessionCleared()
   }
-
-  /**
-   * Check if session exists
-   */
-  hasSession(): boolean {
-    return this.session !== null
-  }
 }

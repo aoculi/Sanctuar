@@ -3,13 +3,13 @@
  */
 
 import { base64ToUint8Array, uint8ArrayToBase64 } from '../crypto'
-import { getSettings, setSettings, getDefaultSettings } from '../storage'
+import { getDefaultSettings, getSettings, setSettings } from '../storage'
 import { getCurrentTab } from '../tabUtils'
-import type { KeyStore } from './keystore'
-import type { SessionManager } from './session'
 import type { AutoLockTimer } from './autoLockTimer'
-import type { TokenRefresh } from './tokenRefresh'
+import type { KeyStore } from './keystore'
 import type { BackgroundMessage, BackgroundResponse } from './messageTypes'
+import type { SessionManager } from './session'
+import type { TokenRefresh } from './tokenRefresh'
 
 export class MessageHandlers {
   constructor(
@@ -18,6 +18,16 @@ export class MessageHandlers {
     private autoLockTimer: AutoLockTimer,
     private tokenRefresh: TokenRefresh
   ) {}
+
+  private resetAutoLockTimer(skipRefresh: boolean = false): void {
+    this.autoLockTimer.resetTimer(
+      this.keystore,
+      this.sessionManager.getSession(),
+      this.tokenRefresh,
+      (session) => this.sessionManager.setSession(session),
+      skipRefresh
+    )
+  }
 
   /**
    * Handle incoming messages
@@ -79,12 +89,7 @@ export class MessageHandlers {
               aadContext
             })
             // Reset auto-lock timer on activity (keys set = user unlocked)
-            this.autoLockTimer.resetTimer(
-              this.keystore,
-              this.sessionManager.getSession(),
-              this.tokenRefresh,
-              (session) => this.sessionManager.setSession(session)
-            )
+            this.resetAutoLockTimer()
             return { ok: true }
           } catch (error) {
             return { ok: false, error: String(error) }
@@ -99,12 +104,7 @@ export class MessageHandlers {
         // Reset auto-lock timer when popup opens and keystore is unlocked
         // This gives the user the full timeout period when they use the extension
         if (unlocked) {
-          this.autoLockTimer.resetTimer(
-            this.keystore,
-            this.sessionManager.getSession(),
-            this.tokenRefresh,
-            (session) => this.sessionManager.setSession(session)
-          )
+          this.resetAutoLockTimer()
         }
         return { ok: true, unlocked }
       }
@@ -118,12 +118,7 @@ export class MessageHandlers {
         try {
           const mak = this.keystore.getMAK()
           // Reset auto-lock timer on activity (keystore access)
-          this.autoLockTimer.resetTimer(
-            this.keystore,
-            this.sessionManager.getSession(),
-            this.tokenRefresh,
-            (session) => this.sessionManager.setSession(session)
-          )
+          this.resetAutoLockTimer()
           return { ok: true, key: uint8ArrayToBase64(mak) }
         } catch (error) {
           return { ok: false, error: String(error) }
@@ -134,12 +129,7 @@ export class MessageHandlers {
         try {
           const kek = this.keystore.getKEK()
           // Reset auto-lock timer on activity (keystore access)
-          this.autoLockTimer.resetTimer(
-            this.keystore,
-            this.sessionManager.getSession(),
-            this.tokenRefresh,
-            (session) => this.sessionManager.setSession(session)
-          )
+          this.resetAutoLockTimer()
           return { ok: true, key: uint8ArrayToBase64(kek) }
         } catch (error) {
           return { ok: false, error: String(error) }
@@ -188,12 +178,7 @@ export class MessageHandlers {
         try {
           await setSettings(settings)
           // Reset auto-lock timer when settings change (in case timeout changed)
-          this.autoLockTimer.resetTimer(
-            this.keystore,
-            this.sessionManager.getSession(),
-            this.tokenRefresh,
-            (session) => this.sessionManager.setSession(session)
-          )
+          this.resetAutoLockTimer()
           return { ok: true }
         } catch (error: any) {
           return {

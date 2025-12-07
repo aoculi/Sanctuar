@@ -10,35 +10,6 @@ import { AEAD, HKDF, KDF, KEY_DERIVATION } from './constants'
 import { getCryptoEnv } from './cryptoEnv'
 
 /**
- * Generate a random UUID v4
- */
-export function generateUUID(): string {
-  const bytes = new Uint8Array(16)
-  crypto.getRandomValues(bytes)
-
-  // Set version (4) and variant bits
-  bytes[6] = (bytes[6] & 0x0f) | 0x40
-  bytes[8] = (bytes[8] & 0x3f) | 0x80
-
-  const hex = Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('')
-
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(
-    12,
-    16
-  )}-${hex.slice(16, 20)}-${hex.slice(20)}`
-}
-
-/**
- * Generate random bytes using libsodium
- */
-export function generateRandomBytes(length: number): Uint8Array {
-  const sodium = getCryptoEnv()
-  return sodium.randombytes_buf(length)
-}
-
-/**
  * Derive master key from password using Argon2id
  * @param password - User password (UTF-8)
  * @param salt - Random salt (32 bytes)
@@ -187,24 +158,4 @@ export function uint8ArrayToBase64(arr: Uint8Array): string {
     binary += String.fromCharCode(...chunk)
   }
   return btoa(binary)
-}
-
-/**
- * Convert Uint8Array to base64 string using libsodium
- * Requires libsodium to be initialized
- * @deprecated Use uint8ArrayToBase64 for consistency
- */
-export function toBase64(data: Uint8Array): string {
-  const sodium = getCryptoEnv()
-  return sodium.to_base64(data, sodium.base64_variants.ORIGINAL)
-}
-
-/**
- * Convert base64 string to Uint8Array using libsodium
- * Requires libsodium to be initialized
- * @deprecated Use base64ToUint8Array for consistency
- */
-export function fromBase64(base64: string): Uint8Array {
-  const sodium = getCryptoEnv()
-  return sodium.from_base64(base64, sodium.base64_variants.ORIGINAL)
 }

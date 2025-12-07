@@ -3,11 +3,11 @@
  * Manages all background script components and their interactions
  */
 
+import { AutoLockTimer } from './autoLockTimer'
 import { KeyStore } from './keystore'
+import { MessageHandlers } from './messageHandlers'
 import { SessionManager } from './session'
 import { TokenRefresh } from './tokenRefresh'
-import { AutoLockTimer } from './autoLockTimer'
-import { MessageHandlers } from './messageHandlers'
 
 export class BackgroundService {
   private keystore: KeyStore
@@ -60,33 +60,5 @@ export class BackgroundService {
       // Indicates we will send a response asynchronously
       return true
     })
-  }
-
-  /**
-   * Get keystore instance (for internal use)
-   */
-  getKeystore(): KeyStore {
-    return this.keystore
-  }
-
-  /**
-   * Get session manager instance (for internal use)
-   */
-  getSessionManager(): SessionManager {
-    return this.sessionManager
-  }
-
-  /**
-   * Get token refresh instance (for internal use)
-   */
-  getTokenRefresh(): TokenRefresh {
-    return this.tokenRefresh
-  }
-
-  /**
-   * Get auto-lock timer instance (for internal use)
-   */
-  getAutoLockTimer(): AutoLockTimer {
-    return this.autoLockTimer
   }
 }
