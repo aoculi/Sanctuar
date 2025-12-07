@@ -25,7 +25,7 @@ importers:
         version: 2.0.2
       drizzle-orm:
         specifier: ^0.44.7
-        version: 0.44.7(bun-types@1.3.2(@types/react@19.2.2))
+        version: 0.44.7(bun-types@1.3.3)
       hono:
         specifier: ^4.10.3
         version: 4.10.3
@@ -41,13 +41,16 @@ importers:
     devDependencies:
       '@types/bun':
         specifier: latest
-        version: 1.3.2(@types/react@19.2.2)
+        version: 1.3.3
       '@types/node':
         specifier: ^24.9.1
         version: 24.9.2
       drizzle-kit:
         specifier: ^0.31.5
         version: 0.31.6
+      prettier:
+        specifier: ^3.7.4
+        version: 3.7.4
       vitest:
         specifier: ^4.0.4
         version: 4.0.4(@types/node@24.9.2)(jiti@2.6.1)
@@ -103,6 +106,9 @@ importers:
       '@wxt-dev/module-react':
         specifier: ^1.1.3
         version: 1.1.5(vite@7.1.12(@types/node@24.9.2)(jiti@2.6.1))(wxt@0.20.11(@types/node@24.9.2)(jiti@2.6.1)(rollup@4.52.5))
+      prettier:
+        specifier: ^3.7.4
+        version: 3.7.4
       typescript:
         specifier: ^5.9.2
         version: 5.9.3
@@ -1240,8 +1246,8 @@ packages:
   '@types/babel__traverse@7.28.0':
     resolution: {integrity: sha512-8PvcXf70gTDZBgt9ptxJ8elBeBjcLOAcOtoO/mPJjtji1+CdGbHgm77om1GrsPxsiE+uXIpNSK64UYaIwQXd4Q==}
 
-  '@types/bun@1.3.2':
-    resolution: {integrity: sha512-t15P7k5UIgHKkxwnMNkJbWlh/617rkDGEdSsDbu+qNHTaz9SKf7aC8fiIlUdD5RPpH6GEkP0cK7WlvmrEBRtWg==}
+  '@types/bun@1.3.3':
+    resolution: {integrity: sha512-ogrKbJ2X5N0kWLLFKeytG0eHDleBYtngtlbu9cyBKFtNL3cnpDZkNdQj8flVf6WTZUX5ulI9AY1oa7ljhSrp+g==}
 
   '@types/chai@5.2.3':
     resolution: {integrity: sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA==}
@@ -1437,10 +1443,8 @@ packages:
   buffer-from@1.1.2:
     resolution: {integrity: sha512-E+XQCRwSbaaiChtv6k6Dwgc+bx+Bs6vuKJHHl5kox/BaKbhiXzqQOwK4cO22yElGp2OCmjwVhT3HmxgyPGnJfQ==}
 
-  bun-types@1.3.2:
-    resolution: {integrity: sha512-i/Gln4tbzKNuxP70OWhJRZz1MRfvqExowP7U6JKoI8cntFrtxg7RJK3jvz7wQW54UuvNC8tbKHHri5fy74FVqg==}
-    peerDependencies:
-      '@types/react': ^19
+  bun-types@1.3.3:
+    resolution: {integrity: sha512-z3Xwlg7j2l9JY27x5Qn3Wlyos8YAp0kKRlrePAOjgjMGS5IG6E7Jnlx736vH9UVI4wUICwwhC9anYL++XeOgTQ==}
 
   bundle-name@4.1.0:
     resolution: {integrity: sha512-tjwM5exMg6BGRI+kNmTntNsvdZS1X8BFYS6tnJ2hdH0kVxM6/eVZ2xy+FqStSWvYmtfFMDLIxurorHwDKfDz5Q==}
@@ -2337,6 +2341,11 @@ packages:
   postcss@8.5.6:
     resolution: {integrity: sha512-3Ybi1tAuwAP9s0r1UQ2J4n5Y0G05bJkpUIO0/bI9MhwmD70S5aTWbXGBwxHrelT+XM1k6dM0pk+SwNkpTRN7Pg==}
     engines: {node: ^10 || ^12 || >=14}
+
+  prettier@3.7.4:
+    resolution: {integrity: sha512-v6UNi1+3hSlVvv8fSaoUbggEM5VErKmmpGA7Pl3HF8V6uKY7rvClBOJlH6yNwQtfTueNkGVpOv/mtWL9L4bgRA==}
+    engines: {node: '>=14'}
+    hasBin: true
 
   process-nextick-args@2.0.1:
     resolution: {integrity: sha512-3ouUOpQhtgrbOa17J7+uxOTpITYWaGP7/AhoR3+A+/1e9skrzelGi/dXzEYyvbxubEF6Wn2ypscTKiKJFFn1ag==}
@@ -3799,11 +3808,9 @@ snapshots:
     dependencies:
       '@babel/types': 7.28.5
 
-  '@types/bun@1.3.2(@types/react@19.2.2)':
+  '@types/bun@1.3.3':
     dependencies:
-      bun-types: 1.3.2(@types/react@19.2.2)
-    transitivePeerDependencies:
-      - '@types/react'
+      bun-types: 1.3.3
 
   '@types/chai@5.2.3':
     dependencies:
@@ -4017,10 +4024,9 @@ snapshots:
 
   buffer-from@1.1.2: {}
 
-  bun-types@1.3.2(@types/react@19.2.2):
+  bun-types@1.3.3:
     dependencies:
       '@types/node': 24.9.2
-      '@types/react': 19.2.2
 
   bundle-name@4.1.0:
     dependencies:
@@ -4222,9 +4228,9 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  drizzle-orm@0.44.7(bun-types@1.3.2(@types/react@19.2.2)):
+  drizzle-orm@0.44.7(bun-types@1.3.3):
     optionalDependencies:
-      bun-types: 1.3.2(@types/react@19.2.2)
+      bun-types: 1.3.3
 
   electron-to-chromium@1.5.242: {}
 
@@ -4811,6 +4817,8 @@ snapshots:
       nanoid: 3.3.11
       picocolors: 1.1.1
       source-map-js: 1.2.1
+
+  prettier@3.7.4: {}
 
   process-nextick-args@2.0.1: {}
 
