@@ -49,9 +49,20 @@ export function BookmarkList({
     return new Set(tags.filter((tag) => tag.hidden).map((tag) => tag.id))
   }, [tags])
 
-  // Filter bookmarks based on search, selected tag, and hidden tags
+  // Bookmarks that should be visible given the hidden tag setting
+  const visibleBookmarks = useMemo(() => {
+    if (showHiddenTags) {
+      return bookmarks
+    }
+
+    return bookmarks.filter(
+      (bookmark) => !bookmark.tags.some((tagId) => hiddenTagIds.has(tagId))
+    )
+  }, [bookmarks, showHiddenTags, hiddenTagIds])
+
+  // Filter bookmarks based on search and selected tag
   const filteredBookmarks = useMemo(() => {
-    let filtered = filterBookmarks(bookmarks, tags, searchQuery)
+    let filtered = filterBookmarks(visibleBookmarks, tags, searchQuery)
 
     // Filter by selected tag (if not "all" or null)
     if (currentTagId && currentTagId !== 'all') {
@@ -60,32 +71,28 @@ export function BookmarkList({
       )
     }
 
-    // Filter out bookmarks with hidden tags when showHiddenTags is false
-    if (!showHiddenTags) {
-      filtered = filtered.filter((bookmark) => {
-        // Check if bookmark has any hidden tag
-        return !bookmark.tags.some((tagId) => hiddenTagIds.has(tagId))
-      })
-    }
-
     return filtered
-  }, [bookmarks, tags, searchQuery, currentTagId, showHiddenTags, hiddenTagIds])
+  }, [visibleBookmarks, tags, searchQuery, currentTagId])
 
   return (
     <div className={styles.container}>
       <Text size='2' color='light' style={{ padding: '20px 20px 0' }}>
         Bookmarks ({filteredBookmarks.length}
-        {filteredBookmarks.length !== bookmarks.length
-          ? ` of ${bookmarks.length}`
+        {filteredBookmarks.length !== visibleBookmarks.length
+          ? ` of ${visibleBookmarks.length}`
           : ''}
         )
       </Text>
 
-      {filteredBookmarks.length === 0 ? (
+      {visibleBookmarks.length === 0 ? (
         <Text size='2' color='light' style={{ padding: '20px 20px 0' }}>
           {bookmarks.length === 0
             ? 'No bookmarks yet. Click "Add Bookmark" to get started.'
-            : 'No bookmarks match your search.'}
+            : 'No visible bookmarks. Enable hidden tags in settings or add new bookmarks.'}
+        </Text>
+      ) : filteredBookmarks.length === 0 ? (
+        <Text size='2' color='light' style={{ padding: '20px 20px 0' }}>
+          No bookmarks match your search.
         </Text>
       ) : (
         <div className={styles.list}>

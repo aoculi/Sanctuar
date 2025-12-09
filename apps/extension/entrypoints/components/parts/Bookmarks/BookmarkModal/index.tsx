@@ -7,6 +7,7 @@ import Input from '@/entrypoints/components/ui/Input'
 import { TagSelectorField } from '@/entrypoints/components/ui/TagSelectorField'
 import type { Bookmark, Tag } from '@/entrypoints/lib/types'
 import { MAX_TAGS_PER_ITEM } from '@/entrypoints/lib/validation'
+import { settingsStore } from '@/entrypoints/store/settings'
 
 import styles from './styles.module.css'
 
@@ -41,6 +42,24 @@ export const BookmarkModal = ({
 
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
+  const [showHiddenTags, setShowHiddenTags] = useState(false)
+
+  // Subscribe to settings to respect hidden tag visibility
+  useEffect(() => {
+    const loadSettings = async () => {
+      const currentState = await settingsStore.getState()
+      setShowHiddenTags(currentState.showHiddenTags)
+    }
+
+    loadSettings()
+
+    const unsubscribe = settingsStore.subscribe(async () => {
+      const state = await settingsStore.getState()
+      setShowHiddenTags(state.showHiddenTags)
+    })
+
+    return unsubscribe
+  }, [])
 
   // Update form fields when bookmark prop changes or modal opens
   useEffect(() => {
@@ -147,6 +166,20 @@ export const BookmarkModal = ({
     return urlChanged || titleChanged || pictureChanged || tagsChanged
   }, [url, title, picture, selectedTags, bookmark])
 
+  const selectableTags = useMemo(() => {
+    if (showHiddenTags) {
+      return tags
+    }
+
+    // Keep already-selected hidden tags visible while hiding them from suggestions
+    const selectedHiddenTags = tags.filter(
+      (tag) => tag.hidden && selectedTags.includes(tag.id)
+    )
+    const visibleTags = tags.filter((tag) => !tag.hidden)
+
+    return [...visibleTags, ...selectedHiddenTags]
+  }, [tags, showHiddenTags, selectedTags])
+
   if (!isOpen) return null
 
   return (
@@ -184,7 +217,7 @@ export const BookmarkModal = ({
         />
 
         <TagSelectorField
-          tags={tags}
+          tags={selectableTags}
           selectedTags={selectedTags}
           onChange={setSelectedTags}
         />
