@@ -4,8 +4,8 @@ import { useBookmarks } from '@/entrypoints/components/hooks/useBookmarks'
 import { useManifestOperations } from '@/entrypoints/components/hooks/useManifestOperations'
 import { useNavigation } from '@/entrypoints/components/hooks/useNavigation'
 import { useTags } from '@/entrypoints/components/hooks/useTags'
+import { useUnauthorizedListener } from '@/entrypoints/components/hooks/useUnauthorizedListener'
 import { keystoreManager } from '@/entrypoints/store/keystore'
-import { sessionManager } from '@/entrypoints/store/session'
 
 import Bookmarks from '@/entrypoints/components/parts/Bookmarks'
 import Tags from '@/entrypoints/components/parts/Tags'
@@ -39,16 +39,14 @@ export default function Vault() {
       }
     }
 
-    initializeKeystore()
+    void initializeKeystore()
+  }, [])
 
-    // Listen for runtime keystore lock events (auto-lock timeout, etc.)
-    const unsubscribe = sessionManager.onUnauthorized(() => {
-      setIsUnlocked(false)
-      navigate('/login')
-    })
-
-    return unsubscribe
-  }, [navigate])
+  // Listen for runtime keystore lock events (auto-lock timeout, etc.)
+  useUnauthorizedListener(() => {
+    setIsUnlocked(false)
+    navigate('/login')
+  })
 
   // Show messages for manifest operations
   useEffect(() => {

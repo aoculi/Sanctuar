@@ -1,12 +1,12 @@
 import { ListFilter, Tag } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { useTags } from '@/entrypoints/components/hooks/useTags'
+import { useTagVisibilityPreference } from '@/entrypoints/components/hooks/useTagVisibilityPreference'
 import { StatusIndicator } from '@/entrypoints/components/parts/StatusIndicator'
 import Button from '@/entrypoints/components/ui/Button'
 import { DropdownMenu } from '@/entrypoints/components/ui/DropdownMenu'
 import type { Bookmark, Tag as EntityTag } from '@/entrypoints/lib/types'
-import { settingsStore } from '@/entrypoints/store/settings'
 import TagComponent from './Tag'
 import TagHeader from './TagHeader'
 import { TagModal } from './TagModal'
@@ -27,24 +27,7 @@ export default function Tags({
   const [sortMode, setSortMode] = useState<'name' | 'count'>('name')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [currentTag, setCurrentTag] = useState<EntityTag | null>(null)
-  const [showHiddenTags, setShowHiddenTags] = useState(false)
-
-  // Subscribe to settings changes
-  useEffect(() => {
-    const loadSettings = async () => {
-      const currentState = await settingsStore.getState()
-      setShowHiddenTags(currentState.showHiddenTags)
-    }
-
-    loadSettings()
-
-    const unsubscribe = settingsStore.subscribe(async () => {
-      const state = await settingsStore.getState()
-      setShowHiddenTags(state.showHiddenTags)
-    })
-
-    return unsubscribe
-  }, [])
+  const { showHiddenTags } = useTagVisibilityPreference()
 
   const onAddTag = () => {
     setCurrentTag(null)

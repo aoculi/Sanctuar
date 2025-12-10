@@ -1,6 +1,7 @@
 import { Loader2 } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 
+import { useResetOnOpen } from '@/entrypoints/components/hooks/useResetOnOpen'
 import Button from '@/entrypoints/components/ui/Button'
 import { Checkbox } from '@/entrypoints/components/ui/Checkbox'
 import { Drawer } from '@/entrypoints/components/ui/Drawer'
@@ -22,31 +23,35 @@ export const TagModal = ({
   onClose: () => void
   onSave: (data: { name: string; hidden: boolean }) => void
 }) => {
-  const [name, setName] = useState(tag?.name || '')
-  const [hidden, setHidden] = useState(tag?.hidden ?? false)
+  const [form, setForm] = useState({
+    name: tag?.name || '',
+    hidden: tag?.hidden ?? false
+  })
   const nameField = useRef<HTMLInputElement>(null)
 
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
 
   // Update form fields when tag prop changes or modal opens
-  useEffect(() => {
-    if (isOpen) {
-      setName(tag?.name || '')
-      setHidden(tag?.hidden ?? false)
+  useResetOnOpen({
+    isOpen,
+    reset: () => {
+      setForm({
+        name: tag?.name || '',
+        hidden: tag?.hidden ?? false
+      })
       setErrors({})
       setIsLoading(false)
-      setTimeout(() => {
-        nameField?.current?.focus()
-      }, 0)
-    }
-  }, [isOpen, tag])
+    },
+    deps: [tag],
+    focusRef: nameField as React.RefObject<{ focus: () => void }>
+  })
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
 
     // Name validation
-    const validationError = validateTagName(name)
+    const validationError = validateTagName(form.name)
     if (validationError) {
       newErrors.name = validationError
     }
@@ -67,8 +72,8 @@ export const TagModal = ({
       // Call onSave - wrap in Promise.resolve to handle both sync and async cases
       await Promise.resolve(
         onSave({
-          name: name.trim(),
-          hidden: hidden
+          name: form.name.trim(),
+          hidden: form.hidden
         })
       )
 
@@ -82,7 +87,7 @@ export const TagModal = ({
 
   // Check if there are changes and name is set
   const hasChanges = useMemo(() => {
-    if (!name.trim()) {
+    if (!form.name.trim()) {
       return false
     }
 
@@ -92,8 +97,10 @@ export const TagModal = ({
     }
 
     // For existing tags, check if name or hidden changed
-    return name.trim() !== tag.name || hidden !== (tag.hidden ?? false)
-  }, [name, hidden, tag])
+    return (
+      form.name.trim() !== tag.name || form.hidden !== (tag.hidden ?? false)
+    )
+  }, [form, tag])
 
   if (!isOpen) return null
 
@@ -111,18 +118,19 @@ export const TagModal = ({
           size='lg'
           type='text'
           placeholder='Tag name'
-          value={name}
+          value={form.name}
           onChange={(e) => {
-            setName(e.target.value)
+            const nextName = e.target.value
+            setForm((prev) => ({ ...prev, name: nextName }))
             if (errors.name) setErrors({ ...errors, name: '' })
           }}
         />
 
         <Text as='label' size='2'>
           <Checkbox
-            checked={hidden}
+            checked={form.hidden}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              setHidden(e.target.checked)
+              setForm((prev) => ({ ...prev, hidden: e.target.checked }))
             }
           />
           Hide tag from list

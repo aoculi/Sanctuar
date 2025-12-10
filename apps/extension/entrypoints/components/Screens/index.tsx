@@ -1,13 +1,6 @@
-import { useEffect, useState } from 'react'
-
-import { useSession } from '@/entrypoints/components/hooks/auth'
-import {
-  NavigationContext,
-  type Route
-} from '@/entrypoints/components/hooks/useNavigation'
-import { keystoreManager } from '@/entrypoints/store/keystore'
-import { sessionManager } from '@/entrypoints/store/session'
-import { settingsStore } from '@/entrypoints/store/settings'
+import { useAuthGate } from '@/entrypoints/components/hooks/useAuthGate'
+import { NavigationContext } from '@/entrypoints/components/hooks/useNavigation'
+import { useUnauthorizedListener } from '@/entrypoints/components/hooks/useUnauthorizedListener'
 
 import { SettingsModal } from '@/entrypoints/components/parts/Settings/SettingsModal'
 import Login from './Login'
@@ -17,109 +10,32 @@ import Vault from './Vault'
 import styles from './styles.module.css'
 
 export default function Screens() {
-  const [route, setRoute] = useState<Route>('/login')
-  const [flash, setFlash] = useState<string | null>(null)
-  const [isChecking, setIsChecking] = useState(true)
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const sessionQuery = useSession()
-
-  // Check session and keystore on popup mount
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        // Check if API URL is set, if not open settings drawer
-        const settings = await settingsStore.getState()
-        if (!settings.apiUrl || settings.apiUrl.trim() === '') {
-          setIsSettingsOpen(true)
-        }
-
-        const session = await sessionManager.getSession()
-        const isUnlocked = await keystoreManager.isUnlocked()
-
-        // If keystore is locked, redirect to login (even if session is valid)
-        if (!isUnlocked) {
-          setRoute('/login')
-          // setFlash("Vault locked - please login again");
-          setIsChecking(false)
-          return
-        }
-
-        if (session) {
-          // Validate session with server
-          const sessionData = await sessionQuery.refetch()
-
-          if (sessionData.data?.valid) {
-            // Session is valid and keystore is unlocked, proceed to vault
-            setRoute('/vault')
-          } else {
-            // Session invalid, clear and show login
-            await sessionManager.clearSession()
-            setRoute('/login')
-            setFlash('Session expired')
-          }
-        } else {
-          // No session, show login
-          setRoute('/login')
-        }
-      } catch (error: any) {
-        // Check if it's an API URL configuration error
-        if (error?.status === -1 && error?.message?.includes('API URL')) {
-          setFlash(error.message)
-          setIsSettingsOpen(true)
-        } else {
-          // On other errors, assume invalid session
-          console.error('Session check failed:', error)
-          await sessionManager.clearSession()
-          setRoute('/login')
-          setFlash('Session check failed')
-        }
-      } finally {
-        setIsChecking(false)
-      }
-    }
-
-    checkSession()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // Only run on mount
+  const {
+    route,
+    isChecking,
+    flash,
+    isSettingsOpen,
+    navigate,
+    setRoute,
+    setFlash,
+    setIsSettingsOpen,
+    openSettings,
+    handleLoginSuccess,
+    handleRegisterSuccess
+  } = useAuthGate()
 
   // Listen for auth events (keystore locked, session expired, etc.)
-  useEffect(() => {
-    const unsubscribe = sessionManager.onUnauthorized(() => {
-      // Use functional update to avoid stale closure
-      setRoute((currentRoute) => {
-        // Only redirect from protected routes (vault)
-        // Don't redirect if already on login or register
-        if (currentRoute === '/vault') {
-          setFlash('Vault locked - please login again')
-          return '/login'
-        }
-        // Stay on current route if already on login/register
-        return currentRoute
-      })
+  useUnauthorizedListener(() => {
+    setRoute((currentRoute) => {
+      // Don't redirect if already on login or register
+      if (currentRoute === '/vault') {
+        setFlash('Vault locked - please login again')
+        return '/login'
+      }
+      // Stay on current route if already on login/register
+      return currentRoute
     })
-
-    return unsubscribe
-  }, [])
-
-  // Function to handle successful login
-  const handleLoginSuccess = () => {
-    setFlash(null)
-    setRoute('/vault')
-  }
-
-  // Function to handle successful registration
-  const handleRegisterSuccess = () => {
-    setFlash(null)
-    setRoute('/vault')
-  }
-
-  const navigate = (newRoute: Route) => {
-    setRoute(newRoute)
-  }
-
-  const openSettings = () => {
-    setIsSettingsOpen(true)
-  }
+  })
 
   if (isChecking) {
     return (

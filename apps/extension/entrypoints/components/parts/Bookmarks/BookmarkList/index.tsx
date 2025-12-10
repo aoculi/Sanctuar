@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 
+import { useTagVisibilityPreference } from '@/entrypoints/components/hooks/useTagVisibilityPreference'
 import { BookmarkCard } from '@/entrypoints/components/parts/Bookmarks/BookmarkCard'
 import Text from '@/entrypoints/components/ui/Text'
 import { filterBookmarks } from '@/entrypoints/lib/bookmarkUtils'
 import type { Bookmark, Tag } from '@/entrypoints/lib/types'
-import { settingsStore } from '@/entrypoints/store/settings'
 
 import styles from './styles.module.css'
 
@@ -25,24 +25,7 @@ export function BookmarkList({
   onEdit,
   onDelete
 }: Props) {
-  const [showHiddenTags, setShowHiddenTags] = useState(false)
-
-  // Subscribe to settings changes
-  useEffect(() => {
-    const loadSettings = async () => {
-      const currentState = await settingsStore.getState()
-      setShowHiddenTags(currentState.showHiddenTags)
-    }
-
-    loadSettings()
-
-    const unsubscribe = settingsStore.subscribe(async () => {
-      const state = await settingsStore.getState()
-      setShowHiddenTags(state.showHiddenTags)
-    })
-
-    return unsubscribe
-  }, [])
+  const { showHiddenTags } = useTagVisibilityPreference()
 
   // Create a set of hidden tag IDs for efficient lookup
   const hiddenTagIds = useMemo(() => {
