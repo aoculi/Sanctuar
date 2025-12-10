@@ -53,6 +53,7 @@ export default function Register({ onRegisterSuccess }: RegisterProps) {
             size='lg'
             placeholder='Email or username'
             name='login'
+            autoComplete='off'
             value={formData.login}
             onChange={handleChange}
             disabled={registerMutation.isPending}

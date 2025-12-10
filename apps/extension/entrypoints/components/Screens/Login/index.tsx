@@ -53,6 +53,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             size='lg'
             placeholder='Email or username'
             name='login'
+            autoComplete='off'
             value={formData.login}
             onChange={handleChange}
             disabled={loginMutation.isPending}
