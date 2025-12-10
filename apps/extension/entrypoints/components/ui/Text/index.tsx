@@ -8,7 +8,8 @@ function Text({
   as = 'div',
   color = 'inherit',
   children,
-  style
+  style,
+  className
 }: {
   size?: '1' | '2' | '3' | '4' | '5' | '6'
   weight?: 'light' | 'regular' | 'medium' | 'bold'
@@ -16,41 +17,42 @@ function Text({
   color?: 'inherit' | 'light' | 'primary' | 'white'
   style?: React.CSSProperties
   children: React.ReactNode
+  className?: string
 }) {
-  const className = `${styles.text} ${styles['size-' + size]} ${
+  const newClassName = `${styles.text} ${styles['size-' + size]} ${
     styles['weight-' + weight]
-  } ${styles['color-' + color]}`
+  } ${styles['color-' + color]}${className ? ' ' + className : ''}`
 
   if (as === 'label') {
     return (
-      <label className={className} style={style}>
+      <label className={newClassName} style={style}>
         {children}
       </label>
     )
   }
   if (as === 'p') {
     return (
-      <p className={className} style={style}>
+      <p className={newClassName} style={style}>
         {children}
       </p>
     )
   }
   if (as === 'h1') {
     return (
-      <h1 className={className} style={style}>
+      <h1 className={newClassName} style={style}>
         {children}
       </h1>
     )
   }
   if (as === 'span') {
     return (
-      <span className={className} style={style}>
+      <span className={newClassName} style={style}>
         {children}
       </span>
     )
   }
   return (
-    <div className={className} style={style}>
+    <div className={newClassName} style={style}>
       {children}
     </div>
   )

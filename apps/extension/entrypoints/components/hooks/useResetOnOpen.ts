@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 
 type Params<T extends { focus: () => void }> = {
   isOpen: boolean
@@ -13,10 +13,17 @@ type Params<T extends { focus: () => void }> = {
 export function useResetOnOpen<
   T extends { focus: () => void } = { focus: () => void }
 >({ isOpen, reset, deps = [], focusRef }: Params<T>) {
+  const resetRef = useRef(reset)
+
+  // Always keep latest reset handler
+  useEffect(() => {
+    resetRef.current = reset
+  }, [reset])
+
   useEffect(() => {
     if (!isOpen) return
 
-    reset()
+    resetRef.current?.()
 
     const target = focusRef?.current
     if (target) {
@@ -25,5 +32,5 @@ export function useResetOnOpen<
       }, 0)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, reset, focusRef, ...deps])
+  }, [isOpen, focusRef, ...deps])
 }

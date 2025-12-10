@@ -146,9 +146,6 @@ export function useUnlock() {
         const hkdfSalt = kdf.hkdf_salt
           ? base64ToUint8Array(kdf.hkdf_salt)
           : kdfSalt // Fallback to KDF salt for backwards compatibility
-        console.log('kdf.hkdf_salt', kdf.hkdf_salt)
-        console.log('hkdfSalt', hkdfSalt)
-        console.log('kdfSalt', kdfSalt)
         const { kek, mak } = deriveSubKeys(mk, hkdfSalt)
 
         // C5. Commit keys into memory

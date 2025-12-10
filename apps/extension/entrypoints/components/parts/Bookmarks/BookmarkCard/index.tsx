@@ -4,8 +4,8 @@ import Button from '@/entrypoints/components/ui/Button'
 import { DropdownMenu } from '@/entrypoints/components/ui/DropdownMenu'
 import Text from '@/entrypoints/components/ui/Text'
 import { getTagName } from '@/entrypoints/lib/bookmarkUtils'
-import { formatDate, getHostname } from '@/entrypoints/lib/utils'
 import type { Bookmark, Tag } from '@/entrypoints/lib/types'
+import { formatDate, getHostname } from '@/entrypoints/lib/utils'
 
 import styles from './styles.module.css'
 
@@ -32,7 +32,7 @@ export function BookmarkCard({ bookmark, tags, onEdit, onDelete }: Props) {
         )}
 
         <div className={styles.content}>
-          <Text size='2' weight='medium' color='white'>
+          <Text size='2' weight='medium' color='white' className={styles.name}>
             {bookmark.title || '(Untitled)'}
           </Text>
           <Text size='2' color='light'>
