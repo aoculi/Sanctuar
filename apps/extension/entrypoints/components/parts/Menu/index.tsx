@@ -8,8 +8,10 @@ import {
 } from 'lucide-react'
 
 import { useLogout } from '@/entrypoints/components/hooks/auth'
-import type { Route } from '@/entrypoints/components/Screens'
-import { useNavigation } from '@/entrypoints/components/Screens'
+import {
+  useNavigation,
+  type Route
+} from '@/entrypoints/components/hooks/useNavigation'
 import Button from '@/entrypoints/components/ui/Button'
 import { DropdownMenu } from '@/entrypoints/components/ui/DropdownMenu'
 

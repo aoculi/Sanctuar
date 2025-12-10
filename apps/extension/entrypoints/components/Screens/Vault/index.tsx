@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react'
 
 import { useBookmarks } from '@/entrypoints/components/hooks/useBookmarks'
 import { useManifestOperations } from '@/entrypoints/components/hooks/useManifestOperations'
+import { useNavigation } from '@/entrypoints/components/hooks/useNavigation'
 import { useTags } from '@/entrypoints/components/hooks/useTags'
+import { keystoreManager } from '@/entrypoints/store/keystore'
+import { sessionManager } from '@/entrypoints/store/session'
+
 import Bookmarks from '@/entrypoints/components/parts/Bookmarks'
 import Tags from '@/entrypoints/components/parts/Tags'
 import Text from '@/entrypoints/components/ui/Text'
-import { keystoreManager } from '@/entrypoints/store/keystore'
-import { sessionManager } from '@/entrypoints/store/session'
-import { useNavigation } from '..'
 
 import styles from './styles.module.css'
 

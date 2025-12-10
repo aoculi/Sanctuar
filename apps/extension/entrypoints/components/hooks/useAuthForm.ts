@@ -1,7 +1,8 @@
 import type { UseMutationResult } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 
-import { useNavigation } from '@/entrypoints/components/Screens'
+import { useNavigation } from '@/entrypoints/components/hooks/useNavigation'
+
 import type { ApiError } from '@/entrypoints/lib/api'
 import { whenCryptoReady } from '@/entrypoints/lib/cryptoEnv'
 

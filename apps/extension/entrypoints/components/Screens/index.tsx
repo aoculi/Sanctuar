@@ -1,33 +1,20 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { useSession } from '@/entrypoints/components/hooks/auth'
-import { SettingsModal } from '@/entrypoints/components/Screens/SettingsModal'
+import {
+  NavigationContext,
+  type Route
+} from '@/entrypoints/components/hooks/useNavigation'
 import { keystoreManager } from '@/entrypoints/store/keystore'
 import { sessionManager } from '@/entrypoints/store/session'
 import { settingsStore } from '@/entrypoints/store/settings'
+
+import { SettingsModal } from '@/entrypoints/components/parts/Settings/SettingsModal'
 import Login from './Login'
 import Register from './Register'
 import Vault from './Vault'
 
 import styles from './styles.module.css'
-
-export type Route = '/login' | '/register' | '/vault'
-
-type NavigationContextType = {
-  navigate: (route: Route) => void
-  setFlash: (message: string | null) => void
-  openSettings: () => void
-}
-
-const NavigationContext = createContext<NavigationContextType | null>(null)
-
-export const useNavigation = () => {
-  const context = useContext(NavigationContext)
-  if (!context) {
-    throw new Error('useNavigation must be used within Screens')
-  }
-  return context
-}
 
 export default function Screens() {
   const [route, setRoute] = useState<Route>('/login')

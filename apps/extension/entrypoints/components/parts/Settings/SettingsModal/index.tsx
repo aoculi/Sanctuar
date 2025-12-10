@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react'
 
-import { useNavigation } from '@/entrypoints/components/Screens'
+import { useNavigation } from '@/entrypoints/components/hooks/useNavigation'
+import {
+  settingsStore,
+  type AutoLockTimeout
+} from '@/entrypoints/store/settings'
+
 import Button from '@/entrypoints/components/ui/Button'
 import { Checkbox } from '@/entrypoints/components/ui/Checkbox'
 import { Drawer } from '@/entrypoints/components/ui/Drawer'
 import Input from '@/entrypoints/components/ui/Input'
 import Select from '@/entrypoints/components/ui/Select'
 import Text from '@/entrypoints/components/ui/Text'
-import {
-  settingsStore,
-  type AutoLockTimeout
-} from '@/entrypoints/store/settings'
 
 import styles from './styles.module.css'
 

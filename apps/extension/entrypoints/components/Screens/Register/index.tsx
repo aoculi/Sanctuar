@@ -2,12 +2,13 @@ import { KeyRound, Loader2, Mail } from 'lucide-react'
 
 import { useRegisterAndLogin } from '@/entrypoints/components/hooks/auth'
 import { useAuthForm } from '@/entrypoints/components/hooks/useAuthForm'
+import { useNavigation } from '@/entrypoints/components/hooks/useNavigation'
+
 import Menu from '@/entrypoints/components/parts/Menu'
 import Button from '@/entrypoints/components/ui/Button'
 import ErrorCallout from '@/entrypoints/components/ui/ErrorCallout'
 import Input from '@/entrypoints/components/ui/Input'
 import Text from '@/entrypoints/components/ui/Text'
-import { useNavigation } from '..'
 
 import styles from './styles.module.css'
 
