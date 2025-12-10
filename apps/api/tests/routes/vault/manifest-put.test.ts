@@ -4,6 +4,7 @@ import { Hono } from 'hono'
 import { testClient } from 'hono/testing'
 import { testUsers } from '../../helpers/fixtures'
 import { clearDatabase, createTestDatabase } from '../../helpers/setup'
+import { generateHeaders } from '../../helpers/utils'
 
 // Create test database
 const { db, sqlite } = createTestDatabase()
@@ -58,11 +59,7 @@ describe('PUT /vault/manifest', () => {
 
     const res = await client.vault.manifest.$put(
       { json: manifestData },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(201)
@@ -82,11 +79,7 @@ describe('PUT /vault/manifest', () => {
     const manifest1 = createManifestData(1)
     const res1 = await client.vault.manifest.$put(
       { json: manifest1 },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
     const data1: any = await res1.json()
 
@@ -94,12 +87,7 @@ describe('PUT /vault/manifest', () => {
     const manifest2 = createManifestData(2)
     const res2 = await client.vault.manifest.$put(
       { json: manifest2 },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'If-Match': data1.etag
-        }
-      }
+      generateHeaders(token, { 'If-Match': data1.etag })
     )
 
     expect(res2.status).toBe(200)
@@ -113,22 +101,14 @@ describe('PUT /vault/manifest', () => {
     const manifest1 = createManifestData(1)
     await client.vault.manifest.$put(
       { json: manifest1 },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
 
     // Try to update without If-Match
     const manifest2 = createManifestData(2)
     const res = await client.vault.manifest.$put(
       { json: manifest2 },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(409)
@@ -141,23 +121,14 @@ describe('PUT /vault/manifest', () => {
     const manifest1 = createManifestData(1)
     await client.vault.manifest.$put(
       { json: manifest1 },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
 
     // Try to update with wrong ETag
     const manifest2 = createManifestData(2)
     const res = await client.vault.manifest.$put(
       { json: manifest2 },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'If-Match': 'wrong_etag'
-        }
-      }
+      generateHeaders(token, { 'If-Match': 'wrong_etag' })
     )
 
     expect(res.status).toBe(409)
@@ -170,11 +141,7 @@ describe('PUT /vault/manifest', () => {
     const manifest2 = createManifestData(2)
     const res = await client.vault.manifest.$put(
       { json: manifest2 },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(409)
@@ -187,22 +154,14 @@ describe('PUT /vault/manifest', () => {
     const manifest1 = createManifestData(1)
     await client.vault.manifest.$put(
       { json: manifest1 },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
 
     // Try to skip to version 3
     const manifest3 = createManifestData(3)
     const res = await client.vault.manifest.$put(
       { json: manifest3 },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(409)
@@ -219,11 +178,7 @@ describe('PUT /vault/manifest', () => {
 
     const res = await client.vault.manifest.$put(
       { json: manifestData },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(400)
@@ -240,11 +195,7 @@ describe('PUT /vault/manifest', () => {
 
     const res = await client.vault.manifest.$put(
       { json: manifestData },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(400)
@@ -266,11 +217,7 @@ describe('PUT /vault/manifest', () => {
 
     const res = await client.vault.manifest.$put(
       { json: manifestData },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(413)
@@ -286,11 +233,7 @@ describe('PUT /vault/manifest', () => {
 
     const res = await client.vault.manifest.$put(
       { json: manifestData },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(400)
@@ -304,11 +247,7 @@ describe('PUT /vault/manifest', () => {
 
     const res = await client.vault.manifest.$put(
       { json: manifestData },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(400)
@@ -322,11 +261,7 @@ describe('PUT /vault/manifest', () => {
 
     const res = await client.vault.manifest.$put(
       { json: manifestData },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(400)
@@ -357,23 +292,12 @@ describe('PUT /vault/manifest', () => {
 
   it('should return 401 for revoked session', async () => {
     // Logout (revoke session)
-    await client.auth.logout.$post(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    await client.auth.logout.$post({}, generateHeaders(token))
 
     const manifestData = createManifestData(1)
     const res = await client.vault.manifest.$put(
       { json: manifestData },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(401)
@@ -384,22 +308,11 @@ describe('PUT /vault/manifest', () => {
 
     await client.vault.manifest.$put(
       { json: manifestData },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
 
     // Get vault metadata
-    const vaultRes = await client.vault.index.$get(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    const vaultRes = await client.vault.index.$get({}, generateHeaders(token))
     const vaultData: any = await vaultRes.json()
 
     expect(vaultData.version).toBe(1)
@@ -412,11 +325,7 @@ describe('PUT /vault/manifest', () => {
     const manifest1 = createManifestData(1)
     const res1 = await client.vault.manifest.$put(
       { json: manifest1 },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
     const data1: any = await res1.json()
 
@@ -424,12 +333,7 @@ describe('PUT /vault/manifest', () => {
     const manifest2 = createManifestData(2)
     const res2 = await client.vault.manifest.$put(
       { json: manifest2 },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'If-Match': data1.etag
-        }
-      }
+      generateHeaders(token, { 'If-Match': data1.etag })
     )
     const data2: any = await res2.json()
 
@@ -437,12 +341,7 @@ describe('PUT /vault/manifest', () => {
     const manifest3 = createManifestData(3)
     const res3 = await client.vault.manifest.$put(
       { json: manifest3 },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'If-Match': data2.etag
-        }
-      }
+      generateHeaders(token, { 'If-Match': data2.etag })
     )
 
     expect(res3.status).toBe(200)
@@ -456,11 +355,7 @@ describe('PUT /vault/manifest', () => {
     const manifest1 = createManifestData(1)
     const res1 = await client.vault.manifest.$put(
       { json: manifest1 },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
     const data1: any = await res1.json()
 
@@ -472,12 +367,7 @@ describe('PUT /vault/manifest', () => {
     }
     const res2 = await client.vault.manifest.$put(
       { json: manifest2 },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'If-Match': data1.etag
-        }
-      }
+      generateHeaders(token, { 'If-Match': data1.etag })
     )
     const data2: any = await res2.json()
 
@@ -489,23 +379,12 @@ describe('PUT /vault/manifest', () => {
     const manifestData = createManifestData(1)
     const putRes = await client.vault.manifest.$put(
       { json: manifestData },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
     const putData: any = await putRes.json()
 
     // Get manifest
-    const getRes = await client.vault.manifest.$get(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    const getRes = await client.vault.manifest.$get({}, generateHeaders(token))
     const getData: any = await getRes.json()
 
     expect(getData.version).toBe(1)
@@ -519,11 +398,7 @@ describe('PUT /vault/manifest', () => {
     const aliceManifest = createManifestData(1)
     const aliceRes = await client.vault.manifest.$put(
       { json: aliceManifest },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
     const aliceData: any = await aliceRes.json()
 
@@ -563,11 +438,7 @@ describe('PUT /vault/manifest', () => {
 
     const res = await client.vault.manifest.$put(
       { json: manifestData },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(400)
@@ -582,11 +453,7 @@ describe('PUT /vault/manifest', () => {
 
     const res = await client.vault.manifest.$put(
       { json: manifestData },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(400)
@@ -597,11 +464,7 @@ describe('PUT /vault/manifest', () => {
     const manifest1 = createManifestData(1)
     const res1 = await client.vault.manifest.$put(
       { json: manifest1 },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
     const data1: any = await res1.json()
 

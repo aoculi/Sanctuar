@@ -1,9 +1,9 @@
-// GET /auth/session tests
 import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test'
 import { Hono } from 'hono'
 import { testClient } from 'hono/testing'
 import { testUsers } from '../../helpers/fixtures'
 import { clearDatabase, createTestDatabase } from '../../helpers/setup'
+import { generateHeaders } from '../../helpers/utils'
 
 // Create test database
 const { db, sqlite } = createTestDatabase()
@@ -42,14 +42,7 @@ describe('GET /auth/session', () => {
   })
 
   it('should return session info with valid token', async () => {
-    const res = await client.auth.session.$get(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    const res = await client.auth.session.$get({}, generateHeaders(token))
 
     expect(res.status).toBe(200)
     const data: any = await res.json()
@@ -60,14 +53,7 @@ describe('GET /auth/session', () => {
   })
 
   it('should return correct expires_at matching login', async () => {
-    const res = await client.auth.session.$get(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    const res = await client.auth.session.$get({}, generateHeaders(token))
 
     const data: any = await res.json()
     expect(data.expires_at).toBe(expiresAt)
@@ -84,11 +70,7 @@ describe('GET /auth/session', () => {
   it('should return 401 with invalid token', async () => {
     const res = await client.auth.session.$get(
       {},
-      {
-        headers: {
-          Authorization: 'Bearer invalid_token'
-        }
-      }
+      generateHeaders('Bearer invalid_token')
     )
 
     expect(res.status).toBe(401)
@@ -99,11 +81,7 @@ describe('GET /auth/session', () => {
   it('should return 401 with malformed Authorization header', async () => {
     const res = await client.auth.session.$get(
       {},
-      {
-        headers: {
-          Authorization: 'InvalidFormat token'
-        }
-      }
+      generateHeaders('InvalidFormat token')
     )
 
     expect(res.status).toBe(401)
@@ -113,24 +91,10 @@ describe('GET /auth/session', () => {
 
   it('should return 401 for revoked session', async () => {
     // Logout (revoke session)
-    await client.auth.logout.$post(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    await client.auth.logout.$post({}, generateHeaders(token))
 
     // Try to check session
-    const res = await client.auth.session.$get(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    const res = await client.auth.session.$get({}, generateHeaders(token))
 
     expect(res.status).toBe(401)
     const data: any = await res.json()
@@ -148,21 +112,13 @@ describe('GET /auth/session', () => {
     // Both sessions should be valid
     const session1Res = await client.auth.session.$get(
       {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
     expect(session1Res.status).toBe(200)
 
     const session2Res = await client.auth.session.$get(
       {},
-      {
-        headers: {
-          Authorization: `Bearer ${token2}`
-        }
-      }
+      generateHeaders(token)
     )
     expect(session2Res.status).toBe(200)
   })
@@ -178,21 +134,13 @@ describe('GET /auth/session', () => {
     // Check both sessions
     const session1Res = await client.auth.session.$get(
       {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
     const session1Data: any = await session1Res.json()
 
     const session2Res = await client.auth.session.$get(
       {},
-      {
-        headers: {
-          Authorization: `Bearer ${token2}`
-        }
-      }
+      generateHeaders(token)
     )
     const session2Data: any = await session2Res.json()
 

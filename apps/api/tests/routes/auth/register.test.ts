@@ -1,4 +1,3 @@
-// POST /auth/register tests
 import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test'
 import { Hono } from 'hono'
 import { testClient } from 'hono/testing'

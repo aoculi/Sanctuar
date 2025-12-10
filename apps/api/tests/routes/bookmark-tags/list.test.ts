@@ -1,9 +1,9 @@
-// GET /bookmarks/:id/tags tests
 import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test'
 import { Hono } from 'hono'
 import { testClient } from 'hono/testing'
 import { testUsers } from '../../helpers/fixtures'
 import { clearDatabase, createTestDatabase } from '../../helpers/setup'
+import { generateHeaders } from '../../helpers/utils'
 
 // Create test database
 const { db, sqlite } = createTestDatabase()
@@ -51,10 +51,7 @@ describe('GET /bookmarks/:id/tags', () => {
     token = loginData.token
 
     // Ensure vault exists (lazy-create)
-    await client.vault.index.$get(
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
+    await client.vault.index.$get({}, generateHeaders(token))
 
     // Create a bookmark
     const nonce = Buffer.alloc(24, 1).toString('base64')
@@ -83,7 +80,7 @@ describe('GET /bookmarks/:id/tags', () => {
           updated_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(bookmarkRes.status).toBe(201)
 
@@ -105,7 +102,7 @@ describe('GET /bookmarks/:id/tags', () => {
             updated_at: now
           }
         },
-        { headers: { Authorization: `Bearer ${token}` } }
+        generateHeaders(token)
       )
       expect(tagRes.status).toBe(201)
     }
@@ -116,7 +113,7 @@ describe('GET /bookmarks/:id/tags', () => {
         {
           json: { item_id: bookmarkId, tag_id: t, created_at: Date.now() }
         },
-        { headers: { Authorization: `Bearer ${token}` } }
+        generateHeaders(token)
       )
       expect(res.status).toBe(201)
     }
@@ -129,7 +126,7 @@ describe('GET /bookmarks/:id/tags', () => {
   it('lists tag IDs linked to a bookmark (200)', async () => {
     const res = await client.bookmarks[bookmarkId].tags.$get(
       {},
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(res.status).toBe(200)
     const data: any = await res.json()
@@ -147,13 +144,13 @@ describe('GET /bookmarks/:id/tags', () => {
           tag_id: tagIds[0]
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(delLink.status).toBe(200)
 
     const res = await client.bookmarks[bookmarkId].tags.$get(
       {},
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(res.status).toBe(200)
     const data: any = await res.json()
@@ -163,7 +160,7 @@ describe('GET /bookmarks/:id/tags', () => {
   it('returns 404 when bookmark does not exist', async () => {
     const res = await client.bookmarks['bm_nonexistent'].tags.$get(
       {},
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(res.status).toBe(404)
   })

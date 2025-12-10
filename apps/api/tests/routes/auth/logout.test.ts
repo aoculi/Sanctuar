@@ -1,9 +1,9 @@
-// POST /auth/logout tests
 import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test'
 import { Hono } from 'hono'
 import { testClient } from 'hono/testing'
 import { testUsers } from '../../helpers/fixtures'
 import { clearDatabase, createTestDatabase } from '../../helpers/setup'
+import { generateHeaders } from '../../helpers/utils'
 
 // Create test database
 const { db, sqlite } = createTestDatabase()
@@ -38,14 +38,7 @@ describe('POST /auth/logout', () => {
   })
 
   it('should logout successfully with valid token', async () => {
-    const res = await client.auth.logout.$post(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    const res = await client.auth.logout.$post({}, generateHeaders(token))
 
     expect(res.status).toBe(200)
     const data: any = await res.json()
@@ -64,11 +57,7 @@ describe('POST /auth/logout', () => {
   it('should return 401 with invalid token', async () => {
     const res = await client.auth.logout.$post(
       {},
-      {
-        headers: {
-          Authorization: 'Bearer invalid_token'
-        }
-      }
+      generateHeaders('Bearer invalid_token')
     )
 
     expect(res.status).toBe(401)
@@ -79,11 +68,7 @@ describe('POST /auth/logout', () => {
   it('should return 401 with malformed Authorization header', async () => {
     const res = await client.auth.logout.$post(
       {},
-      {
-        headers: {
-          Authorization: 'NotBearer token'
-        }
-      }
+      generateHeaders('NotBearer token')
     )
 
     expect(res.status).toBe(401)
@@ -93,24 +78,10 @@ describe('POST /auth/logout', () => {
 
   it('should return 401 when using revoked token', async () => {
     // Logout once
-    await client.auth.logout.$post(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    await client.auth.logout.$post({}, generateHeaders(token))
 
     // Try to logout again with same token
-    const res = await client.auth.logout.$post(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    const res = await client.auth.logout.$post({}, generateHeaders(token))
 
     expect(res.status).toBe(401)
     const data: any = await res.json()
@@ -128,46 +99,24 @@ describe('POST /auth/logout', () => {
     // Logout first session
     const logout1Res = await client.auth.logout.$post(
       {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
     expect(logout1Res.status).toBe(200)
 
     // Second session should still work
     const logout2Res = await client.auth.logout.$post(
       {},
-      {
-        headers: {
-          Authorization: `Bearer ${token2}`
-        }
-      }
+      generateHeaders(token2)
     )
     expect(logout2Res.status).toBe(200)
   })
 
   it('should not allow using token after logout', async () => {
     // Logout
-    await client.auth.logout.$post(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    await client.auth.logout.$post({}, generateHeaders(token))
 
     // Try to check session with revoked token
-    const res = await client.auth.session.$get(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    const res = await client.auth.session.$get({}, generateHeaders(token))
 
     expect(res.status).toBe(401)
   })

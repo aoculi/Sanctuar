@@ -1,9 +1,9 @@
-// GET /tags tests
 import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test'
 import { Hono } from 'hono'
 import { testClient } from 'hono/testing'
 import { testUsers } from '../../helpers/fixtures'
 import { clearDatabase, createTestDatabase } from '../../helpers/setup'
+import { generateHeaders } from '../../helpers/utils'
 
 // Create test database
 const { db, sqlite } = createTestDatabase()
@@ -37,10 +37,7 @@ describe('GET /tags', () => {
     token = loginData.token
 
     // Ensure vault exists (lazy-create)
-    await client.vault.index.$get(
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
+    await client.vault.index.$get({}, generateHeaders(token))
 
     // Create multiple tags for testing
     createdTagIds = []
@@ -65,7 +62,7 @@ describe('GET /tags', () => {
             tag_token: i % 2 === 0 ? `token_${i}` : null
           }
         },
-        { headers: { Authorization: `Bearer ${token}` } }
+        generateHeaders(token)
       )
       expect(createRes.status).toBe(201)
       const createData: any = await createRes.json()
@@ -78,10 +75,7 @@ describe('GET /tags', () => {
   })
 
   it('lists tags successfully (200)', async () => {
-    const res = await client.tags.$get(
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
+    const res = await client.tags.$get({}, generateHeaders(token))
 
     expect(res.status).toBe(200)
     const data: any = await res.json()
@@ -106,7 +100,7 @@ describe('GET /tags', () => {
   it('respects limit parameter', async () => {
     const res = await client.tags.$get(
       { query: { limit: 3 } },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(200)
@@ -120,7 +114,7 @@ describe('GET /tags', () => {
     // Get first page
     const res1 = await client.tags.$get(
       { query: { limit: 2 } },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res1.status).toBe(200)
@@ -131,7 +125,7 @@ describe('GET /tags', () => {
     // Get second page using cursor
     const res2 = await client.tags.$get(
       { query: { limit: 2, cursor: data1.next_cursor } },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res2.status).toBe(200)
@@ -182,7 +176,7 @@ describe('GET /tags', () => {
   it('returns 400 for invalid limit (too large)', async () => {
     const res = await client.tags.$get(
       { query: { limit: 1000 } },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(400)
@@ -191,7 +185,7 @@ describe('GET /tags', () => {
   it('returns 400 for invalid limit (zero)', async () => {
     const res = await client.tags.$get(
       { query: { limit: 0 } },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(400)
@@ -205,7 +199,7 @@ describe('GET /tags', () => {
     const firstTagId = createdTagIds[0]
     const getRes = await client.tags[':id'].$get(
       { param: { id: firstTagId } },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     const tagData: any = await getRes.json()
 
@@ -215,7 +209,7 @@ describe('GET /tags', () => {
     // Test with includeDeleted=false (default)
     const res1 = await client.tags.$get(
       { query: { includeDeleted: false } },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(res1.status).toBe(200)
     const data1: any = await res1.json()
@@ -224,7 +218,7 @@ describe('GET /tags', () => {
     // Test with includeDeleted=true
     const res2 = await client.tags.$get(
       { query: { includeDeleted: true } },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(res2.status).toBe(200)
     const data2: any = await res2.json()
@@ -236,7 +230,7 @@ describe('GET /tags', () => {
 
     const res = await client.tags.$get(
       { query: { updatedAfter: now + 10000 } }, // Future timestamp
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(200)
@@ -247,7 +241,7 @@ describe('GET /tags', () => {
   it('handles byToken parameter', async () => {
     const res = await client.tags.$get(
       { query: { byToken: 'token_0' } },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(200)
@@ -259,7 +253,7 @@ describe('GET /tags', () => {
   it('handles byToken parameter with null token', async () => {
     const res = await client.tags.$get(
       { query: { byToken: '' } }, // Empty string instead of null
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(200)
@@ -276,7 +270,7 @@ describe('GET /tags', () => {
           byToken: 'token_0'
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(200)
@@ -286,10 +280,7 @@ describe('GET /tags', () => {
   })
 
   it('returns correct base64 encoded fields', async () => {
-    const res = await client.tags.$get(
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
+    const res = await client.tags.$get({}, generateHeaders(token))
 
     expect(res.status).toBe(200)
     const data: any = await res.json()
@@ -302,10 +293,7 @@ describe('GET /tags', () => {
   })
 
   it('returns items in correct order (by tag_id)', async () => {
-    const res = await client.tags.$get(
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
+    const res = await client.tags.$get({}, generateHeaders(token))
 
     expect(res.status).toBe(200)
     const data: any = await res.json()
@@ -319,7 +307,7 @@ describe('GET /tags', () => {
   it('handles large limit (max 500)', async () => {
     const res = await client.tags.$get(
       { query: { limit: 500 } },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(200)
@@ -335,10 +323,7 @@ describe('GET /tags', () => {
     const token2 = login2Data.token
 
     // List tags with first token
-    const res1 = await client.tags.$get(
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
+    const res1 = await client.tags.$get({}, generateHeaders(token))
 
     // List tags with second token
     const res2 = await client.tags.$get(
@@ -383,10 +368,7 @@ describe('GET /tags', () => {
   })
 
   it('validates ETag format in returned items', async () => {
-    const res = await client.tags.$get(
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
+    const res = await client.tags.$get({}, generateHeaders(token))
 
     expect(res.status).toBe(200)
     const data: any = await res.json()
@@ -400,10 +382,7 @@ describe('GET /tags', () => {
 
   it('handles edge case with cursor at end of results', async () => {
     // Get all tags first
-    const res1 = await client.tags.$get(
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
+    const res1 = await client.tags.$get({}, generateHeaders(token))
     const data1: any = await res1.json()
 
     // Use cursor from last item
@@ -412,7 +391,7 @@ describe('GET /tags', () => {
 
     const res2 = await client.tags.$get(
       { query: { cursor } },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res2.status).toBe(200)

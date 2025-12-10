@@ -1,9 +1,9 @@
-// GET /tags/:id tests
 import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test'
 import { Hono } from 'hono'
 import { testClient } from 'hono/testing'
 import { testUsers } from '../../helpers/fixtures'
 import { clearDatabase, createTestDatabase } from '../../helpers/setup'
+import { generateHeaders } from '../../helpers/utils'
 
 // Create test database
 const { db, sqlite } = createTestDatabase()
@@ -37,10 +37,7 @@ describe('GET /tags/:id', () => {
     token = loginData.token
 
     // Ensure vault exists (lazy-create)
-    await client.vault.index.$get(
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
+    await client.vault.index.$get({}, generateHeaders(token))
 
     // Create a tag for testing
     const nonce = Buffer.alloc(24, 1).toString('base64')
@@ -63,7 +60,7 @@ describe('GET /tags/:id', () => {
           tag_token: 'test_token'
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(createRes.status).toBe(201)
     const createData: any = await createRes.json()
@@ -77,7 +74,7 @@ describe('GET /tags/:id', () => {
   it('fetches existing tag successfully (200)', async () => {
     const res = await client.tags[':id'].$get(
       { param: { id: createdTagId } },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(200)
@@ -98,7 +95,7 @@ describe('GET /tags/:id', () => {
   it('returns 404 for non-existent tag', async () => {
     const res = await client.tags[':id'].$get(
       { param: { id: 'non_existent_tag' } },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(404)
@@ -132,14 +129,11 @@ describe('GET /tags/:id', () => {
 
   it('returns 401 for revoked session', async () => {
     // Logout to revoke session
-    await client.auth.logout.$post(
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
+    await client.auth.logout.$post({}, generateHeaders(token))
 
     const res = await client.tags[':id'].$get(
       { param: { id: createdTagId } },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(401)
@@ -185,7 +179,7 @@ describe('GET /tags/:id', () => {
   it('returns correct base64 encoded fields', async () => {
     const res = await client.tags[':id'].$get(
       { param: { id: createdTagId } },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(200)
@@ -206,7 +200,7 @@ describe('GET /tags/:id', () => {
   it('returns correct metadata fields', async () => {
     const res = await client.tags[':id'].$get(
       { param: { id: createdTagId } },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(200)
@@ -246,14 +240,14 @@ describe('GET /tags/:id', () => {
           updated_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(createRes.status).toBe(201)
 
     // Fetch the tag
     const res = await client.tags[':id'].$get(
       { param: { id: specialTagId } },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(200)
@@ -270,7 +264,7 @@ describe('GET /tags/:id', () => {
     // Get tag with first token
     const res1 = await client.tags[':id'].$get(
       { param: { id: createdTagId } },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     // Get tag with second token

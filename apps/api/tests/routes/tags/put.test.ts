@@ -4,6 +4,7 @@ import { Hono } from 'hono'
 import { testClient } from 'hono/testing'
 import { testUsers } from '../../helpers/fixtures'
 import { clearDatabase, createTestDatabase } from '../../helpers/setup'
+import { generateHeaders } from '../../helpers/utils'
 
 // Create test database
 const { db, sqlite } = createTestDatabase()
@@ -38,10 +39,7 @@ describe('PUT /tags/:id', () => {
     token = loginData.token
 
     // Ensure vault exists (lazy-create)
-    await client.vault.index.$get(
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
+    await client.vault.index.$get({}, generateHeaders(token))
 
     // Create a tag for testing
     const nonce = Buffer.alloc(24, 1).toString('base64')
@@ -64,7 +62,7 @@ describe('PUT /tags/:id', () => {
           tag_token: 'test_token'
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(createRes.status).toBe(201)
     const createData: any = await createRes.json()
@@ -96,9 +94,7 @@ describe('PUT /tags/:id', () => {
           tag_token: 'updated_token'
         }
       },
-      {
-        headers: { Authorization: `Bearer ${token}`, 'If-Match': currentEtag }
-      }
+      generateHeaders(token, { 'If-Match': currentEtag })
     )
 
     expect(res.status).toBe(200)
@@ -130,7 +126,7 @@ describe('PUT /tags/:id', () => {
           updated_at: newUpdatedAt
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(409)
@@ -157,9 +153,7 @@ describe('PUT /tags/:id', () => {
           updated_at: newUpdatedAt
         }
       },
-      {
-        headers: { Authorization: `Bearer ${token}`, 'If-Match': 'wrong-etag' }
-      }
+      generateHeaders(token, { 'If-Match': 'wrong-etag' })
     )
 
     expect(res.status).toBe(409)
@@ -186,9 +180,7 @@ describe('PUT /tags/:id', () => {
           updated_at: newUpdatedAt
         }
       },
-      {
-        headers: { Authorization: `Bearer ${token}`, 'If-Match': currentEtag }
-      }
+      generateHeaders(token, { 'If-Match': currentEtag })
     )
 
     expect(res.status).toBe(409)
@@ -215,9 +207,7 @@ describe('PUT /tags/:id', () => {
           updated_at: newUpdatedAt
         }
       },
-      {
-        headers: { Authorization: `Bearer ${token}`, 'If-Match': currentEtag }
-      }
+      generateHeaders(token, { 'If-Match': currentEtag })
     )
 
     expect(res.status).toBe(404)
@@ -294,9 +284,7 @@ describe('PUT /tags/:id', () => {
           updated_at: newUpdatedAt
         }
       },
-      {
-        headers: { Authorization: `Bearer ${token}`, 'If-Match': currentEtag }
-      }
+      generateHeaders(token, { 'If-Match': currentEtag })
     )
 
     expect(res.status).toBe(400)
@@ -324,9 +312,7 @@ describe('PUT /tags/:id', () => {
           updated_at: newUpdatedAt
         }
       },
-      {
-        headers: { Authorization: `Bearer ${token}`, 'If-Match': currentEtag }
-      }
+      generateHeaders(token, { 'If-Match': currentEtag })
     )
 
     expect(res.status).toBe(413)
@@ -343,9 +329,7 @@ describe('PUT /tags/:id', () => {
           // missing nonce_content, ciphertext_content, size, updated_at
         }
       },
-      {
-        headers: { Authorization: `Bearer ${token}`, 'If-Match': currentEtag }
-      }
+      generateHeaders(token, { 'If-Match': currentEtag })
     )
 
     expect(res.status).toBe(400)
@@ -367,9 +351,7 @@ describe('PUT /tags/:id', () => {
           updated_at: newUpdatedAt
         }
       },
-      {
-        headers: { Authorization: `Bearer ${token}`, 'If-Match': currentEtag }
-      }
+      generateHeaders(token, { 'If-Match': currentEtag })
     )
 
     expect(res.status).toBe(400)
@@ -391,9 +373,7 @@ describe('PUT /tags/:id', () => {
           updated_at: newUpdatedAt
         }
       },
-      {
-        headers: { Authorization: `Bearer ${token}`, 'If-Match': currentEtag }
-      }
+      generateHeaders(token, { 'If-Match': currentEtag })
     )
 
     expect(res.status).toBe(400)
@@ -415,9 +395,7 @@ describe('PUT /tags/:id', () => {
           updated_at: newUpdatedAt
         }
       },
-      {
-        headers: { Authorization: `Bearer ${token}`, 'If-Match': currentEtag }
-      }
+      generateHeaders(token, { 'If-Match': currentEtag })
     )
 
     expect(res.status).toBe(400)
@@ -442,9 +420,7 @@ describe('PUT /tags/:id', () => {
           updated_at: newUpdatedAt
         }
       },
-      {
-        headers: { Authorization: `Bearer ${token}`, 'If-Match': currentEtag }
-      }
+      generateHeaders(token, { 'If-Match': currentEtag })
     )
 
     expect(res.status).toBe(400)
@@ -468,9 +444,7 @@ describe('PUT /tags/:id', () => {
           updated_at: 0
         }
       },
-      {
-        headers: { Authorization: `Bearer ${token}`, 'If-Match': currentEtag }
-      }
+      generateHeaders(token, { 'If-Match': currentEtag })
     )
 
     expect(res.status).toBe(400)
@@ -575,9 +549,7 @@ describe('PUT /tags/:id', () => {
           tag_token: 'new_token'
         }
       },
-      {
-        headers: { Authorization: `Bearer ${token}`, 'If-Match': currentEtag }
-      }
+      generateHeaders(token, { 'If-Match': currentEtag })
     )
 
     expect(res.status).toBe(200)
@@ -603,9 +575,7 @@ describe('PUT /tags/:id', () => {
           tag_token: null
         }
       },
-      {
-        headers: { Authorization: `Bearer ${token}`, 'If-Match': currentEtag }
-      }
+      generateHeaders(token, { 'If-Match': currentEtag })
     )
 
     expect(res.status).toBe(200)
@@ -631,9 +601,7 @@ describe('PUT /tags/:id', () => {
           updated_at: newUpdatedAt
         }
       },
-      {
-        headers: { Authorization: `Bearer ${token}`, 'If-Match': currentEtag }
-      }
+      generateHeaders(token, { 'If-Match': currentEtag })
     )
 
     expect(res.status).toBe(200) // Should still succeed with warning
@@ -658,9 +626,7 @@ describe('PUT /tags/:id', () => {
           updated_at: newUpdatedAt
         }
       },
-      {
-        headers: { Authorization: `Bearer ${token}`, 'If-Match': currentEtag }
-      }
+      generateHeaders(token, { 'If-Match': currentEtag })
     )
 
     expect(res.status).toBe(200)
@@ -697,9 +663,7 @@ describe('PUT /tags/:id', () => {
           updated_at: newUpdatedAt
         }
       },
-      {
-        headers: { Authorization: `Bearer ${token}`, 'If-Match': currentEtag }
-      }
+      generateHeaders(token, { 'If-Match': currentEtag })
     )
 
     expect(res1.status).toBe(200)

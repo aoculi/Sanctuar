@@ -1,4 +1,3 @@
-// Rate limiting tests for /auth/login and /auth/register
 import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test'
 import { Hono } from 'hono'
 import { testClient } from 'hono/testing'

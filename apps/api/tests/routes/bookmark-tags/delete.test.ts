@@ -1,9 +1,9 @@
-// DELETE /bookmark-tags tests
 import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test'
 import { Hono } from 'hono'
 import { testClient } from 'hono/testing'
 import { testUsers } from '../../helpers/fixtures'
 import { clearDatabase, createTestDatabase } from '../../helpers/setup'
+import { generateHeaders } from '../../helpers/utils'
 
 // Create test database
 const { db, sqlite } = createTestDatabase()
@@ -52,10 +52,7 @@ describe('DELETE /bookmark-tags', () => {
     token = loginData.token
 
     // Ensure vault exists (lazy-create)
-    await client.vault.index.$get(
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
+    await client.vault.index.$get({}, generateHeaders(token))
 
     // Create a bookmark for testing
     const bookmarkNonce = Buffer.alloc(24, 1).toString('base64')
@@ -84,7 +81,7 @@ describe('DELETE /bookmark-tags', () => {
           updated_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(bookmarkRes.status).toBe(201)
 
@@ -108,7 +105,7 @@ describe('DELETE /bookmark-tags', () => {
           updated_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(tagRes.status).toBe(201)
   })
@@ -128,7 +125,7 @@ describe('DELETE /bookmark-tags', () => {
           created_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(createRes.status).toBe(201)
 
@@ -140,7 +137,7 @@ describe('DELETE /bookmark-tags', () => {
           tag_id: tagId
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(200)
@@ -159,7 +156,7 @@ describe('DELETE /bookmark-tags', () => {
           tag_id: tagId
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(200)
@@ -177,7 +174,7 @@ describe('DELETE /bookmark-tags', () => {
           tag_id: tagId
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(404)
@@ -193,7 +190,7 @@ describe('DELETE /bookmark-tags', () => {
           tag_id: 'tag_nonexistent'
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(404)
@@ -207,7 +204,7 @@ describe('DELETE /bookmark-tags', () => {
     // Soft delete the bookmark
     const bookmark = await client.bookmarks[bookmarkId].$get(
       {},
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     const bookmarkData: any = await bookmark.json()
 
@@ -218,12 +215,8 @@ describe('DELETE /bookmark-tags', () => {
           deleted_at: now
         }
       },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'If-Match': bookmarkData.etag
-        }
-      }
+
+      generateHeaders(token, { 'If-Match': bookmarkData.etag })
     )
 
     // Try to delete link for deleted bookmark
@@ -234,7 +227,7 @@ describe('DELETE /bookmark-tags', () => {
           tag_id: tagId
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(404)
@@ -266,7 +259,7 @@ describe('DELETE /bookmark-tags', () => {
           updated_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(newTagRes.status).toBe(201)
 
@@ -278,7 +271,7 @@ describe('DELETE /bookmark-tags', () => {
           tag_id: newTagId
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     // This should work since we didn't actually delete the tag
@@ -332,7 +325,7 @@ describe('DELETE /bookmark-tags', () => {
           tag_id: tagId
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(400)
@@ -346,7 +339,7 @@ describe('DELETE /bookmark-tags', () => {
           // Missing tag_id
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(400)
@@ -360,7 +353,7 @@ describe('DELETE /bookmark-tags', () => {
           tag_id: tagId
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(400)
@@ -374,7 +367,7 @@ describe('DELETE /bookmark-tags', () => {
           tag_id: '' // Empty string
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(400)
@@ -404,10 +397,7 @@ describe('DELETE /bookmark-tags', () => {
 
   it('returns 401 for revoked session', async () => {
     // Logout to revoke session
-    await client.auth.logout.$post(
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
+    await client.auth.logout.$post({}, generateHeaders(token))
 
     const res = await client['bookmark-tags'].$delete(
       {
@@ -416,7 +406,7 @@ describe('DELETE /bookmark-tags', () => {
           tag_id: tagId
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(401)
@@ -434,7 +424,7 @@ describe('DELETE /bookmark-tags', () => {
           created_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(createRes.status).toBe(201)
 
@@ -549,7 +539,7 @@ describe('DELETE /bookmark-tags', () => {
           tag_id: tagId
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(res3.status).toBe(200)
     const data3: any = await res3.json()
@@ -582,7 +572,7 @@ describe('DELETE /bookmark-tags', () => {
           updated_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(tag2Res.status).toBe(201)
 
@@ -605,7 +595,7 @@ describe('DELETE /bookmark-tags', () => {
           updated_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(tag3Res.status).toBe(201)
 
@@ -618,7 +608,7 @@ describe('DELETE /bookmark-tags', () => {
           created_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(res1.status).toBe(201)
 
@@ -630,7 +620,7 @@ describe('DELETE /bookmark-tags', () => {
           created_at: now + 1000
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(res2.status).toBe(201)
 
@@ -642,7 +632,7 @@ describe('DELETE /bookmark-tags', () => {
           created_at: now + 2000
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(res3.status).toBe(201)
 
@@ -654,7 +644,7 @@ describe('DELETE /bookmark-tags', () => {
           tag_id: tagId
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(delRes1.status).toBe(200)
 
@@ -665,7 +655,7 @@ describe('DELETE /bookmark-tags', () => {
           tag_id: tag2Id
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(delRes2.status).toBe(200)
 
@@ -676,7 +666,7 @@ describe('DELETE /bookmark-tags', () => {
           tag_id: tag3Id
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(delRes3.status).toBe(200)
 

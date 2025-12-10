@@ -4,6 +4,7 @@ import { Hono } from 'hono'
 import { testClient } from 'hono/testing'
 import { testUsers } from '../../helpers/fixtures'
 import { clearDatabase, createTestDatabase } from '../../helpers/setup'
+import { generateHeaders } from '../../helpers/utils'
 
 // Create test database
 const { db, sqlite } = createTestDatabase()
@@ -27,14 +28,7 @@ describe('GET /vault/manifest', () => {
   // Helper function to create a manifest
   async function createTestManifest() {
     // Get vault first (creates it if needed)
-    const vaultRes = await client.vault.index.$get(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    const vaultRes = await client.vault.index.$get({}, generateHeaders(token))
     const vaultData: any = await vaultRes.json()
     vaultId = vaultData.vault_id
 
@@ -49,7 +43,7 @@ describe('GET /vault/manifest', () => {
     const updatedAt = Date.now()
 
     sqlite.run(
-      `INSERT INTO manifests (vault_id, etag, version, nonce, ciphertext, size, updated_at) 
+      `INSERT INTO manifests (vault_id, etag, version, nonce, ciphertext, size, updated_at)
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [vaultId, etag, version, nonce, ciphertext, size, updatedAt]
     )
@@ -77,14 +71,7 @@ describe('GET /vault/manifest', () => {
   it('should return manifest successfully when it exists', async () => {
     const testData = await createTestManifest()
 
-    const res = await client.vault.manifest.$get(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    const res = await client.vault.manifest.$get({}, generateHeaders(token))
 
     expect(res.status).toBe(200)
     const data: any = await res.json()
@@ -104,14 +91,7 @@ describe('GET /vault/manifest', () => {
   it('should return base64-encoded nonce and ciphertext', async () => {
     const testData = await createTestManifest()
 
-    const res = await client.vault.manifest.$get(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    const res = await client.vault.manifest.$get({}, generateHeaders(token))
 
     const data: any = await res.json()
 
@@ -125,23 +105,9 @@ describe('GET /vault/manifest', () => {
 
   it('should return 404 when manifest does not exist', async () => {
     // Create vault but no manifest
-    await client.vault.index.$get(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    await client.vault.index.$get({}, generateHeaders(token))
 
-    const res = await client.vault.manifest.$get(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    const res = await client.vault.manifest.$get({}, generateHeaders(token))
 
     expect(res.status).toBe(404)
     const data: any = await res.json()
@@ -150,14 +116,7 @@ describe('GET /vault/manifest', () => {
 
   it('should return 404 when vault does not exist', async () => {
     // Don't create vault at all
-    const res = await client.vault.manifest.$get(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    const res = await client.vault.manifest.$get({}, generateHeaders(token))
 
     expect(res.status).toBe(404)
     const data: any = await res.json()
@@ -175,11 +134,7 @@ describe('GET /vault/manifest', () => {
   it('should return 401 with invalid token', async () => {
     const res = await client.vault.manifest.$get(
       {},
-      {
-        headers: {
-          Authorization: 'Bearer invalid_token'
-        }
-      }
+      generateHeaders('Bearer invalid_token')
     )
 
     expect(res.status).toBe(401)
@@ -190,11 +145,7 @@ describe('GET /vault/manifest', () => {
   it('should return 401 with malformed Authorization header', async () => {
     const res = await client.vault.manifest.$get(
       {},
-      {
-        headers: {
-          Authorization: 'InvalidFormat token'
-        }
-      }
+      generateHeaders('InvalidFormat token')
     )
 
     expect(res.status).toBe(401)
@@ -206,24 +157,10 @@ describe('GET /vault/manifest', () => {
     await createTestManifest()
 
     // Logout (revoke session)
-    await client.auth.logout.$post(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    await client.auth.logout.$post({}, generateHeaders(token))
 
     // Try to get manifest
-    const res = await client.vault.manifest.$get(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    const res = await client.vault.manifest.$get({}, generateHeaders(token))
 
     expect(res.status).toBe(401)
     const data: any = await res.json()
@@ -236,11 +173,7 @@ describe('GET /vault/manifest', () => {
 
     const aliceRes = await client.vault.manifest.$get(
       {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
     const aliceManifest: any = await aliceRes.json()
 
@@ -255,11 +188,7 @@ describe('GET /vault/manifest', () => {
     // Bob should get 404 (no manifest)
     const bobRes = await client.vault.manifest.$get(
       {},
-      {
-        headers: {
-          Authorization: `Bearer ${bobToken}`
-        }
-      }
+      generateHeaders(bobToken)
     )
 
     expect(bobRes.status).toBe(404)
@@ -279,22 +208,14 @@ describe('GET /vault/manifest', () => {
     // Get manifest with first token
     const manifest1Res = await client.vault.manifest.$get(
       {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
     const manifest1Data: any = await manifest1Res.json()
 
     // Get manifest with second token
     const manifest2Res = await client.vault.manifest.$get(
       {},
-      {
-        headers: {
-          Authorization: `Bearer ${token2}`
-        }
-      }
+      generateHeaders(token2)
     )
     const manifest2Data: any = await manifest2Res.json()
 
@@ -308,14 +229,7 @@ describe('GET /vault/manifest', () => {
 
   it('should handle large manifest data', async () => {
     // Get vault first
-    const vaultRes = await client.vault.index.$get(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    const vaultRes = await client.vault.index.$get({}, generateHeaders(token))
     const vaultData: any = await vaultRes.json()
     vaultId = vaultData.vault_id
 
@@ -328,19 +242,12 @@ describe('GET /vault/manifest', () => {
     const updatedAt = Date.now()
 
     sqlite.run(
-      `INSERT INTO manifests (vault_id, etag, version, nonce, ciphertext, size, updated_at) 
+      `INSERT INTO manifests (vault_id, etag, version, nonce, ciphertext, size, updated_at)
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [vaultId, etag, version, nonce, ciphertext, size, updatedAt]
     )
 
-    const res = await client.vault.manifest.$get(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    const res = await client.vault.manifest.$get({}, generateHeaders(token))
 
     expect(res.status).toBe(200)
     const data: any = await res.json()
@@ -354,14 +261,7 @@ describe('GET /vault/manifest', () => {
   it('should include all required fields in response', async () => {
     await createTestManifest()
 
-    const res = await client.vault.manifest.$get(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    const res = await client.vault.manifest.$get({}, generateHeaders(token))
 
     const data: any = await res.json()
 

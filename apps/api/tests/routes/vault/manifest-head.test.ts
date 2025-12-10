@@ -4,6 +4,7 @@ import { Hono } from 'hono'
 import { testClient } from 'hono/testing'
 import { testUsers } from '../../helpers/fixtures'
 import { clearDatabase, createTestDatabase } from '../../helpers/setup'
+import { generateHeaders } from '../../helpers/utils'
 
 // Create test database
 const { db, sqlite } = createTestDatabase()
@@ -38,26 +39,14 @@ describe('HEAD /vault/manifest', () => {
           ciphertext
         }
       },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          ...(version > 1 ? { 'If-Match': await getEtag() } : {})
-        }
-      }
+      generateHeaders(token, version > 1 ? { 'If-Match': await getEtag() } : {})
     )
 
     return await res.json()
   }
 
   async function getEtag() {
-    const getRes = await client.vault.manifest.$get(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    const getRes = await client.vault.manifest.$get({}, generateHeaders(token))
     const data: any = await getRes.json()
     return data.etag
   }
@@ -86,9 +75,7 @@ describe('HEAD /vault/manifest', () => {
     // HEAD request using app.fetch
     const res = await app.request('/vault/manifest', {
       method: 'HEAD',
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+      ...generateHeaders(token)
     })
 
     expect(res.status).toBe(200)
@@ -103,9 +90,7 @@ describe('HEAD /vault/manifest', () => {
     // HEAD request using app.fetch
     const res = await app.request('/vault/manifest', {
       method: 'HEAD',
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+      ...generateHeaders(token)
     })
 
     const body = await res.text()
@@ -117,22 +102,13 @@ describe('HEAD /vault/manifest', () => {
     await createManifest(1)
 
     // GET request
-    const getRes = await client.vault.manifest.$get(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    const getRes = await client.vault.manifest.$get({}, generateHeaders(token))
     const getData: any = await getRes.json()
 
     // HEAD request using app.fetch
     const headRes = await app.request('/vault/manifest', {
       method: 'HEAD',
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+      ...generateHeaders(token)
     })
 
     expect(headRes.headers.get('etag')).toBe(getData.etag)
@@ -148,9 +124,7 @@ describe('HEAD /vault/manifest', () => {
     // HEAD request for v1 using app.fetch
     const head1Res = await app.request('/vault/manifest', {
       method: 'HEAD',
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+      ...generateHeaders(token)
     })
     const etag1 = head1Res.headers.get('etag')
     const version1 = head1Res.headers.get('x-vault-version')
@@ -161,9 +135,7 @@ describe('HEAD /vault/manifest', () => {
     // HEAD request for v2 using app.fetch
     const head2Res = await app.request('/vault/manifest', {
       method: 'HEAD',
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+      ...generateHeaders(token)
     })
     const etag2 = head2Res.headers.get('etag')
     const version2 = head2Res.headers.get('x-vault-version')
@@ -177,9 +149,7 @@ describe('HEAD /vault/manifest', () => {
     // HEAD request without creating manifest using app.fetch
     const res = await app.request('/vault/manifest', {
       method: 'HEAD',
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+      ...generateHeaders(token)
     })
 
     expect(res.status).toBe(404)
@@ -220,21 +190,12 @@ describe('HEAD /vault/manifest', () => {
     await createManifest(1)
 
     // Logout (revoke session)
-    await client.auth.logout.$post(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    await client.auth.logout.$post({}, generateHeaders(token))
 
     // HEAD request using app.fetch
     const res = await app.request('/vault/manifest', {
       method: 'HEAD',
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+      ...generateHeaders(token)
     })
 
     expect(res.status).toBe(401)
@@ -251,19 +212,13 @@ describe('HEAD /vault/manifest', () => {
           ciphertext: largeCiphertext
         }
       },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
 
     // HEAD request (should be lightweight) using app.fetch
     const headRes = await app.request('/vault/manifest', {
       method: 'HEAD',
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+      ...generateHeaders(token)
     })
 
     expect(headRes.status).toBe(200)
@@ -289,9 +244,7 @@ describe('HEAD /vault/manifest', () => {
     // HEAD with first token using app.fetch
     const head1Res = await app.request('/vault/manifest', {
       method: 'HEAD',
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+      ...generateHeaders(token)
     })
 
     // HEAD with second token using app.fetch
@@ -314,9 +267,7 @@ describe('HEAD /vault/manifest', () => {
     await createManifest(1)
     const aliceHeadRes = await app.request('/vault/manifest', {
       method: 'HEAD',
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+      ...generateHeaders(token)
     })
     const aliceEtag = aliceHeadRes.headers.get('etag')
 
@@ -337,11 +288,7 @@ describe('HEAD /vault/manifest', () => {
           ciphertext: Buffer.from('bob_data').toString('base64')
         }
       },
-      {
-        headers: {
-          Authorization: `Bearer ${bobToken}`
-        }
-      }
+      generateHeaders(token)
     )
 
     const bobHeadRes = await app.request('/vault/manifest', {
@@ -363,9 +310,7 @@ describe('HEAD /vault/manifest', () => {
     // Client checks cache freshness using app.fetch
     const check1 = await app.request('/vault/manifest', {
       method: 'HEAD',
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+      ...generateHeaders(token)
     })
     const cachedEtag = check1.headers.get('etag')
     expect(check1.status).toBe(200)
@@ -376,9 +321,7 @@ describe('HEAD /vault/manifest', () => {
     // Client checks again - ETag should be different using app.fetch
     const check2 = await app.request('/vault/manifest', {
       method: 'HEAD',
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+      ...generateHeaders(token)
     })
     const newEtag = check2.headers.get('etag')
     expect(check2.status).toBe(200)

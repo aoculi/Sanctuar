@@ -1,9 +1,9 @@
-// POST /tags tests
 import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test'
 import { Hono } from 'hono'
 import { testClient } from 'hono/testing'
 import { testUsers } from '../../helpers/fixtures'
 import { clearDatabase, createTestDatabase } from '../../helpers/setup'
+import { generateHeaders } from '../../helpers/utils'
 
 // Create test database
 const { db, sqlite } = createTestDatabase()
@@ -37,10 +37,7 @@ describe('POST /tags', () => {
     token = loginData.token
 
     // Ensure vault exists (lazy-create)
-    await client.vault.index.$get(
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
+    await client.vault.index.$get({}, generateHeaders(token))
   })
 
   afterEach(() => {
@@ -67,7 +64,7 @@ describe('POST /tags', () => {
           tag_token: null
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(201)
@@ -96,16 +93,10 @@ describe('POST /tags', () => {
       updated_at: now
     }
 
-    const res1 = await client.tags.$post(
-      { json: body },
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
+    const res1 = await client.tags.$post({ json: body }, generateHeaders(token))
     expect(res1.status).toBe(201)
 
-    const res2 = await client.tags.$post(
-      { json: body },
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
+    const res2 = await client.tags.$post({ json: body }, generateHeaders(token))
     expect(res2.status).toBe(409)
   })
 
@@ -122,7 +113,7 @@ describe('POST /tags', () => {
           updated_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(res.status).toBe(400)
   })
@@ -144,7 +135,7 @@ describe('POST /tags', () => {
           updated_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(res.status).toBe(413)
   })
@@ -227,7 +218,7 @@ describe('POST /tags', () => {
           updated_at: Date.now()
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(res.status).toBe(400)
   })
@@ -250,7 +241,7 @@ describe('POST /tags', () => {
           updated_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(res.status).toBe(400)
   })
@@ -270,7 +261,7 @@ describe('POST /tags', () => {
           updated_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(res.status).toBe(400)
   })
@@ -290,7 +281,7 @@ describe('POST /tags', () => {
           updated_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(res.status).toBe(400)
   })
@@ -310,7 +301,7 @@ describe('POST /tags', () => {
           updated_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(res.status).toBe(400)
   })
@@ -330,7 +321,7 @@ describe('POST /tags', () => {
           updated_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(res.status).toBe(400)
   })
@@ -352,7 +343,7 @@ describe('POST /tags', () => {
           updated_at: Date.now()
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(res.status).toBe(400)
   })
@@ -374,7 +365,7 @@ describe('POST /tags', () => {
           updated_at: Date.now()
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(res.status).toBe(400)
   })
@@ -396,7 +387,7 @@ describe('POST /tags', () => {
           updated_at: 0 // Zero timestamp
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(res.status).toBe(400)
   })
@@ -418,7 +409,7 @@ describe('POST /tags', () => {
           updated_at: Date.now()
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(res.status).toBe(400)
   })
@@ -454,10 +445,7 @@ describe('POST /tags', () => {
 
   it('returns 401 for revoked session', async () => {
     // Logout to revoke session
-    await client.auth.logout.$post(
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
+    await client.auth.logout.$post({}, generateHeaders(token))
 
     const nonce = Buffer.alloc(24, 17).toString('base64')
     const ciphertext = Buffer.from('ct').toString('base64')
@@ -476,7 +464,7 @@ describe('POST /tags', () => {
           updated_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(res.status).toBe(401)
   })
@@ -503,7 +491,7 @@ describe('POST /tags', () => {
           tag_token: 'blind_index_token_123'
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(201)
@@ -535,7 +523,7 @@ describe('POST /tags', () => {
           tag_token: null
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(201)
@@ -565,7 +553,7 @@ describe('POST /tags', () => {
           updated_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(res1.status).toBe(201)
 
@@ -623,7 +611,7 @@ describe('POST /tags', () => {
           updated_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     const data1: any = await res1.json()
 
@@ -644,7 +632,7 @@ describe('POST /tags', () => {
           updated_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     const data2: any = await res2.json()
 
@@ -680,7 +668,7 @@ describe('POST /tags', () => {
           updated_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     // Should still succeed (size mismatch is just a warning)

@@ -4,6 +4,7 @@ import { Hono } from 'hono'
 import { testClient } from 'hono/testing'
 import { testUsers } from '../../helpers/fixtures'
 import { clearDatabase, createTestDatabase } from '../../helpers/setup'
+import { generateHeaders } from '../../helpers/utils'
 
 // Create test database
 const { db, sqlite } = createTestDatabase()
@@ -41,14 +42,7 @@ describe('GET /vault', () => {
   })
 
   it('should create vault lazily on first access', async () => {
-    const res = await client.vault.index.$get(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    const res = await client.vault.index.$get({}, generateHeaders(token))
 
     expect(res.status).toBe(200)
     const data: any = await res.json()
@@ -66,25 +60,11 @@ describe('GET /vault', () => {
 
   it('should return same vault on subsequent requests', async () => {
     // First request
-    const res1 = await client.vault.index.$get(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    const res1 = await client.vault.index.$get({}, generateHeaders(token))
     const data1: any = await res1.json()
 
     // Second request
-    const res2 = await client.vault.index.$get(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    const res2 = await client.vault.index.$get({}, generateHeaders(token))
     const data2: any = await res2.json()
 
     // Should return the same vault
@@ -96,14 +76,7 @@ describe('GET /vault', () => {
 
   it('should return different vaults for different users', async () => {
     // Get vault for alice
-    const aliceRes = await client.vault.index.$get(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    const aliceRes = await client.vault.index.$get({}, generateHeaders(token))
     const aliceData: any = await aliceRes.json()
 
     // Register and login as bob
@@ -169,24 +142,10 @@ describe('GET /vault', () => {
 
   it('should return 401 for revoked session', async () => {
     // Logout (revoke session)
-    await client.auth.logout.$post(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    await client.auth.logout.$post({}, generateHeaders(token))
 
     // Try to access vault
-    const res = await client.vault.index.$get(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    const res = await client.vault.index.$get({}, generateHeaders(token))
 
     expect(res.status).toBe(401)
     const data: any = await res.json()
@@ -196,14 +155,7 @@ describe('GET /vault', () => {
   it('should have valid timestamp within reasonable range', async () => {
     const beforeRequest = Date.now()
 
-    const res = await client.vault.index.$get(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    const res = await client.vault.index.$get({}, generateHeaders(token))
 
     const afterRequest = Date.now()
     const data: any = await res.json()
@@ -222,14 +174,7 @@ describe('GET /vault', () => {
     const token2 = login2Data.token
 
     // Get vault with first token
-    const vault1Res = await client.vault.index.$get(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    const vault1Res = await client.vault.index.$get({}, generateHeaders(token))
     const vault1Data: any = await vault1Res.json()
 
     // Get vault with second token

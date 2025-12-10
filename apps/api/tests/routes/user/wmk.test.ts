@@ -4,6 +4,7 @@ import { Hono } from 'hono'
 import { testClient } from 'hono/testing'
 import { testUsers, testWmk } from '../../helpers/fixtures'
 import { clearDatabase, createTestDatabase } from '../../helpers/setup'
+import { generateHeaders } from '../../helpers/utils'
 
 // Create test database
 const { db, sqlite } = createTestDatabase()
@@ -48,11 +49,7 @@ describe('POST /user/wmk', () => {
           label: 'wmk_v1'
         }
       },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(200)
@@ -69,11 +66,7 @@ describe('POST /user/wmk', () => {
           label: 'wmk_v1'
         }
       },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
 
     // Login again
@@ -92,11 +85,7 @@ describe('POST /user/wmk', () => {
           wrapped_mk: testWmk.valid
         }
       },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(200)
@@ -123,11 +112,7 @@ describe('POST /user/wmk', () => {
           wrapped_mk: testWmk.valid
         }
       },
-      {
-        headers: {
-          Authorization: 'Bearer invalid_token'
-        }
-      }
+      generateHeaders('Bearer invalid_token')
     )
 
     expect(res.status).toBe(401)
@@ -142,11 +127,7 @@ describe('POST /user/wmk', () => {
           wrapped_mk: testWmk.tooShort
         }
       },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(400)
@@ -162,11 +143,7 @@ describe('POST /user/wmk', () => {
           wrapped_mk: testWmk.invalidBase64
         }
       },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(400)
@@ -182,11 +159,7 @@ describe('POST /user/wmk', () => {
           label: 'wmk_v1'
         } as any
       },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(400)
@@ -203,11 +176,7 @@ describe('POST /user/wmk', () => {
           label: 'wmk_v1'
         }
       },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
 
     // Upload different WMK
@@ -220,11 +189,7 @@ describe('POST /user/wmk', () => {
           label: 'wmk_v2'
         }
       },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(200)
@@ -239,14 +204,7 @@ describe('POST /user/wmk', () => {
 
   it('should not allow uploading WMK with revoked token', async () => {
     // Logout (revoke token)
-    await client.auth.logout.$post(
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    await client.auth.logout.$post({}, generateHeaders(token))
 
     // Try to upload WMK
     const res = await client.user.wmk.$post(
@@ -255,11 +213,7 @@ describe('POST /user/wmk', () => {
           wrapped_mk: testWmk.valid
         }
       },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(401)
@@ -275,11 +229,7 @@ describe('POST /user/wmk', () => {
           wrapped_mk: testWmk.valid
         }
       },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
 
     // Register and login as Bob
@@ -299,11 +249,7 @@ describe('POST /user/wmk', () => {
           wrapped_mk: bobWmk
         }
       },
-      {
-        headers: {
-          Authorization: `Bearer ${bobToken}`
-        }
-      }
+      generateHeaders(bobToken)
     )
 
     // Clear rate limits to avoid hitting the limit (we've made 5 requests so far)
@@ -347,11 +293,7 @@ describe('POST /user/wmk', () => {
           wrapped_mk: minWmk
         }
       },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(200)
@@ -365,11 +307,7 @@ describe('POST /user/wmk', () => {
           label: 'custom_wmk_v2'
         }
       },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(200)

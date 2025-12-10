@@ -1,9 +1,9 @@
-// POST /bookmark-tags tests
 import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test'
 import { Hono } from 'hono'
 import { testClient } from 'hono/testing'
 import { testUsers } from '../../helpers/fixtures'
 import { clearDatabase, createTestDatabase } from '../../helpers/setup'
+import { generateHeaders } from '../../helpers/utils'
 
 // Create test database
 const { db, sqlite } = createTestDatabase()
@@ -52,10 +52,7 @@ describe('POST /bookmark-tags', () => {
     token = loginData.token
 
     // Ensure vault exists (lazy-create)
-    await client.vault.index.$get(
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
+    await client.vault.index.$get({}, generateHeaders(token))
 
     // Create a bookmark for testing
     const bookmarkNonce = Buffer.alloc(24, 1).toString('base64')
@@ -84,7 +81,7 @@ describe('POST /bookmark-tags', () => {
           updated_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(bookmarkRes.status).toBe(201)
 
@@ -108,7 +105,7 @@ describe('POST /bookmark-tags', () => {
           updated_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(tagRes.status).toBe(201)
   })
@@ -128,7 +125,7 @@ describe('POST /bookmark-tags', () => {
           created_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(201)
@@ -150,7 +147,7 @@ describe('POST /bookmark-tags', () => {
           created_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(res1.status).toBe(201)
 
@@ -163,7 +160,7 @@ describe('POST /bookmark-tags', () => {
           created_at: now + 1000
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(res2.status).toBe(201) // Should still return 201 (service handles idempotency)
 
@@ -184,7 +181,7 @@ describe('POST /bookmark-tags', () => {
           created_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(404)
@@ -203,7 +200,7 @@ describe('POST /bookmark-tags', () => {
           created_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(404)
@@ -217,7 +214,7 @@ describe('POST /bookmark-tags', () => {
     // Soft delete the bookmark
     const bookmark = await client.bookmarks[bookmarkId].$get(
       {},
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     const bookmarkData: any = await bookmark.json()
 
@@ -228,12 +225,7 @@ describe('POST /bookmark-tags', () => {
           deleted_at: now
         }
       },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'If-Match': bookmarkData.etag
-        }
-      }
+      generateHeaders(token, { 'If-Match': bookmarkData.etag })
     )
 
     // Try to link deleted bookmark
@@ -245,7 +237,7 @@ describe('POST /bookmark-tags', () => {
           created_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(404)
@@ -257,10 +249,7 @@ describe('POST /bookmark-tags', () => {
     const now = Date.now()
 
     // Soft delete the tag
-    const tag = await client.tags[tagId].$get(
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
+    const tag = await client.tags[tagId].$get({}, generateHeaders(token))
     const tagData: any = await tag.json()
 
     await client.tags[tagId].$put(
@@ -273,12 +262,7 @@ describe('POST /bookmark-tags', () => {
           updated_at: now
         }
       },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'If-Match': tagData.etag
-        }
-      }
+      generateHeaders(token, { 'If-Match': tagData.etag })
     )
 
     // Delete the tag (soft delete)
@@ -289,12 +273,7 @@ describe('POST /bookmark-tags', () => {
           deleted_at: now
         }
       },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'If-Match': tagData.etag // This will be wrong, but let's create a new tag for this test
-        }
-      }
+      generateHeaders(token, { 'If-Match': tagData.etag }) // This will be wrong, but let's create a new tag for this test
     )
 
     // Create a new tag and delete it properly
@@ -318,7 +297,7 @@ describe('POST /bookmark-tags', () => {
           updated_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(newTagRes.status).toBe(201)
 
@@ -331,7 +310,7 @@ describe('POST /bookmark-tags', () => {
           created_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     // This should work since we didn't actually delete the tag
@@ -398,7 +377,7 @@ describe('POST /bookmark-tags', () => {
           created_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(400)
@@ -415,7 +394,7 @@ describe('POST /bookmark-tags', () => {
           created_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(400)
@@ -430,7 +409,7 @@ describe('POST /bookmark-tags', () => {
           // Missing created_at
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(400)
@@ -447,7 +426,7 @@ describe('POST /bookmark-tags', () => {
           created_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(400)
@@ -464,7 +443,7 @@ describe('POST /bookmark-tags', () => {
           created_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(400)
@@ -479,7 +458,7 @@ describe('POST /bookmark-tags', () => {
           created_at: 0 // Zero timestamp
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(400)
@@ -494,7 +473,7 @@ describe('POST /bookmark-tags', () => {
           created_at: -1000 // Negative timestamp
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(400)
@@ -509,7 +488,7 @@ describe('POST /bookmark-tags', () => {
           created_at: 1234.567 // Non-integer timestamp
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(400)
@@ -542,10 +521,7 @@ describe('POST /bookmark-tags', () => {
 
   it('returns 401 for revoked session', async () => {
     // Logout to revoke session
-    await client.auth.logout.$post(
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
+    await client.auth.logout.$post({}, generateHeaders(token))
 
     const now = Date.now()
 
@@ -557,7 +533,7 @@ describe('POST /bookmark-tags', () => {
           created_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
 
     expect(res.status).toBe(401)
@@ -575,7 +551,7 @@ describe('POST /bookmark-tags', () => {
           created_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(res1.status).toBe(201)
 
@@ -696,7 +672,7 @@ describe('POST /bookmark-tags', () => {
           updated_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(tag2Res.status).toBe(201)
 
@@ -719,7 +695,7 @@ describe('POST /bookmark-tags', () => {
           updated_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(tag3Res.status).toBe(201)
 
@@ -732,7 +708,7 @@ describe('POST /bookmark-tags', () => {
           created_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(res1.status).toBe(201)
 
@@ -745,7 +721,7 @@ describe('POST /bookmark-tags', () => {
           created_at: now + 1000
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(res2.status).toBe(201)
 
@@ -758,7 +734,7 @@ describe('POST /bookmark-tags', () => {
           created_at: now + 2000
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(res3.status).toBe(201)
 
@@ -804,7 +780,7 @@ describe('POST /bookmark-tags', () => {
           updated_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(bookmark2Res.status).toBe(201)
 
@@ -833,7 +809,7 @@ describe('POST /bookmark-tags', () => {
           updated_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(bookmark3Res.status).toBe(201)
 
@@ -846,7 +822,7 @@ describe('POST /bookmark-tags', () => {
           created_at: now
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(res1.status).toBe(201)
 
@@ -859,7 +835,7 @@ describe('POST /bookmark-tags', () => {
           created_at: now + 1000
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(res2.status).toBe(201)
 
@@ -872,7 +848,7 @@ describe('POST /bookmark-tags', () => {
           created_at: now + 2000
         }
       },
-      { headers: { Authorization: `Bearer ${token}` } }
+      generateHeaders(token)
     )
     expect(res3.status).toBe(201)
 
