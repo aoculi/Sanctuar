@@ -17,12 +17,6 @@
 - close setting panel when save
 - The tagSelector need to create a tag if not existing (with default value)
 - logout (need to click twice)
-- proper project structure:
-
-* packages instead of apps
-* shared inside new packages
-* rename extension?
-* add src inside extension, then assets and entrypoints inside but keep only the popup older in it all other code inside src (https://wxt.dev/guide/essentials/project-structure.html)
 
 ## Features i want:
 

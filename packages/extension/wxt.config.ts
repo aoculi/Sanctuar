@@ -7,6 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 // See https://wxt.dev/api/config.html
 export default defineConfig({
   srcDir: 'src',
+  outDir: 'dist',
   modules: ['@wxt-dev/module-react', '@wxt-dev/auto-icons'],
   vite: () => ({
     resolve: {
