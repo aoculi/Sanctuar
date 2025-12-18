@@ -29,7 +29,7 @@ web-ext.config.ts
 *.njsproj
 *.sln
 *.sw?
-apps/api/.env.production
-apps/api/prod.db
-apps/extension/assets/icon-old.png
-apps/extension/.env.production
+packages/api/.env.production
+packages/api/prod.db
+packages/extension/assets/icon-old.png
+packages/extension/.env.production

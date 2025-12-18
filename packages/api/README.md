@@ -16,7 +16,7 @@ LockMark API is a Bun + Hono service that stores only ciphertext for the LockMar
 - SQLite (file-based; `sqlite.db` by default)
 - Optional: pnpm if you prefer workspace installs from the repo root
 
-## Quick start (from `apps/api`)
+## Quick start (from `packages/api`)
 
 ```bash
 # 1) Install dependencies
