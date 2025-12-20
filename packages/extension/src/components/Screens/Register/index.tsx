@@ -1,7 +1,10 @@
 import { KeyRound, Loader2, Mail } from 'lucide-react'
 
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
-import { useQueryAuth } from '@/components/hooks/queries/useQueryAuth'
+import {
+  useQueryAuth,
+  type AuthPhase
+} from '@/components/hooks/queries/useQueryAuth'
 import { useAuthForm } from '@/components/hooks/useAuthForm'
 
 import Header from '@/components/parts/Header'
@@ -11,12 +14,27 @@ import Input from '@/components/ui/Input'
 
 import styles from './styles.module.css'
 
+function getButtonLabel(phase: AuthPhase): string {
+  switch (phase) {
+    case 'authenticating':
+      return 'Creating account...'
+    case 'fetching':
+      return 'Fetching vault...'
+    case 'unlocking':
+      return 'Unlocking...'
+    case 'decrypting':
+      return 'Decrypting vault...'
+    default:
+      return 'Create Account'
+  }
+}
+
 interface RegisterProps {
   onRegisterSuccess: () => void
 }
 
 export default function Register({ onRegisterSuccess }: RegisterProps) {
-  const { register } = useQueryAuth()
+  const { register, phase } = useQueryAuth()
   const { navigate } = useNavigation()
 
   const mutation = register
@@ -62,7 +80,7 @@ export default function Register({ onRegisterSuccess }: RegisterProps) {
 
           <Button disabled={disabled}>
             {mutation.isPending && <Loader2 className={styles.spinner} />}
-            {mutation.isPending ? 'Creating account...' : 'Create Account'}
+            {getButtonLabel(phase)}
           </Button>
         </form>
 

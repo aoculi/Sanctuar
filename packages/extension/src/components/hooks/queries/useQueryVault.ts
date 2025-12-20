@@ -40,7 +40,6 @@ export default function useQueryVault() {
     const exist = queryClient.getQueryData(QUERY_KEYS.manifest())
 
     if (!exist) {
-      console.log('arr3')
       // Prefetch Vault (lazy created by the api on call)
       await queryClient.prefetchQuery({
         queryKey: QUERY_KEYS.vault(),
@@ -51,9 +50,6 @@ export default function useQueryVault() {
         queryKey: QUERY_KEYS.manifest(),
         queryFn: fetchVaultManifest
       })
-
-      console.log('1', queryClient.getQueryData(QUERY_KEYS.vault()))
-      console.log('2', queryClient.getQueryData(QUERY_KEYS.manifest()))
 
       return true
     }

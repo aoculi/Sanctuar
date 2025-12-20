@@ -108,6 +108,8 @@ export function AuthSessionProvider({ children }: AuthSessionProviderProps) {
   const clearSession = useCallback(() => {
     setSessionState(defaultSession)
     clearStorageItem(STORAGE_KEYS.SESSION)
+    clearStorageItem(STORAGE_KEYS.KEYSTORE)
+    clearStorageItem(STORAGE_KEYS.MANIFEST)
   }, [])
 
   const contextValue: AuthSessionContextType = {

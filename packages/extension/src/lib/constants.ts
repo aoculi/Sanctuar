@@ -103,7 +103,8 @@ export const KEY_DERIVATION = {
 export const STORAGE_KEYS = {
   SETTINGS: 'settings',
   SESSION: 'session',
-  KEYSTORE: 'keystore'
+  KEYSTORE: 'keystore',
+  MANIFEST: 'manifest'
 } as const
 
 // Auto-lock timer constants

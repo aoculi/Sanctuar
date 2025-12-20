@@ -9,7 +9,7 @@ export default function Header({
   title,
   displaySwitchToBookmarks = false
 }: {
-  title: string
+  title?: string
   displaySwitchToBookmarks?: boolean
 }) {
   // const {hasSession} = useSession()

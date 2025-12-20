@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import {
   createContext,
   ReactNode,
@@ -56,25 +57,27 @@ export function NavigationProvider({
   children,
   initialRoute = '/login'
 }: NavigationProviderProps) {
+  const queryClient = useQueryClient()
   const [route, setRoute] = useState<Route>(initialRoute)
   const [flash, setFlashState] = useState<string | null>(null)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
   const { session, isLoading } = useAuthSession()
 
+  // Auto-redirect to login if session is cleared (logout)
+  // Note: Navigation TO vault is handled explicitly by Login/Register onSuccess
   useEffect(() => {
     if (isLoading) return
 
-    if (!session.userId && route !== '/login') {
+    if (!session.userId && route !== '/login' && route !== '/register') {
       setRoute('/login')
-      return
     }
 
     if (session.userId && route !== '/vault') {
       setRoute('/vault')
       return
     }
-  }, [isLoading, session.userId])
+  }, [isLoading, session.userId, route])
 
   const navigate = useCallback((newRoute: Route) => {
     setRoute(newRoute)

@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
 
 import {
   fetchLogin,
@@ -8,65 +9,130 @@ import {
   type LoginInput,
   type LoginResponse
 } from '@/api/auth-api'
-import { VaultManifestResponse } from '@/api/vault-api'
+import { fetchVault, fetchVaultManifest } from '@/api/vault-api'
 import { useAuthSession } from '@/components/hooks/providers/useAuthSessionProvider'
 import { ApiError } from '@/lib/api'
+import { STORAGE_KEYS } from '@/lib/constants'
 import { decryptManifest } from '@/lib/manifest'
+import { setStorageItem } from '@/lib/storage'
 import { unlock } from '@/lib/unlock'
-import useQueryVault from './useQueryVault'
 
 export const QUERY_KEYS = {
   login: () => ['auth', 'login'] as const,
   register: () => ['auth', 'register'] as const
 }
 
+export type AuthPhase =
+  | 'idle'
+  | 'authenticating'
+  | 'fetching'
+  | 'unlocking'
+  | 'decrypting'
+
 export const useQueryAuth = () => {
   const { setSession } = useAuthSession()
-  const { prefetchVaultManifest } = useQueryVault()
   const queryClient = useQueryClient()
+  const [phase, setPhase] = useState<AuthPhase>('idle')
 
   const login = useMutation<LoginResponse, ApiError, LoginInput>({
     mutationKey: QUERY_KEYS.login(),
-    mutationFn: fetchLogin,
-    onSuccess: async (data, variables) => {
-      setSession(data)
-      await prefetchVaultManifest()
+    mutationFn: async (variables) => {
+      // Phase 1: Authenticate
+      setPhase('authenticating')
+      const loginData = await fetchLogin(variables)
 
-      // Get the encrypted manifest to extract vault_id
-      const encryptedManifest = queryClient.getQueryData<VaultManifestResponse>(
-        ['vault', 'manifest']
-      )
+      // Set session immediately after login
+      setSession(loginData)
 
-      // Unlock vault (derive keys and store MAK)
-      await unlock({
+      // Phase 2: Fetch manifest
+      setPhase('fetching')
+      let encryptedManifest = await fetchVaultManifest().catch(() => null)
+
+      // If no manifest exists, create vault and try again
+      if (!encryptedManifest) {
+        await fetchVault()
+        encryptedManifest = await fetchVaultManifest().catch(() => null)
+      }
+
+      // Cache the encrypted manifest
+      // if (encryptedManifest) {
+      //   queryClient.setQueryData(['vault', 'manifest'], encryptedManifest)
+      // }
+
+      // Phase 3: Unlock vault (derive keys)
+      setPhase('unlocking')
+      const unlockResult = await unlock({
         password: variables.password,
-        userId: data.user_id,
-        vaultId: encryptedManifest?.vault_id ?? data.user_id,
-        kdf: data.kdf,
-        wrappedMk: data.wrapped_mk
+        userId: loginData.user_id,
+        vaultId: loginData.user_id,
+        kdf: loginData.kdf,
+        wrappedMk: loginData.wrapped_mk
       })
 
-      // Decrypt the manifest
-      if (encryptedManifest) {
+      // Phase 4: Decrypt manifest
+      if (encryptedManifest && !unlockResult.isFirstUnlock) {
+        setPhase('decrypting')
         const manifest = await decryptManifest(encryptedManifest)
-        // Store decrypted manifest in query cache for components to use
-        queryClient.setQueryData(['vault', 'manifest', 'decrypted'], manifest)
+        setStorageItem(STORAGE_KEYS.MANIFEST, manifest)
+        // queryClient.setQueryData(['vault', 'manifest', 'decrypted'], manifest)
+        // console.log('decrypting in query', manifest)
       }
+
+      setPhase('idle')
+      return loginData
     }
   })
 
   const register = useMutation<RegisterResponse, ApiError, RegisterInput>({
     mutationKey: QUERY_KEYS.register(),
-    mutationFn: fetchRegister,
-    onSuccess: async (_data, variables) => {
-      // Login with the same credentials used for registration
-      // handles session, prefetch, unlock and decrypt manifest
-      await login.mutateAsync(variables)
+    mutationFn: async (variables) => {
+      // Phase 1: Register
+      setPhase('authenticating')
+      const registerData = await fetchRegister(variables)
+
+      // After registration, perform login flow
+      const loginData = await fetchLogin(variables)
+      setSession(loginData)
+
+      // Phase 2: Fetch manifest
+      setPhase('fetching')
+      let encryptedManifest = await fetchVaultManifest().catch(() => null)
+
+      if (!encryptedManifest) {
+        await fetchVault()
+        encryptedManifest = await fetchVaultManifest().catch(() => null)
+      }
+
+      // if (encryptedManifest) {
+      //   queryClient.setQueryData(['vault', 'manifest'], encryptedManifest)
+      // }
+
+      // Phase 3: Unlock vault
+      setPhase('unlocking')
+      const unlockResult = await unlock({
+        password: variables.password,
+        userId: loginData.user_id,
+        vaultId: loginData.user_id,
+        kdf: loginData.kdf,
+        wrappedMk: loginData.wrapped_mk
+      })
+
+      // Phase 4: Decrypt manifest
+      if (encryptedManifest && !unlockResult.isFirstUnlock) {
+        setPhase('decrypting')
+        const manifest = await decryptManifest(encryptedManifest)
+        setStorageItem(STORAGE_KEYS.MANIFEST, manifest)
+        // queryClient.setQueryData(['vault', 'manifest', 'decrypted'], manifest)
+      }
+
+      setPhase('idle')
+      return registerData
     }
   })
 
   return {
     login,
-    register
+    register,
+    phase
   }
 }
