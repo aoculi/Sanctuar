@@ -1,0 +1,26 @@
+.component {
+  padding: 10px 15px;
+}
+
+.content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 30px;
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: orange;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+}
+
+.leftIcon {
+  margin-top: -2px;
+}

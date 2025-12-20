@@ -6,10 +6,37 @@ html {
   background: var(--background-3);
   /* Ensure popup stays on top */
   z-index: 2147483647; /* Maximum z-index value */
+  overflow: hidden;
+  position: relative;
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  color: var(--text);
   position: relative;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
   z-index: 2147483647; /* Maximum z-index value */
+
+  color: var(--text);
+  transition:
+    width 0.2s ease,
+    height 0.2s ease;
+
+  width: 400px;
+  max-width: 400px;
+  height: 500px;
+}
+
+body.compact {
+  width: 400px;
+  height: 500px;
+  min-height: 1000%;
+}
+
+body.large {
+  width: 700px;
+  max-width: 700px;
+  height: 600px;
 }
