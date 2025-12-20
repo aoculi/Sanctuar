@@ -102,7 +102,8 @@ export const KEY_DERIVATION = {
 // Storage keys for chrome.storage.local
 export const STORAGE_KEYS = {
   SETTINGS: 'settings',
-  SESSION: 'session'
+  SESSION: 'session',
+  KEYSTORE: 'keystore'
 } as const
 
 // Auto-lock timer constants

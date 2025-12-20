@@ -1,14 +1,13 @@
 import { KeyRound, Loader2, Mail } from 'lucide-react'
 
-import { useRegisterAndLogin } from '@/components/hooks/auth'
+import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
+import { useQueryAuth } from '@/components/hooks/queries/useQueryAuth'
 import { useAuthForm } from '@/components/hooks/useAuthForm'
-import { useNavigation } from '@/components/hooks/useNavigation'
 
-import Menu from '@/components/parts/Menu'
+import Header from '@/components/parts/Header'
 import Button from '@/components/ui/Button'
 import ErrorCallout from '@/components/ui/ErrorCallout'
 import Input from '@/components/ui/Input'
-import Text from '@/components/ui/Text'
 
 import styles from './styles.module.css'
 
@@ -17,35 +16,22 @@ interface RegisterProps {
 }
 
 export default function Register({ onRegisterSuccess }: RegisterProps) {
-  const registerMutation = useRegisterAndLogin()
+  const { register } = useQueryAuth()
   const { navigate } = useNavigation()
 
-  const {
-    formData,
-    error,
-    isInitializing,
-    initializing,
-    disabled,
-    handleSubmit,
-    handleChange
-  } = useAuthForm({
-    onSuccess: onRegisterSuccess,
-    mutation: registerMutation
-  })
+  const mutation = register
+
+  const { formData, error, disabled, handleSubmit, handleChange } = useAuthForm(
+    {
+      onSuccess: onRegisterSuccess,
+      mutation
+    }
+  )
 
   return (
     <div className={styles.container}>
-      <div className={styles.special} />
-
-      <div className={styles.menu}>
-        <Menu />
-      </div>
-
+      <Header title='Register' />
       <div className={styles.content}>
-        <Text as='h1' size='6' weight='medium'>
-          LockMark
-        </Text>
-
         {error && <ErrorCallout>{error}</ErrorCallout>}
 
         <form onSubmit={handleSubmit} className={styles.form}>
@@ -56,7 +42,7 @@ export default function Register({ onRegisterSuccess }: RegisterProps) {
             autoComplete='off'
             value={formData.login}
             onChange={handleChange}
-            disabled={registerMutation.isPending}
+            disabled={mutation.isPending}
             autoFocus
           >
             <Mail size={16} />
@@ -69,23 +55,23 @@ export default function Register({ onRegisterSuccess }: RegisterProps) {
             name='password'
             value={formData.password}
             onChange={handleChange}
-            disabled={registerMutation.isPending}
+            disabled={mutation.isPending}
           >
             <KeyRound size={16} />
           </Input>
 
           <Button disabled={disabled}>
-            {initializing && <Loader2 className={styles.spinner} />}
-            {isInitializing
-              ? 'Initializing...'
-              : registerMutation.isPending
-                ? 'Creating account...'
-                : 'Create Account'}
+            {mutation.isPending && <Loader2 className={styles.spinner} />}
+            {mutation.isPending ? 'Creating account...' : 'Create Account'}
           </Button>
         </form>
 
         <div className={styles.loginLink}>
-          <Button variant='ghost' onClick={() => navigate('/login')}>
+          <Button
+            variant='ghost'
+            onClick={() => navigate('/login')}
+            color='light'
+          >
             Already have an account? Sign in
           </Button>
         </div>
