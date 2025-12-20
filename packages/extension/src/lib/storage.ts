@@ -89,7 +89,7 @@ export function setSettings(settings: Settings): Promise<void> {
 export function getDefaultSettings(): Settings {
   return {
     showHiddenTags: false,
-    apiUrl: '',
+    apiUrl: 'http://127.0.0.1:3500',
     autoLockTimeout: DEFAULT_AUTO_LOCK_TIMEOUT
   }
 }

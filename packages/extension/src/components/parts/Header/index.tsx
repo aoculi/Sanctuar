@@ -5,7 +5,13 @@ import Text from '@/components/ui/Text'
 
 import styles from './styles.module.css'
 
-export default function Header() {
+export default function Header({
+  title,
+  displaySwitchToBookmarks = false
+}: {
+  title: string
+  displaySwitchToBookmarks?: boolean
+}) {
   // const {hasSession} = useSession()
 
   const ToggleSizeAction = () => {
@@ -27,14 +33,16 @@ export default function Header() {
           </div>
 
           <Text as='h1' size='2' weight='medium'>
-            LockMark
+            {title ? title : 'LockMark'}
           </Text>
         </div>
 
         <div className={styles.right}>
-          <Button onClick={ToggleSizeAction} variant='ghost'>
-            <BookOpenText strokeWidth={2} size={18} color='white' />
-          </Button>
+          {displaySwitchToBookmarks && (
+            <Button onClick={ToggleSizeAction} variant='ghost'>
+              <BookOpenText strokeWidth={2} size={18} color='white' />
+            </Button>
+          )}
           <Button variant='ghost'>
             <Settings2 strokeWidth={2} size={18} color='white' />
           </Button>

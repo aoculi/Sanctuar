@@ -9,7 +9,6 @@ import Button from '@/components/ui/Button'
 import ErrorCallout from '@/components/ui/ErrorCallout'
 import Input from '@/components/ui/Input'
 
-import { useSettings } from '@/components/hooks/providers/useSettingsProvider'
 import styles from './styles.module.css'
 
 interface LoginProps {
@@ -19,16 +18,6 @@ interface LoginProps {
 export default function Login({ onLoginSuccess }: LoginProps) {
   const { login } = useQueryAuth()
   const { navigate } = useNavigation()
-
-  const {
-    settings,
-    isLoading,
-    updateSettings,
-    setShowHiddenTags,
-    setApiUrl,
-    setAutoLockTimeout
-  } = useSettings()
-  console.log(settings)
 
   const mutation = login
 

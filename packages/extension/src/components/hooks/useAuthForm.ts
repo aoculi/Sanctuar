@@ -19,7 +19,7 @@ export function useAuthForm({ onSuccess, mutation }: UseAuthFormOptions) {
     login: '',
     password: ''
   })
-  const [error, setError] = useState<string | string[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const { setFlash } = useNavigation()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -67,10 +67,15 @@ export function useAuthForm({ onSuccess, mutation }: UseAuthFormOptions) {
         const lines: string[] = []
         for (const [field, messages] of Object.entries(details)) {
           if (Array.isArray(messages) && messages.length > 0) {
-            lines.push(`${field}: ${messages.join(', ')}`)
+            lines.push(`${messages.join(', ')}`)
           }
         }
-        setError(lines.length > 0 ? [baseMessage, ...lines] : baseMessage)
+
+        setError(
+          lines.length > 0
+            ? `${baseMessage}\n${lines.map((l) => `• ${l}`).join('\n')}`
+            : baseMessage
+        )
       } else {
         setError(baseMessage)
       }

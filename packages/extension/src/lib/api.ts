@@ -2,15 +2,9 @@
  * API client for secure extension
  */
 
-import type { ManifestApiResponse } from '@/components/hooks/useManifestQuery'
-import { constructAadManifest } from '@/lib/constants'
-import { base64ToUint8Array, decryptAEAD, zeroize } from '@/lib/crypto'
-import { whenCryptoReady } from '@/lib/cryptoEnv'
-import type { ManifestV1 } from '@/lib/types'
-import { keystoreManager } from '@/store/keystore'
-import { sessionManager } from '@/store/session'
-import { settingsStore } from '@/store/settings'
-import { QueryClient } from '@tanstack/react-query'
+import { getSettings } from '@/lib/storage'
+import { keystoreManager } from '@/utils/keystore'
+import { sessionManager } from '@/utils/session'
 
 /**
  * API client types
@@ -42,8 +36,8 @@ export type ApiError = {
  * @throws ApiError if API URL is not configured
  */
 async function getApiUrl(): Promise<string> {
-  const settings = await settingsStore.getState()
-  if (!settings.apiUrl || settings.apiUrl.trim() === '') {
+  const settings = await getSettings()
+  if (!settings?.apiUrl || settings.apiUrl.trim() === '') {
     throw {
       status: -1,
       message:
@@ -133,7 +127,6 @@ export async function apiClient<T = unknown>(
   }
 
   const requestBody = body !== undefined ? JSON.stringify(body) : undefined
-
   let response: Response
   try {
     const url = await buildUrl(path)
@@ -176,90 +169,142 @@ export async function apiClient<T = unknown>(
   }
 }
 
-/**
- * Vault prefetch utilities
- */
-const QUERY_KEYS = {
-  vault: () => ['vault'] as const,
-  manifest: () => ['vault', 'manifest'] as const
-}
+// /**
+//  * Vault prefetch utilities
+//  */
+// const QUERY_KEYS = {
+//   vault: () => ['vault'] as const,
+//   manifest: () => ['vault', 'manifest'] as const
+// }
 
-/**
- * Prefetches vault and manifest data after successful authentication
- * Handles the case where manifest might not exist yet (404)
- */
-export async function prefetchVaultData(queryClient: QueryClient) {
-  await queryClient.prefetchQuery({
-    queryKey: QUERY_KEYS.vault(),
-    queryFn: () => apiClient('/vault').then((r) => r.data)
-  })
+// /**
+//  * Prefetches vault metadata
+//  * Creates vault lazily if it doesn't exist
+//  */
+// export async function prefetchVault(queryClient: QueryClient) {
+//   await queryClient.prefetchQuery({
+//     queryKey: QUERY_KEYS.vault(),
+//     queryFn: () => apiClient('/vault').then((r) => r.data)
+//   })
+// }
 
-  const vaultData = queryClient.getQueryData<{ has_manifest?: boolean }>(
-    QUERY_KEYS.vault()
-  )
-  if (vaultData?.has_manifest) {
-    await queryClient.prefetchQuery({
-      queryKey: QUERY_KEYS.manifest(),
-      queryFn: async () => {
-        try {
-          const response = await apiClient('/vault/manifest')
-          return response.data
-        } catch (error: any) {
-          // Handle 404 gracefully - manifest doesn't exist yet
-          if (error?.status === 404) {
-            return null
-          }
-          throw error
-        }
-      }
-    })
-  }
-}
+// /**
+//  * Prefetches manifest data
+//  * If manifest doesn't exist (404), ensures vault exists and retries
+//  */
+// export async function prefetchManifest(
+//   queryClient: QueryClient,
+//   retryAfterVault = false
+// ) {
+//   await queryClient.prefetchQuery({
+//     queryKey: QUERY_KEYS.manifest(),
+//     queryFn: async () => {
+//       try {
+//         const response = await apiClient('/vault/manifest')
+//         return response.data
+//       } catch (error: any) {
+//         // Handle 404 gracefully - manifest doesn't exist yet
+//         if (error?.status === 404) {
+//           // If we haven't retried yet, ensure vault exists and retry
+//           if (!retryAfterVault) {
+//             await prefetchVault(queryClient)
+//             // Recursively call itself to retry after vault is created
+//             return prefetchManifest(queryClient, true)
+//           }
+//           // If we already retried, manifest truly doesn't exist
+//           return null
+//         }
+//         throw error
+//       }
+//     }
+//   })
+// }
 
-/**
- * Decrypts and parses a manifest from API response
- * Returns the parsed manifest and handles key cleanup
- */
-export async function decryptManifest(
-  data: ManifestApiResponse
-): Promise<ManifestV1> {
-  // Ensure crypto environment (libsodium) is initialized
-  await whenCryptoReady()
+// /**
+//  * Prefetches vault and manifest data after successful authentication
+//  * Handles the case where manifest might not exist yet (404)
+//  */
+// // export async function prefetchVaultData(queryClient: QueryClient) {
+// //   await prefetchVault(queryClient)
+// //   await prefetchManifest(queryClient)
+// // }
 
-  const mak = await keystoreManager.getMAK()
-  const aadContext = await keystoreManager.getAadContext()
+// /**
+//  * Prefetches vault and manifest data after successful authentication
+//  * Handles the case where manifest might not exist yet (404)
+//  */
+// export async function prefetchVaultData(queryClient: QueryClient) {
+//   await queryClient.prefetchQuery({
+//     queryKey: QUERY_KEYS.vault(),
+//     queryFn: () => apiClient('/vault').then((r) => r.data)
+//   })
 
-  if (!mak || !aadContext) {
-    throw new Error('Keys not available for decryption')
-  }
+//   const vaultData = queryClient.getQueryData<{ has_manifest?: boolean }>(
+//     QUERY_KEYS.vault()
+//   )
+//   if (vaultData?.has_manifest) {
+//     await queryClient.prefetchQuery({
+//       queryKey: QUERY_KEYS.manifest(),
+//       queryFn: async () => {
+//         try {
+//           const response = await apiClient('/vault/manifest')
+//           return response.data
+//         } catch (error: any) {
+//           // Handle 404 gracefully - manifest doesn't exist yet
+//           if (error?.status === 404) {
+//             return null
+//           }
+//           throw error
+//         }
+//       }
+//     })
+//   }
+// }
 
-  const aadManifest = new TextEncoder().encode(
-    constructAadManifest(aadContext.userId, aadContext.vaultId)
-  )
-  const plaintext = decryptAEAD(
-    base64ToUint8Array(data.ciphertext),
-    base64ToUint8Array(data.nonce),
-    mak,
-    aadManifest
-  )
-  const manifestText = new TextDecoder().decode(plaintext)
+// /**
+//  * Decrypts and parses a manifest from API response
+//  * Returns the parsed manifest and handles key cleanup
+//  */
+// export async function decryptManifest(
+//   data: ManifestApiResponse
+// ): Promise<ManifestV1> {
+//   // Ensure crypto environment (libsodium) is initialized
+//   await whenCryptoReady()
 
-  let manifest: ManifestV1
-  try {
-    manifest = JSON.parse(manifestText)
-    if (!manifest.items || !Array.isArray(manifest.items)) {
-      manifest.items = []
-    }
-    if (!manifest.tags || !Array.isArray(manifest.tags)) {
-      manifest.tags = []
-    }
-    if (!manifest.version) {
-      manifest.version = data.version
-    }
-  } catch (err) {
-    manifest = { version: data.version, items: [], tags: [] }
-  }
+//   const mak = await keystoreManager.getMAK()
+//   const aadContext = await keystoreManager.getAadContext()
 
-  zeroize(plaintext)
-  return manifest
-}
+//   if (!mak || !aadContext) {
+//     throw new Error('Keys not available for decryption')
+//   }
+
+//   const aadManifest = new TextEncoder().encode(
+//     constructAadManifest(aadContext.userId, aadContext.vaultId)
+//   )
+//   const plaintext = decryptAEAD(
+//     base64ToUint8Array(data.ciphertext),
+//     base64ToUint8Array(data.nonce),
+//     mak,
+//     aadManifest
+//   )
+//   const manifestText = new TextDecoder().decode(plaintext)
+
+//   let manifest: ManifestV1
+//   try {
+//     manifest = JSON.parse(manifestText)
+//     if (!manifest.items || !Array.isArray(manifest.items)) {
+//       manifest.items = []
+//     }
+//     if (!manifest.tags || !Array.isArray(manifest.tags)) {
+//       manifest.tags = []
+//     }
+//     if (!manifest.version) {
+//       manifest.version = data.version
+//     }
+//   } catch (err) {
+//     manifest = { version: data.version, items: [], tags: [] }
+//   }
+
+//   zeroize(plaintext)
+//   return manifest
+// }
