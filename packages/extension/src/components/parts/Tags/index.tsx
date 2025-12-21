@@ -2,62 +2,35 @@ import { ListFilter, Tag } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { useTags } from '@/components/hooks/useTags'
-import { useTagVisibilityPreference } from '@/components/hooks/useTagVisibilityPreference'
-import type { Bookmark, Tag as EntityTag } from '@/lib/types'
+import type { Tag as EntityTag } from '@/lib/types'
 
-import { StatusIndicator } from '@/components/parts/StatusIndicator'
 import TagComponent from '@/components/parts/Tags/Tag'
 import TagHeader from '@/components/parts/Tags/TagHeader'
-import { TagModal } from '@/components/parts/Tags/TagModal'
 import Button from '@/components/ui/Button'
 import { DropdownMenu } from '@/components/ui/DropdownMenu'
 
+import { useBookmarks } from '@/components/hooks/useBookmarks'
 import styles from './styles.module.css'
 
 export default function Tags({
-  bookmarks,
   currentTagId,
   onSelectTag
 }: {
-  bookmarks: Bookmark[]
   currentTagId: string | null
   onSelectTag: (id: string) => void
 }) {
-  const { tags, createTag, renameTag, deleteTag } = useTags()
   const [message, setMessage] = useState<string | null>(null)
   const [sortMode, setSortMode] = useState<'name' | 'count'>('name')
-  const [isModalOpen, setIsModalOpen] = useState(false)
   const [currentTag, setCurrentTag] = useState<EntityTag | null>(null)
-  const { showHiddenTags } = useTagVisibilityPreference()
+  const { tags, showHiddenTags, deleteTag } = useTags()
+  const { bookmarks } = useBookmarks()
 
   const onAddTag = () => {
     setCurrentTag(null)
-    setIsModalOpen(true)
   }
 
   const onEditTag = (tag: EntityTag) => {
     setCurrentTag(tag)
-    setIsModalOpen(true)
-  }
-
-  const handleSaveTag = async (data: { name: string; hidden: boolean }) => {
-    try {
-      if (currentTag) {
-        // Editing existing tag
-        await renameTag(currentTag.id, data.name, data.hidden)
-      } else {
-        // Creating new tag
-        await createTag({ name: data.name, hidden: data.hidden ?? false })
-      }
-      setIsModalOpen(false)
-      setCurrentTag(null)
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Failed to save tag'
-      setMessage(errorMessage)
-      setTimeout(() => setMessage(null), 5000)
-      throw error // Re-throw to let modal handle loading state
-    }
   }
 
   const onDeleteTag = (id: string) => {
@@ -165,18 +138,7 @@ export default function Tags({
         </div>
       </div>
 
-      <TagModal
-        isOpen={isModalOpen}
-        tag={currentTag}
-        onClose={() => {
-          setIsModalOpen(false)
-          setCurrentTag(null)
-        }}
-        onSave={handleSaveTag}
-      />
-      <div className={styles.status}>
-        <StatusIndicator />
-      </div>
+      <div className={styles.status}>{/* <StatusIndicator /> */}</div>
     </div>
   )
 }

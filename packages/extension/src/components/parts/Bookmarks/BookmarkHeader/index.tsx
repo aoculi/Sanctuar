@@ -6,13 +6,13 @@ import styles from './styles.module.css'
 
 export default function BookmarkHeader({
   searchQuery,
-  onSearchChange,
-  onQuickAdd
+  onSearchChange
 }: {
   searchQuery: string
   onSearchChange: (query: string) => void
-  onQuickAdd: () => void
 }) {
+  const onQuickAdd = () => {}
+
   return (
     <div className={styles.container}>
       <div className={styles.searchBarContainer}>

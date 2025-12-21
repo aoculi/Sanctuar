@@ -12,10 +12,9 @@ import {
 } from '@/api/auth-api'
 import { fetchVault, fetchVaultManifest } from '@/api/vault-api'
 import { useAuthSession } from '@/components/hooks/providers/useAuthSessionProvider'
+import { saveManifestData } from '@/components/hooks/useManifest'
 import { ApiError } from '@/lib/api'
-import { STORAGE_KEYS } from '@/lib/constants'
 import { decryptManifest } from '@/lib/manifest'
-import { setStorageItem } from '@/lib/storage'
 import { unlock } from '@/lib/unlock'
 
 export const QUERY_KEYS = {
@@ -70,7 +69,11 @@ export const useQueryAuth = () => {
       if (encryptedManifest && !unlockResult.isFirstUnlock) {
         setPhase('decrypting')
         const manifest = await decryptManifest(encryptedManifest)
-        setStorageItem(STORAGE_KEYS.MANIFEST, manifest)
+        await saveManifestData({
+          manifest,
+          etag: encryptedManifest.etag,
+          serverVersion: encryptedManifest.version
+        })
       }
 
       setPhase('idle')
@@ -112,7 +115,11 @@ export const useQueryAuth = () => {
       if (encryptedManifest && !unlockResult.isFirstUnlock) {
         setPhase('decrypting')
         const manifest = await decryptManifest(encryptedManifest)
-        setStorageItem(STORAGE_KEYS.MANIFEST, manifest)
+        await saveManifestData({
+          manifest,
+          etag: encryptedManifest.etag,
+          serverVersion: encryptedManifest.version
+        })
       }
 
       setPhase('idle')

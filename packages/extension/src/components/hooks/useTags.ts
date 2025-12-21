@@ -1,18 +1,31 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
-import { useManifestOperations } from '@/components/hooks/useManifestOperations'
+import { useManifest } from '@/components/hooks/useManifest'
 import { useTagValidation } from '@/components/hooks/validation'
+import { STORAGE_KEYS } from '@/lib/constants'
+import { getStorageItem, Settings } from '@/lib/storage'
 import type { Bookmark, Tag } from '@/lib/types'
 import { generateId } from '@/lib/utils'
-import { manifestStore } from '@/store/manifest'
 
 export function useTags() {
-  const { store } = useManifestOperations()
+  const { manifest, save, isSaving } = useManifest()
   const { validateTag } = useTagValidation()
+  const [showHiddenTags, setShowHiddenTags] = useState(false)
+
+  // Load showHiddenTags setting
+  useEffect(() => {
+    const loadSettings = async () => {
+      const settings = await getStorageItem<Settings>(STORAGE_KEYS.SETTINGS)
+      if (settings) {
+        setShowHiddenTags(settings.showHiddenTags)
+      }
+    }
+    loadSettings()
+  }, [])
 
   const createTag = useCallback(
-    (tag: Omit<Tag, 'id'>) => {
-      if (!store.manifest) return
+    async (tag: Omit<Tag, 'id'>) => {
+      if (!manifest) return
 
       // Validate tag name
       const validationError = validateTag(tag.name)
@@ -23,7 +36,7 @@ export function useTags() {
       const trimmedName = tag.name.trim()
 
       // Check for duplicate tag names
-      const existingTag = store.manifest.tags?.find(
+      const existingTag = manifest.tags?.find(
         (t: Tag) => t.name.toLowerCase() === trimmedName.toLowerCase()
       )
       if (existingTag) {
@@ -37,17 +50,17 @@ export function useTags() {
         hidden: tag.hidden ?? false
       }
 
-      manifestStore.apply((manifest) => ({
+      await save({
         ...manifest,
         tags: [...(manifest.tags || []), newTag]
-      }))
+      })
     },
-    [store.manifest, validateTag]
+    [manifest, validateTag, save]
   )
 
   const renameTag = useCallback(
-    (id: string, newName: string, hidden?: boolean) => {
-      if (!store.manifest) return
+    async (id: string, newName: string, hidden?: boolean) => {
+      if (!manifest) return
 
       // Validate new name
       const validationError = validateTag(newName)
@@ -58,7 +71,7 @@ export function useTags() {
       const trimmedName = newName.trim()
 
       // Check for duplicate tag names (excluding current tag)
-      const existingTag = store.manifest.tags?.find(
+      const existingTag = manifest.tags?.find(
         (t: Tag) =>
           t.id !== id && t.name.toLowerCase() === trimmedName.toLowerCase()
       )
@@ -66,7 +79,7 @@ export function useTags() {
         throw new Error('A tag with this name already exists')
       }
 
-      manifestStore.apply((manifest) => ({
+      await save({
         ...manifest,
         tags: (manifest.tags || []).map((tag: Tag) =>
           tag.id === id
@@ -77,40 +90,42 @@ export function useTags() {
               }
             : tag
         )
-      }))
+      })
     },
-    [store.manifest, validateTag]
+    [manifest, validateTag, save]
   )
 
   const deleteTag = useCallback(
-    (id: string) => {
-      if (!store.manifest) return
+    async (id: string) => {
+      if (!manifest) return
 
       // Remove tag from manifest and from all bookmarks atomically
-      manifestStore.apply((manifest) => ({
+      await save({
         ...manifest,
         tags: (manifest.tags || []).filter((tag: Tag) => tag.id !== id),
         items: (manifest.items || []).map((bookmark: Bookmark) => ({
           ...bookmark,
           tags: bookmark.tags.filter((tagId: string) => tagId !== id)
         }))
-      }))
+      })
     },
-    [store.manifest]
+    [manifest, save]
   )
 
   const getTag = useCallback(
     (id: string): Tag | undefined => {
-      return store.manifest?.tags?.find((tag: Tag) => tag.id === id)
+      return manifest?.tags?.find((tag: Tag) => tag.id === id)
     },
-    [store.manifest]
+    [manifest]
   )
 
   return {
-    tags: store.manifest?.tags || [],
+    tags: manifest?.tags || [],
+    showHiddenTags,
     createTag,
     renameTag,
     deleteTag,
-    getTag
+    getTag,
+    isSaving
   }
 }
