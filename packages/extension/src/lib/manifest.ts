@@ -6,7 +6,13 @@
  */
 
 import { constructAadManifest, STORAGE_KEYS } from '@/lib/constants'
-import { base64ToUint8Array, decryptAEAD, zeroize } from '@/lib/crypto'
+import {
+  base64ToUint8Array,
+  decryptAEAD,
+  encryptAEAD,
+  uint8ArrayToBase64,
+  zeroize
+} from '@/lib/crypto'
 import { whenCryptoReady } from '@/lib/cryptoEnv'
 import { getStorageItem } from '@/lib/storage'
 import type { ManifestV1 } from '@/lib/types'
@@ -164,4 +170,201 @@ export async function canDecryptManifest(): Promise<boolean> {
   } catch {
     return false
   }
+}
+
+/**
+ * Encrypted manifest payload ready for API
+ */
+export type EncryptedManifestPayload = {
+  version: number
+  nonce: string
+  ciphertext: string
+}
+
+/**
+ * Manifest encryption error types
+ */
+export class ManifestEncryptionError extends Error {
+  constructor(
+    message: string,
+    public readonly cause?: unknown
+  ) {
+    super(message)
+    this.name = 'ManifestEncryptionError'
+  }
+}
+
+/**
+ * Encrypts a manifest for storage on the server
+ *
+ * @param manifest - The manifest to encrypt
+ * @param nextVersion - The version number for this manifest
+ * @returns The encrypted manifest payload ready for API
+ * @throws KeysNotAvailableError if the vault is locked
+ * @throws ManifestEncryptionError if encryption fails
+ */
+export async function encryptManifest(
+  manifest: ManifestV1,
+  nextVersion: number
+): Promise<EncryptedManifestPayload> {
+  // Ensure crypto environment (libsodium) is initialized
+  await whenCryptoReady()
+
+  // Retrieve keys from storage
+  const keystoreData = await getStorageItem<KeystoreData>(STORAGE_KEYS.KEYSTORE)
+
+  if (!keystoreData) {
+    throw new KeysNotAvailableError()
+  }
+
+  const { mak: makBase64, aadContext } = keystoreData
+  const mak = base64ToUint8Array(makBase64)
+
+  try {
+    // Build AAD for manifest encryption
+    const aad = new TextEncoder().encode(
+      constructAadManifest(aadContext.userId, aadContext.vaultId)
+    )
+
+    // Serialize and encrypt
+    const plaintext = new TextEncoder().encode(JSON.stringify(manifest))
+    const { nonce, ciphertext } = encryptAEAD(plaintext, mak, aad)
+
+    return {
+      version: nextVersion,
+      nonce: uint8ArrayToBase64(nonce),
+      ciphertext: uint8ArrayToBase64(ciphertext)
+    }
+  } catch (error) {
+    if (error instanceof ManifestDecryptionError) {
+      throw error
+    }
+    throw new ManifestEncryptionError('Failed to encrypt manifest', error)
+  } finally {
+    zeroize(mak)
+  }
+}
+
+/**
+ * Input for saving a manifest
+ */
+export type SaveManifestInput = {
+  manifest: ManifestV1
+  etag: string | null
+  serverVersion: number
+  /** Base snapshot for 3-way merge on conflict (optional, enables conflict resolution) */
+  baseSnapshot?: ManifestV1
+}
+
+/**
+ * Response after saving a manifest
+ */
+export type SaveManifestResult = {
+  vault_id: string
+  version: number
+  etag: string
+  updated_at: number
+  manifest: ManifestV1
+  /** True if a conflict was resolved via 3-way merge */
+  conflictResolved?: boolean
+}
+
+/**
+ * API functions required for saving with conflict resolution
+ */
+export type SaveManifestApi = {
+  save: (payload: {
+    body: EncryptedManifestPayload
+    headers?: Record<string, string>
+  }) => Promise<{
+    vault_id: string
+    version: number
+    etag: string
+    updated_at: number
+  }>
+  /** Fetch latest manifest (for conflict resolution) */
+  fetch: () => Promise<EncryptedManifest>
+}
+
+/**
+ * Encrypts and saves a manifest to the server with automatic conflict resolution
+ *
+ * On 409 conflict:
+ * 1. Fetches the latest server manifest
+ * 2. Performs 3-way merge (base, local, remote)
+ * 3. Retries save with merged result
+ *
+ * @param input - The manifest data and version info
+ * @param api - API functions for save and fetch
+ * @returns The save result with updated etag and version
+ */
+export async function saveManifest(
+  input: SaveManifestInput,
+  api: SaveManifestApi
+): Promise<SaveManifestResult> {
+  const { manifest, etag, serverVersion, baseSnapshot } = input
+
+  const attemptSave = async (
+    manifestToSave: ManifestV1,
+    version: number,
+    currentEtag: string | null
+  ) => {
+    const encrypted = await encryptManifest(manifestToSave, version + 1)
+
+    const isFirstWrite = version === 0
+    const headers: Record<string, string> = {}
+    if (!isFirstWrite && currentEtag) {
+      headers['If-Match'] = currentEtag
+    }
+
+    return api.save({ body: encrypted, headers })
+  }
+
+  try {
+    const response = await attemptSave(manifest, serverVersion, etag)
+    return { ...response, manifest }
+  } catch (error: unknown) {
+    // Handle conflict (409)
+    if (isConflictError(error) && baseSnapshot) {
+      const { threeWayMerge } = await import('@/lib/conflictResolution')
+
+      // Fetch latest from server
+      const serverData = await api.fetch()
+      const remoteManifest = await decryptManifest(serverData)
+
+      // 3-way merge
+      const resolution = threeWayMerge({
+        base: baseSnapshot,
+        local: manifest,
+        remote: remoteManifest
+      })
+
+      // Retry with merged manifest
+      const response = await attemptSave(
+        resolution.merged,
+        serverData.version,
+        serverData.etag
+      )
+
+      return {
+        ...response,
+        manifest: resolution.merged,
+        conflictResolved: true
+      }
+    }
+
+    throw error
+  }
+}
+
+/**
+ * Check if an error is a 409 conflict
+ */
+function isConflictError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'status' in error &&
+    (error as { status: number }).status === 409
+  )
 }

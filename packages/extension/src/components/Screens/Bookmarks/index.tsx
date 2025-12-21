@@ -1,28 +1,29 @@
-import { useAuthSession } from '@/components/hooks/providers/useAuthSessionProvider'
 import usePopupSize from '@/components/hooks/usePopupSize'
 import { STORAGE_KEYS } from '@/lib/constants'
 import { getStorageItem } from '@/lib/storage'
 import { ManifestV1 } from '@/lib/types'
 
 import Header from '@/components/parts/Header'
-import Button from '@/components/ui/Button'
 
 import styles from './styles.module.css'
 
 export default function Bookmarks() {
-  const { clearSession } = useAuthSession()
   usePopupSize('large')
 
   const getManifest = async () => {
     const manifest = await getStorageItem<ManifestV1>(STORAGE_KEYS.MANIFEST)
-    console.log('get manifest', manifest)
+
+    if (manifest) {
+      manifest.items.forEach((item) => {
+        console.log('item', item)
+      })
+    }
   }
   getManifest()
 
   return (
     <div className={styles.component}>
       <Header canSwitchToBookmark={true} />
-      <Button onClick={() => clearSession()}>Logout</Button>
       <div>BOOKMARKS LIST</div>
     </div>
   )

@@ -1,6 +1,13 @@
-import { BookOpenText, Library, Settings2, Star } from 'lucide-react'
+import {
+  BookOpenText,
+  Library,
+  LockKeyhole,
+  Settings2,
+  Star
+} from 'lucide-react'
 
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
+import { useQueryAuth } from '@/components/hooks/queries/useQueryAuth'
 
 import Button from '@/components/ui/Button'
 import Text from '@/components/ui/Text'
@@ -17,6 +24,7 @@ export default function Header({
   canSwitchToBookmark?: boolean
 }) {
   const { navigate } = useNavigation()
+  const { logout } = useQueryAuth()
 
   const switchToVault = () => {
     navigate('/vault')
@@ -40,18 +48,29 @@ export default function Header({
 
         <div className={styles.right}>
           {canSwitchToVault && (
-            <Button onClick={switchToVault} variant='ghost'>
+            <Button onClick={switchToVault} variant='ghost' title='Open vault'>
               <BookOpenText strokeWidth={2} size={18} color='white' />
             </Button>
           )}
           {canSwitchToBookmark && (
-            <Button onClick={switchToBookmark} variant='ghost'>
+            <Button
+              onClick={switchToBookmark}
+              variant='ghost'
+              title='New bookmark'
+            >
               <Star strokeWidth={2} size={18} color='white' />
             </Button>
           )}
 
-          <Button variant='ghost'>
+          <Button variant='ghost' title='Settings'>
             <Settings2 strokeWidth={2} size={18} color='white' />
+          </Button>
+          <Button
+            variant='ghost'
+            onClick={() => logout.mutate()}
+            title='Logout'
+          >
+            <LockKeyhole strokeWidth={2} size={18} color='white' />
           </Button>
         </div>
       </div>

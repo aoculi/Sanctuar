@@ -3,6 +3,7 @@ import { useState } from 'react'
 
 import {
   fetchLogin,
+  fetchLogout,
   fetchRegister,
   RegisterInput,
   RegisterResponse,
@@ -19,7 +20,8 @@ import { unlock } from '@/lib/unlock'
 
 export const QUERY_KEYS = {
   login: () => ['auth', 'login'] as const,
-  register: () => ['auth', 'register'] as const
+  register: () => ['auth', 'register'] as const,
+  logout: () => ['auth', 'logout'] as const
 }
 
 export type AuthPhase =
@@ -30,7 +32,7 @@ export type AuthPhase =
   | 'decrypting'
 
 export const useQueryAuth = () => {
-  const { setSession } = useAuthSession()
+  const { setSession, clearSession } = useAuthSession()
   const queryClient = useQueryClient()
   const [phase, setPhase] = useState<AuthPhase>('idle')
 
@@ -54,11 +56,6 @@ export const useQueryAuth = () => {
         encryptedManifest = await fetchVaultManifest().catch(() => null)
       }
 
-      // Cache the encrypted manifest
-      // if (encryptedManifest) {
-      //   queryClient.setQueryData(['vault', 'manifest'], encryptedManifest)
-      // }
-
       // Phase 3: Unlock vault (derive keys)
       setPhase('unlocking')
       const unlockResult = await unlock({
@@ -74,8 +71,6 @@ export const useQueryAuth = () => {
         setPhase('decrypting')
         const manifest = await decryptManifest(encryptedManifest)
         setStorageItem(STORAGE_KEYS.MANIFEST, manifest)
-        // queryClient.setQueryData(['vault', 'manifest', 'decrypted'], manifest)
-        // console.log('decrypting in query', manifest)
       }
 
       setPhase('idle')
@@ -103,10 +98,6 @@ export const useQueryAuth = () => {
         encryptedManifest = await fetchVaultManifest().catch(() => null)
       }
 
-      // if (encryptedManifest) {
-      //   queryClient.setQueryData(['vault', 'manifest'], encryptedManifest)
-      // }
-
       // Phase 3: Unlock vault
       setPhase('unlocking')
       const unlockResult = await unlock({
@@ -122,7 +113,6 @@ export const useQueryAuth = () => {
         setPhase('decrypting')
         const manifest = await decryptManifest(encryptedManifest)
         setStorageItem(STORAGE_KEYS.MANIFEST, manifest)
-        // queryClient.setQueryData(['vault', 'manifest', 'decrypted'], manifest)
       }
 
       setPhase('idle')
@@ -130,9 +120,35 @@ export const useQueryAuth = () => {
     }
   })
 
+  const logout = useMutation<void, ApiError, void>({
+    mutationKey: QUERY_KEYS.logout(),
+    mutationFn: async () => {
+      try {
+        await fetchLogout()
+      } catch (err: unknown) {
+        // Ignore 401 errors during logout (already logged out server-side)
+        if (
+          err &&
+          typeof err === 'object' &&
+          'status' in err &&
+          err.status !== 401
+        ) {
+          throw err
+        }
+      }
+    },
+    onSettled: async () => {
+      // Clear session and storage (except settings)
+      clearSession()
+      // Clear all cached queries
+      queryClient.clear()
+    }
+  })
+
   return {
     login,
     register,
+    logout,
     phase
   }
 }

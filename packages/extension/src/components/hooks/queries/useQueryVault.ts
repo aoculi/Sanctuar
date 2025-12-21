@@ -1,19 +1,31 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import {
   fetchVault,
   fetchVaultManifest,
+  putVaultManifest,
   VaultManifestResponse,
   VaultResponse
 } from '@/api/vault-api'
 import { type ApiError } from '@/lib/api'
+import {
+  saveManifest as saveManifestFn,
+  type SaveManifestInput,
+  type SaveManifestResult
+} from '@/lib/manifest'
 
 const QUERY_KEYS = {
   vault: () => ['vault'] as const,
-  manifest: () => ['vault', 'manifest'] as const
+  manifest: () => ['vault', 'manifest'] as const,
+  manifestSave: () => ['vault', 'manifest', 'save'] as const
 }
 
-export default function useQueryVault() {
+const manifestApi = {
+  save: putVaultManifest,
+  fetch: fetchVaultManifest
+}
+
+export function useQueryVault() {
   const queryClient = useQueryClient()
 
   const getVault = useQuery<VaultResponse, ApiError>({
@@ -31,7 +43,6 @@ export default function useQueryVault() {
   })
 
   const prefetchVaultManifest = async () => {
-    // 1) Prefetch the manifest
     await queryClient.prefetchQuery({
       queryKey: QUERY_KEYS.manifest(),
       queryFn: fetchVaultManifest
@@ -40,7 +51,6 @@ export default function useQueryVault() {
     const exist = queryClient.getQueryData(QUERY_KEYS.manifest())
 
     if (!exist) {
-      // Prefetch Vault (lazy created by the api on call)
       await queryClient.prefetchQuery({
         queryKey: QUERY_KEYS.vault(),
         queryFn: fetchVault
@@ -55,9 +65,21 @@ export default function useQueryVault() {
     }
   }
 
+  const saveManifest = useMutation<
+    SaveManifestResult,
+    ApiError,
+    SaveManifestInput
+  >({
+    mutationKey: QUERY_KEYS.manifestSave(),
+    mutationFn: (input) => saveManifestFn(input, manifestApi)
+  })
+
   return {
     getVault,
     getManifest,
-    prefetchVaultManifest
+    prefetchVaultManifest,
+    saveManifest
   }
 }
+
+export default useQueryVault

@@ -1,12 +1,20 @@
 import { Loader2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
-import { useAuthSession } from '@/components/hooks/providers/useAuthSessionProvider'
+import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
+import { useQueryVault } from '@/components/hooks/queries/useQueryVault'
 import usePopupSize from '@/components/hooks/usePopupSize'
 import { STORAGE_KEYS } from '@/lib/constants'
 import { captureCurrentPage } from '@/lib/pageCapture'
-import { getDefaultSettings, getStorageItem, Settings } from '@/lib/storage'
+import {
+  getDefaultSettings,
+  getStorageItem,
+  setStorageItem,
+  Settings
+} from '@/lib/storage'
 import type { Bookmark as BookmarkType, ManifestV1, Tag } from '@/lib/types'
+import { generateId } from '@/lib/utils'
+import { MAX_TAGS_PER_ITEM } from '@/lib/validation'
 
 import Header from '@/components/parts/Header'
 import Button from '@/components/ui/Button'
@@ -14,8 +22,6 @@ import ErrorCallout from '@/components/ui/ErrorCallout'
 import Input from '@/components/ui/Input'
 import { TagSelectorField } from '@/components/ui/TagSelectorField'
 
-import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
-import { MAX_TAGS_PER_ITEM } from '@/lib/validation'
 import styles from './styles.module.css'
 
 const emptyBookmark = {
@@ -26,27 +32,45 @@ const emptyBookmark = {
 }
 
 export default function Bookmark({ bookmark }: { bookmark?: BookmarkType }) {
-  const { clearSession } = useAuthSession()
   usePopupSize('compact')
   const { navigate } = useNavigation()
+  const { saveManifest } = useQueryVault()
+
+  const [manifest, setManifest] = useState<ManifestV1 | null>(null)
+  const [etag, setEtag] = useState<string | null>(null)
+  const [serverVersion, setServerVersion] = useState(0)
   const [tags, setTags] = useState<Tag[]>([])
   const [settings, setSettings] = useState<Settings>(getDefaultSettings())
-  const [captureBookmark, setCaptureBookmark] = useState(emptyBookmark)
   const [form, setForm] = useState(emptyBookmark)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
   const [captureError, setCaptureError] = useState<string | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
-  // Load tags and settings when the route is displayed
+  // Load manifest, tags and settings when the route is displayed
   useEffect(() => {
     const loadData = async () => {
-      const [manifest, storedSettings] = await Promise.all([
+      const [storedManifest, storedSettings] = await Promise.all([
         getStorageItem<ManifestV1>(STORAGE_KEYS.MANIFEST),
         getStorageItem<Settings>(STORAGE_KEYS.SETTINGS)
       ])
 
-      if (manifest?.tags) {
-        setTags(manifest.tags)
+      if (storedManifest) {
+        setManifest(storedManifest)
+        setServerVersion(storedManifest.version)
+        if (storedManifest.tags) {
+          setTags(storedManifest.tags)
+        }
+      }
+
+      // Load etag from manifest metadata (stored separately)
+      const manifestMeta = await getStorageItem<{
+        etag: string
+        version: number
+      }>('manifest_meta')
+      if (manifestMeta?.etag) {
+        setEtag(manifestMeta.etag)
+        setServerVersion(manifestMeta.version)
       }
 
       if (storedSettings) {
@@ -57,7 +81,19 @@ export default function Bookmark({ bookmark }: { bookmark?: BookmarkType }) {
     loadData()
   }, [])
 
-  // Capture current page when the route is displayed
+  // Initialize form when editing an existing bookmark
+  useEffect(() => {
+    if (bookmark) {
+      setForm({
+        url: bookmark.url,
+        title: bookmark.title,
+        picture: bookmark.picture,
+        tags: bookmark.tags
+      })
+    }
+  }, [bookmark])
+
+  // Capture current page when creating a new bookmark
   useEffect(() => {
     // if we update a page, do not capture it again
     if (bookmark) {
@@ -70,14 +106,12 @@ export default function Bookmark({ bookmark }: { bookmark?: BookmarkType }) {
 
       const result = await captureCurrentPage()
       if (result.ok) {
-        const data = {
+        setForm({
           url: result.bookmark.url,
           title: result.bookmark.title,
           picture: result.bookmark.picture,
           tags: result.bookmark.tags
-        }
-        setCaptureBookmark(data)
-        setForm(data)
+        })
       } else {
         setCaptureError(result.error)
       }
@@ -86,7 +120,7 @@ export default function Bookmark({ bookmark }: { bookmark?: BookmarkType }) {
     }
 
     loadCurrentPage()
-  }, [])
+  }, [bookmark])
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
@@ -122,18 +156,76 @@ export default function Bookmark({ bookmark }: { bookmark?: BookmarkType }) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!validateForm() || isLoading) {
+    if (!validateForm() || isLoading || saveManifest.isPending) {
+      return
+    }
+
+    if (!manifest) {
+      setSaveError('Manifest not loaded. Please try again.')
       return
     }
 
     setIsLoading(true)
+    setSaveError(null)
+
     try {
-      // update bookmark if we have a bookmark value
-      // else create bookmark
+      const now = Date.now()
+      let updatedManifest: ManifestV1
+
+      if (bookmark) {
+        // Update existing bookmark
+        updatedManifest = {
+          ...manifest,
+          items: manifest.items.map((item) =>
+            item.id === bookmark.id
+              ? {
+                  ...item,
+                  url: form.url.trim(),
+                  title: form.title.trim(),
+                  picture: form.picture.trim(),
+                  tags: form.tags,
+                  updated_at: now
+                }
+              : item
+          )
+        }
+      } else {
+        // Create new bookmark
+        const newBookmark: BookmarkType = {
+          id: generateId(),
+          url: form.url.trim(),
+          title: form.title.trim(),
+          picture: form.picture.trim(),
+          tags: form.tags,
+          created_at: now,
+          updated_at: now
+        }
+        updatedManifest = {
+          ...manifest,
+          items: [...manifest.items, newBookmark]
+        }
+      }
+
+      // Save to server (baseSnapshot enables conflict resolution for multi-device sync)
+      const result = await saveManifest.mutateAsync({
+        manifest: updatedManifest,
+        etag,
+        serverVersion,
+        baseSnapshot: manifest
+      })
+
+      // Update local storage with the saved manifest
+      await setStorageItem(STORAGE_KEYS.MANIFEST, result.manifest)
+      await setStorageItem('manifest_meta', {
+        etag: result.etag,
+        version: result.version
+      })
 
       navigate('/vault')
     } catch (error) {
-      // Error handling is done in parent component
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to save bookmark'
+      setSaveError(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -178,11 +270,15 @@ export default function Bookmark({ bookmark }: { bookmark?: BookmarkType }) {
     return [...visibleTags, ...selectedHiddenTags]
   }, [tags, settings.showHiddenTags, form.tags])
 
+  const isSaving = isLoading || saveManifest.isPending
+  const buttonLabel = bookmark ? 'Save' : 'Create'
+
   return (
     <div className={styles.component}>
-      <Header title='New' canSwitchToVault={true} />
-      <Button onClick={() => clearSession()}>Logout</Button>
+      <Header title={bookmark ? 'Edit' : 'New'} canSwitchToVault={true} />
+
       {captureError && <ErrorCallout>{captureError}</ErrorCallout>}
+      {saveError && <ErrorCallout>{saveError}</ErrorCallout>}
       <div className={styles.container}>
         <div className={styles.content}>
           <img src={form.picture} alt={form.title} />
@@ -190,7 +286,6 @@ export default function Bookmark({ bookmark }: { bookmark?: BookmarkType }) {
           <Input type='hidden' value={form.picture} />
           <Input
             error={errors.url}
-            // ref={urlField}
             size='lg'
             type='url'
             placeholder='https://example.com'
@@ -227,9 +322,9 @@ export default function Bookmark({ bookmark }: { bookmark?: BookmarkType }) {
         </div>
 
         <div className={styles.actions}>
-          <Button onClick={handleSubmit} disabled={!hasChanges || isLoading}>
-            {isLoading && <Loader2 className={styles.spinner} />}
-            Create
+          <Button onClick={handleSubmit} disabled={!hasChanges || isSaving}>
+            {isSaving && <Loader2 className={styles.spinner} />}
+            {buttonLabel}
           </Button>
         </div>
       </div>
