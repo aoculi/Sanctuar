@@ -7,7 +7,7 @@ import usePopupSize from '@/components/hooks/usePopupSize'
 import { STORAGE_KEYS } from '@/lib/constants'
 import { captureCurrentPage } from '@/lib/pageCapture'
 import { getDefaultSettings, getStorageItem, Settings } from '@/lib/storage'
-import type { Bookmark as BookmarkType, Tag } from '@/lib/types'
+import type { Bookmark as BookmarkType } from '@/lib/types'
 import { generateId } from '@/lib/utils'
 import { MAX_TAGS_PER_ITEM } from '@/lib/validation'
 
@@ -17,6 +17,7 @@ import ErrorCallout from '@/components/ui/ErrorCallout'
 import Input from '@/components/ui/Input'
 import { TagSelectorField } from '@/components/ui/TagSelectorField'
 
+import { useTags } from '@/components/hooks/useTags'
 import styles from './styles.module.css'
 
 const emptyBookmark = {
@@ -26,12 +27,13 @@ const emptyBookmark = {
   tags: [] as string[]
 }
 
-export default function Bookmark({ bookmark }: { bookmark?: BookmarkType }) {
+export default function Bookmark({ id }: { id: string | null }) {
   usePopupSize('compact')
   const { navigate } = useNavigation()
   const { manifest, save, isSaving } = useManifest()
+  const { tags } = useTags()
+  const bookmark = manifest?.items.find((item) => item.id === id) || null
 
-  const [tags, setTags] = useState<Tag[]>([])
   const [settings, setSettings] = useState<Settings>(getDefaultSettings())
   const [form, setForm] = useState(emptyBookmark)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -51,13 +53,6 @@ export default function Bookmark({ bookmark }: { bookmark?: BookmarkType }) {
     }
     loadSettings()
   }, [])
-
-  // Update tags when manifest loads
-  useEffect(() => {
-    if (manifest?.tags) {
-      setTags(manifest.tags)
-    }
-  }, [manifest])
 
   // Initialize form when editing an existing bookmark
   useEffect(() => {

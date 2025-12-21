@@ -14,13 +14,13 @@ import styles from './styles.module.css'
 type Props = {
   searchQuery: string
   currentTagId: string | null
-  onEdit: (bookmark: Bookmark) => void
+  setSelectedBookmark: (id: string) => void
 }
 
 export default function BookmarkList({
   searchQuery,
   currentTagId,
-  onEdit
+  setSelectedBookmark
 }: Props) {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([])
   const [settings, setSettings] = useState<Settings>(getDefaultSettings())
@@ -120,7 +120,7 @@ export default function BookmarkList({
               key={bookmark.id}
               bookmark={bookmark}
               tags={tags}
-              onEdit={onEdit}
+              setSelectedBookmark={setSelectedBookmark}
               onDelete={onDelete}
             />
           ))}

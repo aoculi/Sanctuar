@@ -11,11 +11,26 @@ import Bookmark from '../Bookmark'
 import Bookmarks from '../Bookmarks'
 import Login from '../Login'
 import Register from '../Register'
+import Tag from '../Tag'
 
 import styles from './styles.module.css'
 
 function RootContent() {
   const { route, flash, setFlash, navigate } = useNavigation()
+  const [selectedBookmark, setSelectedBookmark] = useState<string | null>(null)
+  const [selectedTag, setSelectedTag] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (selectedTag) {
+      navigate('/tag')
+    }
+  }, [selectedTag])
+
+  useEffect(() => {
+    if (selectedBookmark) {
+      navigate('/bookmark')
+    }
+  }, [selectedBookmark])
 
   const handleLoginSuccess = () => {
     setFlash(null)
@@ -34,11 +49,18 @@ function RootContent() {
       case '/register':
         return <Register onRegisterSuccess={handleRegisterSuccess} />
       case '/vault':
-        return <Bookmarks />
+        return (
+          <Bookmarks
+            setSelectedBookmark={setSelectedBookmark}
+            setSelectedTag={setSelectedTag}
+          />
+        )
       case '/bookmark':
-        return <Bookmark />
+        return <Bookmark id={selectedBookmark} />
+      case '/tag':
+        return <Tag id={selectedTag} />
       default:
-        return <Bookmark />
+        return <Bookmark id={selectedBookmark} />
     }
   }
 

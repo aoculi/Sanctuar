@@ -3,8 +3,7 @@ import { useCallback } from 'react'
 import {
   estimateManifestSize,
   isManifestSizeWarning,
-  validateBookmarkInput,
-  validateTagName
+  validateBookmarkInput
 } from '@/lib/validation'
 
 /**
@@ -19,17 +18,6 @@ export function useBookmarkValidation() {
   )
 
   return { validateBookmark }
-}
-
-/**
- * Hook for tag validation
- */
-export function useTagValidation() {
-  const validateTag = useCallback((name: string) => {
-    return validateTagName(name)
-  }, [])
-
-  return { validateTag }
 }
 
 /**

@@ -1,6 +1,7 @@
 import { ListFilter, Tag } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
+import { useBookmarks } from '@/components/hooks/useBookmarks'
 import { useTags } from '@/components/hooks/useTags'
 import type { Tag as EntityTag } from '@/lib/types'
 
@@ -8,30 +9,23 @@ import TagComponent from '@/components/parts/Tags/Tag'
 import TagHeader from '@/components/parts/Tags/TagHeader'
 import Button from '@/components/ui/Button'
 import { DropdownMenu } from '@/components/ui/DropdownMenu'
+import ErrorCallout from '@/components/ui/ErrorCallout'
 
-import { useBookmarks } from '@/components/hooks/useBookmarks'
 import styles from './styles.module.css'
 
 export default function Tags({
   currentTagId,
-  onSelectTag
+  onSelectFilterTag,
+  setSelectedTag
 }: {
   currentTagId: string | null
-  onSelectTag: (id: string) => void
+  onSelectFilterTag: (id: string) => void
+  setSelectedTag: (id: string) => void
 }) {
-  const [message, setMessage] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const [sortMode, setSortMode] = useState<'name' | 'count'>('name')
-  const [currentTag, setCurrentTag] = useState<EntityTag | null>(null)
   const { tags, showHiddenTags, deleteTag } = useTags()
   const { bookmarks } = useBookmarks()
-
-  const onAddTag = () => {
-    setCurrentTag(null)
-  }
-
-  const onEditTag = (tag: EntityTag) => {
-    setCurrentTag(tag)
-  }
 
   const onDeleteTag = (id: string) => {
     if (
@@ -44,8 +38,8 @@ export default function Tags({
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : 'Failed to delete tag'
-        setMessage(errorMessage)
-        setTimeout(() => setMessage(null), 5000)
+        setError(errorMessage)
+        setTimeout(() => setError(null), 5000)
       }
     }
   }
@@ -78,13 +72,15 @@ export default function Tags({
 
   return (
     <div className={styles.container}>
-      <TagHeader onAddTag={onAddTag} />
+      <TagHeader />
+
+      {error && <ErrorCallout>{error}</ErrorCallout>}
 
       <div className={styles.content}>
         <div className={styles.contentActions}>
           <Button
             size='sm'
-            onClick={() => onSelectTag('all')}
+            onClick={() => onSelectFilterTag('all')}
             variant={currentTagId === 'all' ? 'solid' : 'ghost'}
             color={currentTagId === 'all' ? 'primary' : 'light'}
           >
@@ -125,12 +121,12 @@ export default function Tags({
               ({ tag, count }: { tag: EntityTag; count: number }) => (
                 <TagComponent
                   key={tag.id}
-                  onClick={() => onSelectTag(tag.id)}
+                  onClick={() => onSelectFilterTag(tag.id)}
                   name={tag.name}
                   count={count}
                   all={false}
                   active={currentTagId === tag.id}
-                  onEdit={() => onEditTag(tag)}
+                  onEdit={() => setSelectedTag(tag.id)}
                   onDelete={() => onDeleteTag(tag.id)}
                 />
               )

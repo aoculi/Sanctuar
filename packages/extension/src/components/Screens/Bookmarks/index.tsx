@@ -1,29 +1,27 @@
 import { useState } from 'react'
 
 import usePopupSize from '@/components/hooks/usePopupSize'
-import { Bookmark } from '@/lib/types'
 
 import BookmarkHeader from '@/components/parts/Bookmarks/BookmarkHeader'
 import BookmarkList from '@/components/parts/Bookmarks/BookmarkList'
 import Header from '@/components/parts/Header'
-
 import Tags from '@/components/parts/Tags'
+
 import styles from './styles.module.css'
 
-export default function Bookmarks() {
+export default function Bookmarks({
+  setSelectedBookmark,
+  setSelectedTag
+}: {
+  setSelectedBookmark: (id: string) => void
+  setSelectedTag: (id: string) => void
+}) {
   usePopupSize('large')
 
   const [currentTagId, setCurrentTagId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedBookmark, setSelectedBookmark] = useState<Bookmark | null>(
-    null
-  )
 
-  const handleShowBookmarkModal = (bookmark: Bookmark) => {
-    setSelectedBookmark(bookmark)
-  }
-
-  const onSelectTag = (id: string) => {
+  const onSelectFilterTag = (id: string) => {
     setCurrentTagId(id)
   }
 
@@ -31,9 +29,11 @@ export default function Bookmarks() {
     <div className={styles.component}>
       <Header canSwitchToBookmark={true} />
       <div className={styles.content}>
-        <div className={styles.left}>
-          <Tags currentTagId={currentTagId} onSelectTag={onSelectTag} />
-        </div>
+        <Tags
+          currentTagId={currentTagId}
+          onSelectFilterTag={onSelectFilterTag}
+          setSelectedTag={setSelectedTag}
+        />
         <div className={styles.right}>
           <BookmarkHeader
             searchQuery={searchQuery}
@@ -43,7 +43,7 @@ export default function Bookmarks() {
           <BookmarkList
             searchQuery={searchQuery}
             currentTagId={currentTagId}
-            onEdit={handleShowBookmarkModal}
+            setSelectedBookmark={setSelectedBookmark}
           />
         </div>
       </div>

@@ -1,22 +1,28 @@
 import { EllipsisVertical } from 'lucide-react'
 
-import Button from '@/components/ui/Button'
-import { DropdownMenu } from '@/components/ui/DropdownMenu'
-import Text from '@/components/ui/Text'
 import { getTagName } from '@/lib/bookmarkUtils'
 import type { Bookmark, Tag } from '@/lib/types'
 import { formatDate, getHostname } from '@/lib/utils'
+
+import Button from '@/components/ui/Button'
+import { DropdownMenu } from '@/components/ui/DropdownMenu'
+import Text from '@/components/ui/Text'
 
 import styles from './styles.module.css'
 
 type Props = {
   bookmark: Bookmark
   tags: Tag[]
-  onEdit: (bookmark: Bookmark) => void
+  setSelectedBookmark: (id: string) => void
   onDelete: (id: string) => void
 }
 
-export function BookmarkCard({ bookmark, tags, onEdit, onDelete }: Props) {
+export function BookmarkCard({
+  bookmark,
+  tags,
+  setSelectedBookmark,
+  onDelete
+}: Props) {
   return (
     <div className={styles.component}>
       <a
@@ -69,7 +75,7 @@ export function BookmarkCard({ bookmark, tags, onEdit, onDelete }: Props) {
           </Button>
         </DropdownMenu.Trigger>
         <DropdownMenu.Content>
-          <DropdownMenu.Item onClick={() => onEdit(bookmark)}>
+          <DropdownMenu.Item onClick={() => setSelectedBookmark(bookmark.id)}>
             Edit
           </DropdownMenu.Item>
           <DropdownMenu.Separator />

@@ -11,7 +11,7 @@ import {
 import { loadManifestData } from '@/components/hooks/useManifest'
 import { useAuthSession } from './useAuthSessionProvider'
 
-export type Route = '/login' | '/register' | '/vault' | '/bookmark'
+export type Route = '/login' | '/register' | '/vault' | '/bookmark' | '/tag'
 
 type NavigationContextType = {
   route: Route

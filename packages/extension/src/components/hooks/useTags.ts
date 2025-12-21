@@ -1,15 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import { useManifest } from '@/components/hooks/useManifest'
-import { useTagValidation } from '@/components/hooks/validation'
 import { STORAGE_KEYS } from '@/lib/constants'
 import { getStorageItem, Settings } from '@/lib/storage'
 import type { Bookmark, Tag } from '@/lib/types'
 import { generateId } from '@/lib/utils'
+import { validateTagName } from '@/lib/validation'
 
 export function useTags() {
   const { manifest, save, isSaving } = useManifest()
-  const { validateTag } = useTagValidation()
   const [showHiddenTags, setShowHiddenTags] = useState(false)
 
   // Load showHiddenTags setting
@@ -28,7 +27,7 @@ export function useTags() {
       if (!manifest) return
 
       // Validate tag name
-      const validationError = validateTag(tag.name)
+      const validationError = validateTagName(tag.name)
       if (validationError) {
         throw new Error(validationError)
       }
@@ -55,44 +54,38 @@ export function useTags() {
         tags: [...(manifest.tags || []), newTag]
       })
     },
-    [manifest, validateTag, save]
+    [manifest, validateTagName, save]
   )
 
-  const renameTag = useCallback(
-    async (id: string, newName: string, hidden?: boolean) => {
+  const updateTag = useCallback(
+    async (id: string, updates: Partial<Omit<Tag, 'id' | 'created_at'>>) => {
       if (!manifest) return
 
-      // Validate new name
-      const validationError = validateTag(newName)
+      const validationError = validateTagName(updates.name!)
       if (validationError) {
         throw new Error(validationError)
       }
 
-      const trimmedName = newName.trim()
-
-      // Check for duplicate tag names (excluding current tag)
-      const existingTag = manifest.tags?.find(
-        (t: Tag) =>
-          t.id !== id && t.name.toLowerCase() === trimmedName.toLowerCase()
-      )
+      // Validate input if URL or title is being updated
+      const existingTag = manifest.tags?.find((item: Tag) => item.id === id)
       if (existingTag) {
-        throw new Error('A tag with this name already exists')
-      }
+        const validationData = {
+          name: updates.name ?? existingTag.name,
+          hidden: updates.hidden ?? existingTag.hidden,
+          color: updates.name ?? existingTag.color
+        }
 
-      await save({
-        ...manifest,
-        tags: (manifest.tags || []).map((tag: Tag) =>
-          tag.id === id
-            ? {
-                ...tag,
-                name: trimmedName,
-                hidden: hidden !== undefined ? hidden : (tag.hidden ?? false)
-              }
-            : tag
-        )
-      })
+        await save({
+          ...manifest,
+          tags: (manifest.tags || []).map((item: Tag) =>
+            item.id === id
+              ? { ...item, ...validationData, updated_at: Date.now() }
+              : item
+          )
+        })
+      }
     },
-    [manifest, validateTag, save]
+    [manifest, validateTagName, save]
   )
 
   const deleteTag = useCallback(
@@ -123,7 +116,7 @@ export function useTags() {
     tags: manifest?.tags || [],
     showHiddenTags,
     createTag,
-    renameTag,
+    updateTag,
     deleteTag,
     getTag,
     isSaving
