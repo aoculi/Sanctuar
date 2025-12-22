@@ -1,12 +1,12 @@
 import { useCallback } from 'react'
 
-import { useManifest } from '@/components/hooks/useManifest'
+import { useManifest } from '@/components/hooks/providers/useManifestProvider'
 import type { Bookmark } from '@/lib/types'
 import { generateId } from '@/lib/utils'
 import { validateBookmarkInput } from '@/lib/validation'
 
 export function useBookmarks() {
-  const { manifest, save, isSaving } = useManifest()
+  const { manifest, save } = useManifest()
 
   const validateBookmark = useCallback(
     (data: { url: string; title: string; picture: string; tags: string[] }) => {
@@ -104,7 +104,7 @@ export function useBookmarks() {
   )
 
   return {
-    bookmarks: manifest?.items || [],
+    bookmarks: [...(manifest?.items || [])],
     addBookmark,
     updateBookmark,
     deleteBookmark,

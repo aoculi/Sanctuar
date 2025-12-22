@@ -1,11 +1,11 @@
 import { Loader2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
+import { useManifest } from '@/components/hooks/providers/useManifestProvider'
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
 import { useSelection } from '@/components/hooks/providers/useSelectionProvider'
 import { useSettings } from '@/components/hooks/providers/useSettingsProvider'
 import { useBookmarks } from '@/components/hooks/useBookmarks'
-import { useManifest } from '@/components/hooks/useManifest'
 import usePopupSize from '@/components/hooks/usePopupSize'
 import { useTags } from '@/components/hooks/useTags'
 import { captureCurrentPage } from '@/lib/pageCapture'

@@ -46,13 +46,13 @@ export default function Tags({
   }
 
   const sortedTags = useMemo(() => {
-    let tagsWithCounts = tags.map((tag: EntityTag) => ({
-      tag,
-      count: bookmarks.filter((bookmark) => bookmark.tags.includes(tag.id))
-        .length
-    }))
+    let tagsWithCounts = tags.map((tag: EntityTag) => {
+      const count = bookmarks.filter((bookmark) =>
+        bookmark.tags.includes(tag.id)
+      ).length
+      return { tag, count }
+    })
 
-    // Filter hidden tags based on settings
     if (!showHiddenTags) {
       tagsWithCounts = tagsWithCounts.filter(
         (tag: { tag: EntityTag }) => !tag.tag.hidden
@@ -60,12 +60,12 @@ export default function Tags({
     }
 
     if (sortMode === 'name') {
-      return tagsWithCounts.sort(
+      return [...tagsWithCounts].sort(
         (a: { tag: EntityTag }, b: { tag: EntityTag }) =>
           a.tag.name.localeCompare(b.tag.name)
       )
     } else {
-      return tagsWithCounts.sort(
+      return [...tagsWithCounts].sort(
         (a: { count: number }, b: { count: number }) => b.count - a.count
       )
     }

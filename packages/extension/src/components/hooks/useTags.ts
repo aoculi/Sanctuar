@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 
+import { useManifest } from '@/components/hooks/providers/useManifestProvider'
 import { useSettings } from '@/components/hooks/providers/useSettingsProvider'
-import { useManifest } from '@/components/hooks/useManifest'
 import type { Bookmark, Tag } from '@/lib/types'
 import { generateId } from '@/lib/utils'
 import { validateTagName } from '@/lib/validation'

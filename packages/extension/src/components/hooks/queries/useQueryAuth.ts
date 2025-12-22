@@ -12,7 +12,7 @@ import {
 } from '@/api/auth-api'
 import { fetchVault, fetchVaultManifest } from '@/api/vault-api'
 import { useAuthSession } from '@/components/hooks/providers/useAuthSessionProvider'
-import { saveManifestData } from '@/components/hooks/useManifest'
+import { saveManifestData } from '@/components/hooks/providers/useManifestProvider'
 import { ApiError } from '@/lib/api'
 import { decryptManifest } from '@/lib/manifest'
 import { unlock } from '@/lib/unlock'

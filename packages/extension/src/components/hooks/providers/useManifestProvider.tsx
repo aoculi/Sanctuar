@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
+import {
+  ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState
+} from 'react'
 
 import { useQueryVault } from '@/components/hooks/queries/useQueryVault'
 import { STORAGE_KEYS } from '@/lib/constants'
@@ -7,7 +14,6 @@ import type { ManifestV1 } from '@/lib/types'
 
 /**
  * Manifest data stored in chrome.storage.local
- * Combines manifest with its sync metadata
  */
 export type StoredManifestData = {
   manifest: ManifestV1
@@ -17,11 +23,8 @@ export type StoredManifestData = {
 
 /**
  * Load manifest data from storage
- * @returns Manifest data or null if not found
- * @throws StorageError if storage operation fails (not just "not found")
  */
 export async function loadManifestData(): Promise<StoredManifestData | null> {
-  // Try new format first
   const stored = await getStorageItem<StoredManifestData>(STORAGE_KEYS.MANIFEST)
   if (stored?.manifest) {
     return stored
@@ -30,7 +33,6 @@ export async function loadManifestData(): Promise<StoredManifestData | null> {
   // Backwards compatibility: check for old separate storage format
   const oldManifest = await getStorageItem<ManifestV1>(STORAGE_KEYS.MANIFEST)
   if (oldManifest && 'items' in oldManifest) {
-    // Try to get old metadata, but don't fail if it doesn't exist
     const oldMeta = await getStorageItem<{ etag: string; version: number }>(
       'manifest_meta'
     ).catch(() => null)
@@ -53,15 +55,41 @@ export async function saveManifestData(
   await setStorageItem(STORAGE_KEYS.MANIFEST, data)
 }
 
+type ManifestContextType = {
+  manifest: ManifestV1 | null
+  isLoading: boolean
+  isSaving: boolean
+  save: (updatedManifest: ManifestV1) => Promise<{
+    manifest: ManifestV1
+    etag: string
+    version: number
+  }>
+  reload: () => Promise<void>
+}
+
+const ManifestContext = createContext<ManifestContextType | null>(null)
+
 /**
- * Hook for managing manifest state with automatic sync
- *
- * Provides:
- * - Current manifest state
- * - save() function that handles etag/version automatically
- * - Loading and saving states
+ * Hook to use the manifest context
+ * Must be used within a ManifestProvider
  */
 export function useManifest() {
+  const context = useContext(ManifestContext)
+  if (!context) {
+    throw new Error('useManifest must be used within a ManifestProvider')
+  }
+  return context
+}
+
+type ManifestProviderProps = {
+  children: ReactNode
+}
+
+/**
+ * Manifest Provider Component
+ * Shares manifest state across all components
+ */
+export function ManifestProvider({ children }: ManifestProviderProps) {
   const { saveManifest: saveManifestMutation } = useQueryVault()
 
   const [manifest, setManifest] = useState<ManifestV1 | null>(null)
@@ -80,7 +108,6 @@ export function useManifest() {
           setServerVersion(data.serverVersion)
         }
       } catch (error) {
-        // Log storage errors but don't crash the app
         console.error('Failed to load manifest from storage:', error)
       } finally {
         setIsLoading(false)
@@ -91,7 +118,6 @@ export function useManifest() {
 
   /**
    * Save an updated manifest to server and storage
-   * Automatically handles etag, version, and conflict resolution
    */
   const save = useCallback(
     async (updatedManifest: ManifestV1) => {
@@ -114,13 +140,11 @@ export function useManifest() {
           serverVersion: result.version
         })
       } catch (error) {
-        // Log storage error but don't fail the save operation
-        // The server already has the data, local storage is just a cache
         console.error('Failed to save manifest to local storage:', error)
       }
 
-      // Update local state
-      setManifest(result.manifest)
+      // Update shared state - all consumers will re-render
+      setManifest({ ...result.manifest })
       setEtag(result.etag)
       setServerVersion(result.version)
 
@@ -130,7 +154,7 @@ export function useManifest() {
   )
 
   /**
-   * Reload manifest from storage (useful after external updates)
+   * Reload manifest from storage
    */
   const reload = useCallback(async () => {
     const data = await loadManifestData()
@@ -141,11 +165,17 @@ export function useManifest() {
     }
   }, [])
 
-  return {
+  const contextValue: ManifestContextType = {
     manifest,
     isLoading,
     isSaving: saveManifestMutation.isPending,
     save,
     reload
   }
+
+  return (
+    <ManifestContext.Provider value={contextValue}>
+      {children}
+    </ManifestContext.Provider>
+  )
 }

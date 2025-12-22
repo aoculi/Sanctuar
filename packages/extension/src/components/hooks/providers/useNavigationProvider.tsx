@@ -8,7 +8,7 @@ import {
 } from 'react'
 
 import { useAuthSession } from '@/components/hooks/providers/useAuthSessionProvider'
-import { loadManifestData } from '@/components/hooks/useManifest'
+import { loadManifestData } from '@/components/hooks/providers/useManifestProvider'
 
 export type Route =
   | '/login'

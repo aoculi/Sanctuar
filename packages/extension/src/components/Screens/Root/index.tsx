@@ -1,4 +1,5 @@
 import { AuthSessionProvider } from '@/components/hooks/providers/useAuthSessionProvider'
+import { ManifestProvider } from '@/components/hooks/providers/useManifestProvider'
 import {
   NavigationProvider,
   Route,
@@ -70,11 +71,13 @@ export default function Root() {
   return (
     <SettingsProvider>
       <AuthSessionProvider>
-        <NavigationProvider>
-          <SelectionProvider>
-            <RootContent />
-          </SelectionProvider>
-        </NavigationProvider>
+        <ManifestProvider>
+          <NavigationProvider>
+            <SelectionProvider>
+              <RootContent />
+            </SelectionProvider>
+          </NavigationProvider>
+        </ManifestProvider>
       </AuthSessionProvider>
     </SettingsProvider>
   )

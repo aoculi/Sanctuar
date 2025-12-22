@@ -26,40 +26,51 @@ export function isBookmarkableUrl(url: string): boolean {
 
 /**
  * Captures the current page data and returns a bookmark draft.
- * Communicates with the background script to reliably get tab info.
+ * Uses chrome.tabs.query directly to get the current active tab.
  *
  * @returns A result object containing either a bookmark draft or an error message
  */
 export async function captureCurrentPage(): Promise<CaptureResult> {
-  type TabResponse =
-    | { ok: true; tab: { url: string; title: string; picture?: string } }
-    | { ok: false; error: string }
-
   try {
-    const response = await new Promise<TabResponse | undefined>((resolve) => {
-      chrome.runtime.sendMessage({ type: 'tabs:getCurrent' }, (response) => {
-        resolve(response)
-      })
-    })
-
-    if (!response) {
+    // Check if chrome.tabs is available
+    if (!chrome.tabs || typeof chrome.tabs.query !== 'function') {
       return {
         ok: false,
         error: 'Unable to get current page information'
       }
     }
 
-    if (!response.ok || !response.tab) {
+    // Query for the active tab in the current window
+    const queryOptions = { active: true, currentWindow: true }
+    let tabs: chrome.tabs.Tab[]
+
+    // Try Promise-based approach first (Manifest V3)
+    const queryResult = chrome.tabs.query(queryOptions)
+    if (queryResult && typeof queryResult.then === 'function') {
+      tabs = await queryResult
+    } else {
+      // Fallback to callback-based API
+      tabs = await new Promise<chrome.tabs.Tab[]>((resolve, reject) => {
+        chrome.tabs.query(queryOptions, (tabs) => {
+          if (chrome.runtime.lastError) {
+            reject(
+              new Error(chrome.runtime.lastError.message || 'Unknown error')
+            )
+            return
+          }
+          resolve(tabs || [])
+        })
+      })
+    }
+
+    if (!tabs || tabs.length === 0) {
       return {
         ok: false,
-        error:
-          'error' in response
-            ? response.error
-            : 'Unable to get current page information'
+        error: 'Unable to get current page information'
       }
     }
 
-    const tab = response.tab
+    const tab = tabs[0]
 
     if (!tab?.url || !tab?.title) {
       return {
@@ -80,7 +91,7 @@ export async function captureCurrentPage(): Promise<CaptureResult> {
       bookmark: {
         url: tab.url,
         title: tab.title,
-        picture: tab.picture || '',
+        picture: tab.favIconUrl || '',
         tags: []
       }
     }
