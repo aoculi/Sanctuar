@@ -1,10 +1,9 @@
 import type { UseMutationResult } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
-import { useNavigation } from '@/components/hooks/useNavigation'
-
+import type { LoginResponse, RegisterResponse } from '@/api/auth-api'
+import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
 import type { ApiError } from '@/lib/api'
-import { whenCryptoReady } from '@/lib/cryptoEnv'
 
 export type AuthFormData = {
   login: string
@@ -13,7 +12,12 @@ export type AuthFormData = {
 
 export type UseAuthFormOptions = {
   onSuccess: () => void
-  mutation: UseMutationResult<any, ApiError, AuthFormData, unknown>
+  mutation: UseMutationResult<
+    LoginResponse | RegisterResponse,
+    ApiError,
+    AuthFormData,
+    unknown
+  >
 }
 
 export function useAuthForm({ onSuccess, mutation }: UseAuthFormOptions) {
@@ -21,39 +25,13 @@ export function useAuthForm({ onSuccess, mutation }: UseAuthFormOptions) {
     login: '',
     password: ''
   })
-  const [error, setError] = useState<string | string[] | null>(null)
-  const [cryptoReady, setCryptoReady] = useState(false)
-  const [isInitializing, setIsInitializing] = useState(true)
-  const { setFlash, openSettings } = useNavigation()
-
-  // Check sodium ready state
-  useEffect(() => {
-    const checkCryptoReady = async () => {
-      try {
-        await whenCryptoReady()
-        setCryptoReady(true)
-      } catch (error) {
-        console.error('Failed to initialize crypto:', error)
-        setError(
-          'Failed to initialize encryption. Please refresh the extension.'
-        )
-      } finally {
-        setIsInitializing(false)
-      }
-    }
-
-    checkCryptoReady()
-  }, [])
+  const [error, setError] = useState<string | null>(null)
+  const { setFlash } = useNavigation()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setFlash(null)
     setError(null)
-
-    if (!cryptoReady) {
-      setError('Encryption not ready. Please wait...')
-      return
-    }
 
     if (!formData.login.trim() || !formData.password.trim()) {
       setError('Please fill in all fields')
@@ -66,23 +44,21 @@ export function useAuthForm({ onSuccess, mutation }: UseAuthFormOptions) {
         password: formData.password
       })
 
-      // Success - callback handles navigation
       onSuccess()
-    } catch (err: any) {
-      // Handle API URL configuration error
+    } catch (err: unknown) {
       const apiError = err as {
         status?: number
         message?: string
-        details?: Record<string, any>
+        details?: Record<string, unknown>
       }
 
+      // The api url is not set in the settings
       if (apiError.status === -1 && apiError.message?.includes('API URL')) {
         setFlash(apiError.message)
-        openSettings()
         return
       }
 
-      // Handle WMK upload failure differently - keep session, allow retry
+      // The WMK upload failed
       if (apiError.details?.wmkUploadFailed) {
         // WMK upload failed - show error but keep session
         setError('Could not initialize vault. Please try again.')
@@ -97,10 +73,15 @@ export function useAuthForm({ onSuccess, mutation }: UseAuthFormOptions) {
         const lines: string[] = []
         for (const [field, messages] of Object.entries(details)) {
           if (Array.isArray(messages) && messages.length > 0) {
-            lines.push(`${field}: ${messages.join(', ')}`)
+            lines.push(`${messages.join(', ')}`)
           }
         }
-        setError(lines.length > 0 ? [baseMessage, ...lines] : baseMessage)
+
+        setError(
+          lines.length > 0
+            ? `${baseMessage}\n${lines.map((l) => `• ${l}`).join('\n')}`
+            : baseMessage
+        )
       } else {
         setError(baseMessage)
       }
@@ -115,16 +96,12 @@ export function useAuthForm({ onSuccess, mutation }: UseAuthFormOptions) {
     }))
   }
 
-  const initializing = mutation.isPending || !cryptoReady || isInitializing
   const disabled =
-    initializing || !formData.login.trim() || !formData.password.trim()
+    mutation.isPending || !formData.login.trim() || !formData.password.trim()
 
   return {
     formData,
     error,
-    cryptoReady,
-    isInitializing,
-    initializing,
     disabled,
     handleSubmit,
     handleChange

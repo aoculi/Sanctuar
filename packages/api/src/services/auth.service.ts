@@ -37,6 +37,7 @@ export interface LoginUserOutput {
   user_id: string
   token: string
   expires_at: number
+  created_at: number
   kdf: {
     algo: string
     salt: string
@@ -50,6 +51,7 @@ export interface LoginUserOutput {
 export interface RefreshSessionOutput {
   token: string
   expiresAt: number
+  createdAt: number
 }
 
 /**
@@ -156,13 +158,14 @@ export const loginUser = async (
   const token = await generateToken(user.userId, jwtId)
 
   // Create session record
+  const createdAt = Date.now()
   try {
     await sessionRepository.createSession({
       sessionId,
       userId: user.userId,
       jwtId,
       expiresAt,
-      createdAt: Date.now()
+      createdAt
     })
 
     console.log(`User logged in successfully: ${user.userId}`)
@@ -172,6 +175,7 @@ export const loginUser = async (
       user_id: user.userId,
       token,
       expires_at: expiresAt,
+      created_at: createdAt,
       kdf: formatKdfParams(user),
       wrapped_mk: formatWrappedMk(user)
     }
@@ -227,6 +231,7 @@ export const refreshSession = async (
 
   // Calculate new expiration (extend by configured JWT expiration time)
   const newExpiresAt = getExpirationTimestamp()
+  const createdAt = Date.now()
 
   // Generate new JWT token with same jwtId and userId
   // This allows seamless refresh without creating a new session
@@ -240,7 +245,8 @@ export const refreshSession = async (
 
     return {
       token,
-      expiresAt: newExpiresAt
+      expiresAt: newExpiresAt,
+      createdAt
     }
   } catch (error) {
     logError('Session refresh failed', error)

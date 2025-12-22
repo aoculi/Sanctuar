@@ -2,31 +2,12 @@
   width: 100%;
   overflow: hidden;
   position: relative;
-}
-
-.special {
-  background: radial-gradient(
-    circle,
-    var(--background-1) 0%,
-    var(--background-3) 70%
-  );
-
-  position: absolute;
-  z-index: -1;
-  top: -80%;
-  width: 800px;
-  height: 800px;
-}
-
-.menu {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 3;
+  height: 100vh;
 }
 
 .content {
-  padding: 100px;
+  height: 100vh;
+  padding: 0 50px;
   position: relative;
   margin: 0 auto;
   display: flex;

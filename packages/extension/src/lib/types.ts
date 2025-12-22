@@ -42,13 +42,3 @@ export interface CryptoEnv {
   ready: boolean
   sodium: typeof import('libsodium-wrappers-sumo') | null
 }
-
-/**
- * AAD (Additional Authenticated Data) Context
- */
-export type AadContext = {
-  userId: string
-  vaultId: string
-  wmkLabel: string
-  manifestLabel: string
-}

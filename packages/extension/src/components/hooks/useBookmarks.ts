@@ -1,18 +1,23 @@
 import { useCallback } from 'react'
 
-import { useManifestOperations } from '@/components/hooks/useManifestOperations'
-import { useBookmarkValidation } from '@/components/hooks/validation'
+import { useManifest } from '@/components/hooks/providers/useManifestProvider'
 import type { Bookmark } from '@/lib/types'
 import { generateId } from '@/lib/utils'
-import { manifestStore } from '@/store/manifest'
+import { validateBookmarkInput } from '@/lib/validation'
 
 export function useBookmarks() {
-  const { store } = useManifestOperations()
-  const { validateBookmark } = useBookmarkValidation()
+  const { manifest, save } = useManifest()
+
+  const validateBookmark = useCallback(
+    (data: { url: string; title: string; picture: string; tags: string[] }) => {
+      return validateBookmarkInput(data)
+    },
+    []
+  )
 
   const addBookmark = useCallback(
-    (bookmark: Omit<Bookmark, 'id' | 'created_at' | 'updated_at'>) => {
-      if (!store.manifest) return
+    async (bookmark: Omit<Bookmark, 'id' | 'created_at' | 'updated_at'>) => {
+      if (!manifest) return
 
       // Validate input
       const validationError = validateBookmark({
@@ -33,22 +38,24 @@ export function useBookmarks() {
         updated_at: now
       }
 
-      // Apply to manifestStore - this will markDirty() automatically
-      manifestStore.apply((manifest) => ({
+      await save({
         ...manifest,
         items: [...(manifest.items || []), newBookmark]
-      }))
+      })
     },
-    [store.manifest, validateBookmark]
+    [manifest, validateBookmark, save]
   )
 
   const updateBookmark = useCallback(
-    (id: string, updates: Partial<Omit<Bookmark, 'id' | 'created_at'>>) => {
-      if (!store.manifest) return
+    async (
+      id: string,
+      updates: Partial<Omit<Bookmark, 'id' | 'created_at'>>
+    ) => {
+      if (!manifest) return
 
       // Validate input if URL or title is being updated
       if (updates.url !== undefined || updates.title !== undefined) {
-        const existingBookmark = store.manifest.items?.find(
+        const existingBookmark = manifest.items?.find(
           (item: Bookmark) => item.id === id
         )
         if (existingBookmark) {
@@ -65,40 +72,39 @@ export function useBookmarks() {
         }
       }
 
-      // Apply update with updated_at timestamp
-      manifestStore.apply((manifest) => ({
+      await save({
         ...manifest,
         items: (manifest.items || []).map((item: Bookmark) =>
           item.id === id
             ? { ...item, ...updates, updated_at: Date.now() }
             : item
         )
-      }))
+      })
     },
-    [store.manifest, validateBookmark]
+    [manifest, validateBookmark, save]
   )
 
   const deleteBookmark = useCallback(
-    (id: string) => {
-      if (!store.manifest) return
+    async (id: string) => {
+      if (!manifest) return
 
-      manifestStore.apply((manifest) => ({
+      await save({
         ...manifest,
         items: (manifest.items || []).filter((item: Bookmark) => item.id !== id)
-      }))
+      })
     },
-    [store.manifest]
+    [manifest, save]
   )
 
   const getBookmark = useCallback(
     (id: string): Bookmark | undefined => {
-      return store.manifest?.items?.find((item: Bookmark) => item.id === id)
+      return manifest?.items?.find((item: Bookmark) => item.id === id)
     },
-    [store.manifest]
+    [manifest]
   )
 
   return {
-    bookmarks: store.manifest?.items || [],
+    bookmarks: [...(manifest?.items || [])],
     addBookmark,
     updateBookmark,
     deleteBookmark,

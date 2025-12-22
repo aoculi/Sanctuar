@@ -4,24 +4,28 @@
   flex-direction: column;
   flex: 1;
   border-right: 1px solid var(--border);
-
+  height: 100vh;
   overflow-y: auto;
-  background-color: var(--background-2);
 }
 
 .content {
   display: flex;
   flex-direction: column;
   gap: 0;
-  padding: 20px 0;
+  padding: 0 0 20px 0;
 }
 
-.contentActions {
-  margin: 0 0 10px;
-  padding: 0 20px;
+.headerActions {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 0 15px;
+  margin-bottom: 10px;
+}
+
+.contentActionsButtons {
+  margin-bottom: 20px;
 }
 
 .list {
@@ -57,19 +61,22 @@
   background-color: rgba(255, 255, 255, 0.07);
 }
 
-.tag.inactive {
-  background-color: transparent;
-}
-
 .tag:hover,
 .tag.active:hover {
   background-color: rgba(255, 255, 255, 0.12) !important;
 }
 
+.tagIconLabelWrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
 .dropdownMenu {
   position: absolute;
   top: 7px;
-  right: 20px;
+  right: 10px;
   z-index: 3;
 }
 
@@ -83,10 +90,6 @@
 
 .tagEnd.countItem {
   padding-right: 35px;
-}
-
-.tag.inactive {
-  background-color: var(--background-2);
 }
 
 .status {

@@ -1,17 +1,13 @@
-import { Plus, Search } from 'lucide-react'
-
-import Button from '@/components/ui/Button'
+import { Search } from 'lucide-react'
 
 import styles from './styles.module.css'
 
 export default function BookmarkHeader({
   searchQuery,
-  onSearchChange,
-  onQuickAdd
+  onSearchChange
 }: {
   searchQuery: string
   onSearchChange: (query: string) => void
-  onQuickAdd: () => void
 }) {
   return (
     <div className={styles.container}>
@@ -25,17 +21,6 @@ export default function BookmarkHeader({
           className={styles.searchInput}
         />
       </div>
-
-      <Button
-        onClick={onQuickAdd}
-        color='primary'
-        variant='solid'
-        size='sm'
-        asIcon={true}
-        style={{ position: 'absolute', right: '12px', zIndex: 3 }}
-      >
-        <Plus strokeWidth={1} size={18} />
-      </Button>
     </div>
   )
 }

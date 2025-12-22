@@ -1,31 +1,38 @@
 import { useMemo } from 'react'
 
-import { useTagVisibilityPreference } from '@/components/hooks/useTagVisibilityPreference'
+import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
+import { useBookmarks } from '@/components/hooks/useBookmarks'
+import { useTags } from '@/components/hooks/useTags'
+import { filterBookmarks } from '@/lib/bookmarkUtils'
+import type { Bookmark } from '@/lib/types'
+
 import { BookmarkCard } from '@/components/parts/Bookmarks/BookmarkCard'
 import Text from '@/components/ui/Text'
-import { filterBookmarks } from '@/lib/bookmarkUtils'
-import type { Bookmark, Tag } from '@/lib/types'
 
 import styles from './styles.module.css'
 
 type Props = {
-  bookmarks: Bookmark[]
-  tags: Tag[]
   searchQuery: string
   currentTagId: string | null
-  onEdit: (bookmark: Bookmark) => void
-  onDelete: (id: string) => void
 }
 
-export function BookmarkList({
-  bookmarks,
-  tags,
-  searchQuery,
-  currentTagId,
-  onEdit,
-  onDelete
-}: Props) {
-  const { showHiddenTags } = useTagVisibilityPreference()
+export default function BookmarkList({ searchQuery, currentTagId }: Props) {
+  const { bookmarks, deleteBookmark } = useBookmarks()
+  const { tags, showHiddenTags } = useTags()
+  const { setFlash } = useNavigation()
+
+  const onDelete = async (id: string) => {
+    if (confirm('Are you sure you want to delete this bookmark?')) {
+      try {
+        await deleteBookmark(id)
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Failed to delete bookmark'
+        setFlash(errorMessage)
+        setTimeout(() => setFlash(null), 5000)
+      }
+    }
+  }
 
   // Create a set of hidden tag IDs for efficient lookup
   const hiddenTagIds = useMemo(() => {
@@ -49,9 +56,13 @@ export function BookmarkList({
 
     // Filter by selected tag (if not "all" or null)
     if (currentTagId && currentTagId !== 'all') {
-      filtered = filtered.filter((bookmark) =>
-        bookmark.tags.includes(currentTagId)
-      )
+      if (currentTagId === 'unsorted') {
+        filtered = filtered.filter((bookmark) => bookmark.tags.length === 0)
+      } else {
+        filtered = filtered.filter((bookmark) =>
+          bookmark.tags.includes(currentTagId)
+        )
+      }
     }
 
     return filtered
@@ -84,7 +95,6 @@ export function BookmarkList({
               key={bookmark.id}
               bookmark={bookmark}
               tags={tags}
-              onEdit={onEdit}
               onDelete={onDelete}
             />
           ))}

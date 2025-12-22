@@ -7,9 +7,3 @@
   padding: 25px 12px 20px;
   height: 40px;
 }
-
-.headerLeft {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}

@@ -1,51 +1,57 @@
 import { KeyRound, Loader2, Mail } from 'lucide-react'
 
-import { useLoginAndUnlock } from '@/components/hooks/auth'
+import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
+import {
+  useQueryAuth,
+  type AuthPhase
+} from '@/components/hooks/queries/useQueryAuth'
 import { useAuthForm } from '@/components/hooks/useAuthForm'
-import { useNavigation } from '@/components/hooks/useNavigation'
+import usePopupSize from '@/components/hooks/usePopupSize'
 
-import Menu from '@/components/parts/Menu'
+import Header from '@/components/parts/Header'
 import Button from '@/components/ui/Button'
 import ErrorCallout from '@/components/ui/ErrorCallout'
 import Input from '@/components/ui/Input'
-import Text from '@/components/ui/Text'
 
 import styles from './styles.module.css'
+
+function getButtonLabel(phase: AuthPhase): string {
+  switch (phase) {
+    case 'authenticating':
+      return 'Logging in...'
+    case 'fetching':
+      return 'Fetching vault...'
+    case 'unlocking':
+      return 'Unlocking...'
+    case 'decrypting':
+      return 'Decrypting vault...'
+    default:
+      return 'Unlock Vault'
+  }
+}
 
 interface LoginProps {
   onLoginSuccess: () => void
 }
 
 export default function Login({ onLoginSuccess }: LoginProps) {
-  const loginMutation = useLoginAndUnlock()
+  usePopupSize('compact')
+  const { login, phase } = useQueryAuth()
   const { navigate } = useNavigation()
 
-  const {
-    formData,
-    error,
-    isInitializing,
-    initializing,
-    disabled,
-    handleSubmit,
-    handleChange
-  } = useAuthForm({
-    onSuccess: onLoginSuccess,
-    mutation: loginMutation
-  })
+  const mutation = login
+
+  const { formData, error, disabled, handleSubmit, handleChange } = useAuthForm(
+    {
+      onSuccess: onLoginSuccess,
+      mutation
+    }
+  )
 
   return (
     <div className={styles.container}>
-      <div className={styles.special} />
-
-      <div className={styles.menu}>
-        <Menu />
-      </div>
-
+      <Header title='Login' />
       <div className={styles.content}>
-        <Text as='h1' size='6' weight='medium'>
-          LockMark
-        </Text>
-
         {error && <ErrorCallout>{error}</ErrorCallout>}
 
         <form onSubmit={handleSubmit} className={styles.form}>
@@ -56,7 +62,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             autoComplete='off'
             value={formData.login}
             onChange={handleChange}
-            disabled={loginMutation.isPending}
+            disabled={mutation.isPending}
             autoFocus
           >
             <Mail size={16} />
@@ -69,22 +75,23 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             name='password'
             value={formData.password}
             onChange={handleChange}
-            disabled={loginMutation.isPending}
+            disabled={mutation.isPending}
           >
             <KeyRound size={16} />
           </Input>
 
           <Button disabled={disabled}>
-            {initializing && <Loader2 className={styles.spinner} />}
-            {isInitializing
-              ? 'Initializing...'
-              : loginMutation.isPending
-                ? 'Logging in...'
-                : 'Unlock Vault'}
+            {mutation.isPending && <Loader2 className={styles.spinner} />}
+            {getButtonLabel(phase)}
           </Button>
         </form>
+
         <div className={styles.registerLink}>
-          <Button variant='ghost' onClick={() => navigate('/register')}>
+          <Button
+            variant='ghost'
+            onClick={() => navigate('/register')}
+            color='light'
+          >
             Not registered? Create an account
           </Button>
         </div>

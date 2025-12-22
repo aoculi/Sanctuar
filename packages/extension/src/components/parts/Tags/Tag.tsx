@@ -1,4 +1,4 @@
-import { EllipsisVertical, LineSquiggle } from 'lucide-react'
+import { EllipsisVertical } from 'lucide-react'
 
 import Button from '@/components/ui/Button'
 import { DropdownMenu } from '@/components/ui/DropdownMenu'
@@ -13,7 +13,8 @@ export default function Tag({
   active = false,
   onClick,
   onEdit,
-  onDelete
+  onDelete,
+  icon
 }: {
   name: string
   count: number
@@ -22,6 +23,7 @@ export default function Tag({
   onClick: () => void
   onEdit?: () => void
   onDelete?: () => void
+  icon: React.ReactNode
 }) {
   return (
     <div className={styles.tagWrapper}>
@@ -30,9 +32,11 @@ export default function Tag({
         href='#'
         onClick={onClick}
       >
-        <div className={styles.tagLabel}>
-          {all && <LineSquiggle height={16} width={16} />}
-          <Text size='2'>{name}</Text>
+        <div className={styles.tagIconLabelWrapper}>
+          {icon}
+          <div className={styles.tagLabel}>
+            <Text size='2'>{name}</Text>
+          </div>
         </div>
         <div className={`${styles.tagEnd} ${!all ? styles.countItem : ''}`}>
           <Text size='2' weight='medium' color='light'>

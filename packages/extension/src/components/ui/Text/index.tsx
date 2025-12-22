@@ -7,6 +7,7 @@ function Text({
   weight = 'regular',
   as = 'div',
   color = 'inherit',
+  align = 'left',
   children,
   style,
   className
@@ -15,13 +16,14 @@ function Text({
   weight?: 'light' | 'regular' | 'medium' | 'bold'
   as?: 'label' | 'p' | 'div' | 'h1' | 'span'
   color?: 'inherit' | 'light' | 'primary' | 'white'
+  align?: 'left' | 'center' | 'right'
   style?: React.CSSProperties
   children: React.ReactNode
   className?: string
 }) {
   const newClassName = `${styles.text} ${styles['size-' + size]} ${
     styles['weight-' + weight]
-  } ${styles['color-' + color]}${className ? ' ' + className : ''}`
+  } ${styles['text-align-' + align]} ${styles['color-' + color]}${className ? ' ' + className : ''}`
 
   if (as === 'label') {
     return (

@@ -3,8 +3,10 @@
   font-weight: 400;
   color: var(--text);
   line-height: 1.5;
-  text-align: left;
-  text-wrap: wrap;
+  /* text-wrap: wrap; */
+
+  text-wrap: balance;
+
   text-overflow: ellipsis;
   /* overflow: hidden;
   white-space: nowrap; */
@@ -12,6 +14,15 @@
   word-wrap: break-word;
   word-break: break-all;
   user-select: none;
+}
+.text-align-left {
+  text-align: left;
+}
+.text-align-right {
+  text-align: right;
+}
+.text-align-center {
+  text-align: center;
 }
 
 .size-1 {

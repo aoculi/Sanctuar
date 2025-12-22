@@ -2,7 +2,7 @@
   "name": "LockMark",
   "description": "Secure Bookmarks Vault",
   "private": true,
-  "version": "0.0.6",
+  "version": "0.0.7",
   "type": "module",
   "scripts": {
     "dev": "wxt",
@@ -15,7 +15,7 @@
     "zip:prod": "wxt zip --mode production",
     "zip:firefox": "wxt zip -b firefox",
     "zip:firefox:prod": "wxt zip -b firefox --mode production",
-    "format": "prettier --write \"entrypoints/**/*.{ts,tsx,js,jsx,json,css}\"",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css}\"",
     "compile": "tsc --noEmit",
     "postinstall": "wxt prepare"
   },

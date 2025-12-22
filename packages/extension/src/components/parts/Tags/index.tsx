@@ -1,90 +1,58 @@
-import { ListFilter, Tag } from 'lucide-react'
+import { FolderOpen, Funnel, Plus, TagIcon, TagsIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
+import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
+import { useSelection } from '@/components/hooks/providers/useSelectionProvider'
+import { useBookmarks } from '@/components/hooks/useBookmarks'
 import { useTags } from '@/components/hooks/useTags'
-import { useTagVisibilityPreference } from '@/components/hooks/useTagVisibilityPreference'
-import type { Bookmark, Tag as EntityTag } from '@/lib/types'
+import type { Tag as EntityTag } from '@/lib/types'
 
-import { StatusIndicator } from '@/components/parts/StatusIndicator'
 import TagComponent from '@/components/parts/Tags/Tag'
-import TagHeader from '@/components/parts/Tags/TagHeader'
-import { TagModal } from '@/components/parts/Tags/TagModal'
 import Button from '@/components/ui/Button'
 import { DropdownMenu } from '@/components/ui/DropdownMenu'
+import ErrorCallout from '@/components/ui/ErrorCallout'
 
 import styles from './styles.module.css'
 
 export default function Tags({
-  bookmarks,
   currentTagId,
-  onSelectTag
+  onSelectFilterTag
 }: {
-  bookmarks: Bookmark[]
   currentTagId: string | null
-  onSelectTag: (id: string) => void
+  onSelectFilterTag: (id: string) => void
 }) {
-  const { tags, createTag, renameTag, deleteTag } = useTags()
-  const [message, setMessage] = useState<string | null>(null)
+  const { setSelectedTag } = useSelection()
+  const [error, setError] = useState<string | null>(null)
   const [sortMode, setSortMode] = useState<'name' | 'count'>('name')
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [currentTag, setCurrentTag] = useState<EntityTag | null>(null)
-  const { showHiddenTags } = useTagVisibilityPreference()
+  const { tags, showHiddenTags, deleteTag } = useTags()
+  const { bookmarks } = useBookmarks()
+  const { navigate } = useNavigation()
 
-  const onAddTag = () => {
-    setCurrentTag(null)
-    setIsModalOpen(true)
-  }
-
-  const onEditTag = (tag: EntityTag) => {
-    setCurrentTag(tag)
-    setIsModalOpen(true)
-  }
-
-  const handleSaveTag = async (data: { name: string; hidden: boolean }) => {
-    try {
-      if (currentTag) {
-        // Editing existing tag
-        await renameTag(currentTag.id, data.name, data.hidden)
-      } else {
-        // Creating new tag
-        await createTag({ name: data.name, hidden: data.hidden ?? false })
-      }
-      setIsModalOpen(false)
-      setCurrentTag(null)
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Failed to save tag'
-      setMessage(errorMessage)
-      setTimeout(() => setMessage(null), 5000)
-      throw error // Re-throw to let modal handle loading state
-    }
-  }
-
-  const onDeleteTag = (id: string) => {
+  const onDeleteTag = async (id: string) => {
     if (
       confirm(
         'Are you sure you want to delete this tag? It will be removed from all bookmarks.'
       )
     ) {
       try {
-        deleteTag(id)
+        await deleteTag(id)
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : 'Failed to delete tag'
-        setMessage(errorMessage)
-        setTimeout(() => setMessage(null), 5000)
+        setError(errorMessage)
+        setTimeout(() => setError(null), 5000)
       }
     }
   }
 
   const sortedTags = useMemo(() => {
-    let tagsWithCounts = tags.map((tag: EntityTag) => ({
-      tag,
-      count: bookmarks.filter((bookmark) => bookmark.tags.includes(tag.id))
-        .length
-    }))
+    let tagsWithCounts = tags.map((tag: EntityTag) => {
+      const count = bookmarks.filter((bookmark) =>
+        bookmark.tags.includes(tag.id)
+      ).length
+      return { tag, count }
+    })
 
-    // Filter hidden tags based on settings
     if (!showHiddenTags) {
       tagsWithCounts = tagsWithCounts.filter(
         (tag: { tag: EntityTag }) => !tag.tag.hidden
@@ -92,37 +60,63 @@ export default function Tags({
     }
 
     if (sortMode === 'name') {
-      return tagsWithCounts.sort(
+      return [...tagsWithCounts].sort(
         (a: { tag: EntityTag }, b: { tag: EntityTag }) =>
           a.tag.name.localeCompare(b.tag.name)
       )
     } else {
-      return tagsWithCounts.sort(
+      return [...tagsWithCounts].sort(
         (a: { count: number }, b: { count: number }) => b.count - a.count
       )
     }
   }, [tags, bookmarks, sortMode, showHiddenTags])
 
+  const bookmarkWithoutTags = bookmarks.filter(
+    (bookmark) => bookmark.tags.length === 0
+  )
+
   return (
     <div className={styles.container}>
-      <TagHeader onAddTag={onAddTag} />
+      {error && <ErrorCallout>{error}</ErrorCallout>}
 
       <div className={styles.content}>
-        <div className={styles.contentActions}>
-          <Button
-            size='sm'
-            onClick={() => onSelectTag('all')}
-            variant={currentTagId === 'all' ? 'solid' : 'ghost'}
-            color={currentTagId === 'all' ? 'primary' : 'light'}
-          >
-            <Tag size={16} strokeWidth={2} />
-            All tags ({bookmarks.length})
-          </Button>
+        <div className={styles.contentActionsButtons}>
+          <TagComponent
+            key='all'
+            onClick={() => onSelectFilterTag('all')}
+            name='All bookmarks'
+            count={bookmarks.length}
+            all={true}
+            active={currentTagId === 'all'}
+            onEdit={() => {
+              setSelectedTag('all')
+              navigate('/tag')
+            }}
+            onDelete={() => onDeleteTag('all')}
+            icon={<TagsIcon size={18} strokeWidth={2} />}
+          />
 
+          <TagComponent
+            key='unsorted'
+            onClick={() => onSelectFilterTag('unsorted')}
+            name='Unsorted'
+            count={bookmarkWithoutTags.length}
+            all={true}
+            active={currentTagId === 'unsorted'}
+            onEdit={() => {
+              setSelectedTag('unsorted')
+              navigate('/tag')
+            }}
+            onDelete={() => onDeleteTag('unsorted')}
+            icon={<FolderOpen size={18} strokeWidth={2} />}
+          />
+        </div>
+
+        <div className={styles.headerActions}>
           <DropdownMenu.Root>
             <DropdownMenu.Trigger asChild>
-              <Button asIcon={true} size='sm' color='light'>
-                <ListFilter strokeWidth={1} size={15} />
+              <Button asIcon={true} size='sm' variant='ghost' color='light'>
+                <Funnel strokeWidth={2} size={16} />
               </Button>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content>
@@ -140,6 +134,15 @@ export default function Tags({
               </DropdownMenu.Item>
             </DropdownMenu.Content>
           </DropdownMenu.Root>
+
+          <Button
+            asIcon={true}
+            size='sm'
+            color='light'
+            onClick={() => navigate('/tag')}
+          >
+            <Plus strokeWidth={2} size={16} />
+          </Button>
         </div>
 
         <div className={styles.list}>
@@ -152,30 +155,21 @@ export default function Tags({
               ({ tag, count }: { tag: EntityTag; count: number }) => (
                 <TagComponent
                   key={tag.id}
-                  onClick={() => onSelectTag(tag.id)}
+                  icon={<TagIcon size={16} strokeWidth={2} />}
+                  onClick={() => onSelectFilterTag(tag.id)}
                   name={tag.name}
                   count={count}
                   all={false}
                   active={currentTagId === tag.id}
-                  onEdit={() => onEditTag(tag)}
+                  onEdit={() => {
+                    setSelectedTag(tag.id)
+                    navigate('/tag')
+                  }}
                   onDelete={() => onDeleteTag(tag.id)}
                 />
               )
             )}
         </div>
-      </div>
-
-      <TagModal
-        isOpen={isModalOpen}
-        tag={currentTag}
-        onClose={() => {
-          setIsModalOpen(false)
-          setCurrentTag(null)
-        }}
-        onSave={handleSaveTag}
-      />
-      <div className={styles.status}>
-        <StatusIndicator />
       </div>
     </div>
   )

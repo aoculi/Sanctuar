@@ -2,15 +2,9 @@
  * API client for secure extension
  */
 
-import type { ManifestApiResponse } from '@/components/hooks/useManifestQuery'
-import { constructAadManifest } from '@/lib/constants'
-import { base64ToUint8Array, decryptAEAD, zeroize } from '@/lib/crypto'
-import { whenCryptoReady } from '@/lib/cryptoEnv'
-import type { ManifestV1 } from '@/lib/types'
-import { keystoreManager } from '@/store/keystore'
-import { sessionManager } from '@/store/session'
-import { settingsStore } from '@/store/settings'
-import { QueryClient } from '@tanstack/react-query'
+import { LoginResponse } from '@/api/auth-api'
+import { STORAGE_KEYS } from '@/lib/constants'
+import { clearStorageItem, getSettings, getStorageItem } from '@/lib/storage'
 
 /**
  * API client types
@@ -34,6 +28,21 @@ export type ApiError = {
 }
 
 /**
+ * Create an ApiError object
+ */
+export function createApiError(
+  status: number,
+  message: string,
+  details?: unknown
+): ApiError {
+  return {
+    status,
+    message,
+    details
+  }
+}
+
+/**
  * Helper functions for API client
  */
 
@@ -42,15 +51,13 @@ export type ApiError = {
  * @throws ApiError if API URL is not configured
  */
 async function getApiUrl(): Promise<string> {
-  const settings = await settingsStore.getState()
-  if (!settings.apiUrl || settings.apiUrl.trim() === '') {
-    throw {
-      status: -1,
-      message:
-        'API URL is not configured. Please set the API Base URL in Settings.',
-      details:
-        'The API URL must be defined in the extension settings before making API calls.'
-    } as ApiError
+  const settings = await getSettings()
+  if (!settings?.apiUrl || settings.apiUrl.trim() === '') {
+    throw createApiError(
+      -1,
+      'API URL is not configured. Please set the API Base URL in Settings.',
+      'The API URL must be defined in the extension settings before making API calls.'
+    )
   }
   return settings.apiUrl.trim()
 }
@@ -71,7 +78,7 @@ async function buildUrl(path: string): Promise<string> {
  * @returns Bearer token header or undefined
  */
 async function getAuthHeader(): Promise<string | undefined> {
-  const session = await sessionManager.getSession()
+  const session = await getStorageItem<LoginResponse>(STORAGE_KEYS.SESSION)
   return session?.token ? `Bearer ${session.token}` : undefined
 }
 
@@ -80,7 +87,7 @@ async function getAuthHeader(): Promise<string | undefined> {
  * @param response - Fetch response
  * @returns Parsed data
  */
-async function parseResponseBody(response: Response): Promise<any> {
+async function parseResponseBody(response: Response): Promise<unknown> {
   const text = await response.text()
   if (text.length === 0) return null
 
@@ -95,16 +102,25 @@ async function parseResponseBody(response: Response): Promise<any> {
  * Handle 401 Unauthorized response
  * Clears session and keystore, then throws ApiError
  */
-async function handle401Error(data: any): Promise<never> {
-  await sessionManager.clearSession()
-  await keystoreManager.zeroize()
-  sessionManager.notifyListeners()
+async function handle401Error(data: unknown): Promise<never> {
+  // Try to clear session storage, but don't fail if it errors
+  try {
+    await clearStorageItem(STORAGE_KEYS.SESSION)
+  } catch (error) {
+    // Log but don't throw - we still want to throw the 401 error
+    console.warn('Failed to clear session storage on 401:', error)
+  }
 
-  throw {
-    status: 401,
-    message: data?.message || data?.error || 'Unauthorized',
-    details: data?.details
-  } as ApiError
+  const errorData = data as {
+    message?: string
+    error?: string
+    details?: unknown
+  }
+  throw createApiError(
+    401,
+    errorData?.message || errorData?.error || 'Unauthorized',
+    errorData?.details
+  )
 }
 
 /**
@@ -133,7 +149,6 @@ export async function apiClient<T = unknown>(
   }
 
   const requestBody = body !== undefined ? JSON.stringify(body) : undefined
-
   let response: Response
   try {
     const url = await buildUrl(path)
@@ -145,15 +160,23 @@ export async function apiClient<T = unknown>(
       credentials: 'omit',
       mode: 'cors'
     })
-  } catch (err: any) {
-    if (err?.status === -1 && err?.message?.includes('API URL')) {
+  } catch (err: unknown) {
+    // Check if it's already an ApiError (from getApiUrl)
+    if (
+      err &&
+      typeof err === 'object' &&
+      'status' in err &&
+      'message' in err &&
+      (err as ApiError).status === -1 &&
+      typeof (err as ApiError).message === 'string' &&
+      (err as ApiError).message.includes('API URL')
+    ) {
       throw err as ApiError
     }
-    throw {
-      status: -1,
-      message: 'Network error',
-      details: err?.message
-    } as ApiError
+    // Handle network errors or other unknown errors
+    const errorMessage =
+      err instanceof Error ? err.message : 'Network request failed'
+    throw createApiError(-1, 'Network error', errorMessage)
   }
 
   const data = await parseResponseBody(response)
@@ -163,103 +186,20 @@ export async function apiClient<T = unknown>(
   }
 
   if (!response.ok) {
-    throw {
-      status: response.status,
-      message: data?.message || data?.error || 'Request failed',
-      details: data?.details
-    } as ApiError
+    const errorData = data as {
+      message?: string
+      error?: string
+      details?: unknown
+    }
+    throw createApiError(
+      response.status,
+      errorData?.message || errorData?.error || 'Request failed',
+      errorData?.details
+    )
   }
 
   return {
     data: data as T,
     status: response.status
   }
-}
-
-/**
- * Vault prefetch utilities
- */
-const QUERY_KEYS = {
-  vault: () => ['vault'] as const,
-  manifest: () => ['vault', 'manifest'] as const
-}
-
-/**
- * Prefetches vault and manifest data after successful authentication
- * Handles the case where manifest might not exist yet (404)
- */
-export async function prefetchVaultData(queryClient: QueryClient) {
-  await queryClient.prefetchQuery({
-    queryKey: QUERY_KEYS.vault(),
-    queryFn: () => apiClient('/vault').then((r) => r.data)
-  })
-
-  const vaultData = queryClient.getQueryData<{ has_manifest?: boolean }>(
-    QUERY_KEYS.vault()
-  )
-  if (vaultData?.has_manifest) {
-    await queryClient.prefetchQuery({
-      queryKey: QUERY_KEYS.manifest(),
-      queryFn: async () => {
-        try {
-          const response = await apiClient('/vault/manifest')
-          return response.data
-        } catch (error: any) {
-          // Handle 404 gracefully - manifest doesn't exist yet
-          if (error?.status === 404) {
-            return null
-          }
-          throw error
-        }
-      }
-    })
-  }
-}
-
-/**
- * Decrypts and parses a manifest from API response
- * Returns the parsed manifest and handles key cleanup
- */
-export async function decryptManifest(
-  data: ManifestApiResponse
-): Promise<ManifestV1> {
-  // Ensure crypto environment (libsodium) is initialized
-  await whenCryptoReady()
-
-  const mak = await keystoreManager.getMAK()
-  const aadContext = await keystoreManager.getAadContext()
-
-  if (!mak || !aadContext) {
-    throw new Error('Keys not available for decryption')
-  }
-
-  const aadManifest = new TextEncoder().encode(
-    constructAadManifest(aadContext.userId, aadContext.vaultId)
-  )
-  const plaintext = decryptAEAD(
-    base64ToUint8Array(data.ciphertext),
-    base64ToUint8Array(data.nonce),
-    mak,
-    aadManifest
-  )
-  const manifestText = new TextDecoder().decode(plaintext)
-
-  let manifest: ManifestV1
-  try {
-    manifest = JSON.parse(manifestText)
-    if (!manifest.items || !Array.isArray(manifest.items)) {
-      manifest.items = []
-    }
-    if (!manifest.tags || !Array.isArray(manifest.tags)) {
-      manifest.tags = []
-    }
-    if (!manifest.version) {
-      manifest.version = data.version
-    }
-  } catch (err) {
-    manifest = { version: data.version, items: [], tags: [] }
-  }
-
-  zeroize(plaintext)
-  return manifest
 }
