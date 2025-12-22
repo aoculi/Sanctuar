@@ -10,6 +10,7 @@ import Text from '@/components/ui/Text'
 import Bookmark from '../Bookmark'
 import Login from '../Login'
 import Register from '../Register'
+import Settings from '../Settings'
 import Tag from '../Tag'
 import Vault from '../Vault'
 
@@ -48,6 +49,8 @@ function RootContent() {
         return <Login onLoginSuccess={handleLoginSuccess} />
       case '/register':
         return <Register onRegisterSuccess={handleRegisterSuccess} />
+      case '/settings':
+        return <Settings />
       case '/vault':
         return (
           <Vault

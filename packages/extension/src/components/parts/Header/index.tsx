@@ -6,6 +6,7 @@ import {
   Star
 } from 'lucide-react'
 
+import { useAuthSession } from '@/components/hooks/providers/useAuthSessionProvider'
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
 import { useQueryAuth } from '@/components/hooks/queries/useQueryAuth'
 
@@ -25,6 +26,7 @@ export default function Header({
 }) {
   const { navigate } = useNavigation()
   const { logout } = useQueryAuth()
+  const { isAuthenticated } = useAuthSession()
 
   const switchToVault = () => {
     navigate('/vault')
@@ -47,12 +49,12 @@ export default function Header({
         </div>
 
         <div className={styles.right}>
-          {canSwitchToVault && (
+          {canSwitchToVault && isAuthenticated && (
             <Button onClick={switchToVault} variant='ghost' title='Open vault'>
               <BookOpenText strokeWidth={2} size={18} color='white' />
             </Button>
           )}
-          {canSwitchToBookmark && (
+          {canSwitchToBookmark && isAuthenticated && (
             <Button
               onClick={switchToBookmark}
               variant='ghost'
@@ -62,16 +64,23 @@ export default function Header({
             </Button>
           )}
 
-          <Button variant='ghost' title='Settings'>
-            <Settings2 strokeWidth={2} size={18} color='white' />
-          </Button>
           <Button
             variant='ghost'
-            onClick={() => logout.mutate()}
-            title='Logout'
+            title='Settings'
+            onClick={() => navigate('/settings')}
           >
-            <LockKeyhole strokeWidth={2} size={18} color='white' />
+            <Settings2 strokeWidth={2} size={18} color='white' />
           </Button>
+
+          {isAuthenticated && (
+            <Button
+              variant='ghost'
+              onClick={() => logout.mutate()}
+              title='Logout'
+            >
+              <LockKeyhole strokeWidth={2} size={18} color='white' />
+            </Button>
+          )}
         </div>
       </div>
     </div>

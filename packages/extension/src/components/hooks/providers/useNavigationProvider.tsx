@@ -1,4 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query'
 import {
   createContext,
   ReactNode,
@@ -11,26 +10,26 @@ import {
 import { loadManifestData } from '@/components/hooks/useManifest'
 import { useAuthSession } from './useAuthSessionProvider'
 
-export type Route = '/login' | '/register' | '/vault' | '/bookmark' | '/tag'
+export type Route =
+  | '/login'
+  | '/register'
+  | '/vault'
+  | '/bookmark'
+  | '/tag'
+  | '/settings'
 
 type NavigationContextType = {
   route: Route
   flash: string | null
-  isSettingsOpen: boolean
   navigate: (route: Route) => void
   setFlash: (message: string | null) => void
-  openSettings: () => void
-  closeSettings: () => void
 }
 
 export const NavigationContext = createContext<NavigationContextType>({
   route: '/login',
   flash: null,
-  isSettingsOpen: false,
   navigate: () => {},
-  setFlash: () => {},
-  openSettings: () => {},
-  closeSettings: () => {}
+  setFlash: () => {}
 })
 
 /**
@@ -59,10 +58,8 @@ export function NavigationProvider({
   children,
   initialRoute = '/login'
 }: NavigationProviderProps) {
-  const queryClient = useQueryClient()
   const [route, setRoute] = useState<Route>(initialRoute)
   const [flash, setFlashState] = useState<string | null>(null)
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
   const { session, isLoading } = useAuthSession()
 
@@ -71,7 +68,12 @@ export function NavigationProvider({
   useEffect(() => {
     if (isLoading) return
 
-    if (!session.userId && route !== '/login' && route !== '/register') {
+    if (
+      !session.userId &&
+      route !== '/login' &&
+      route !== '/register' &&
+      route !== '/settings'
+    ) {
       setRoute('/login')
       return
     }
@@ -85,11 +87,6 @@ export function NavigationProvider({
           setRoute('/bookmark')
           return
         }
-
-        // if (route !== '/bookmark' || route !== '/bookmarks') {
-        //   setRoute('/bookmark')
-        //   return
-        // }
       }
     }
     checkManifest()
@@ -103,22 +100,11 @@ export function NavigationProvider({
     setFlashState(message)
   }, [])
 
-  const openSettings = useCallback(() => {
-    setIsSettingsOpen(true)
-  }, [])
-
-  const closeSettings = useCallback(() => {
-    setIsSettingsOpen(false)
-  }, [])
-
   const contextValue: NavigationContextType = {
     route,
     flash,
-    isSettingsOpen,
     navigate,
-    setFlash,
-    openSettings,
-    closeSettings
+    setFlash
   }
 
   return (

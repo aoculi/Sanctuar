@@ -68,6 +68,11 @@
   color: var(--text);
 }
 
+.black.solid {
+  background-color: var(--background-4);
+  color: var(--text);
+}
+
 .primary.ghost {
   background-color: transparent;
   color: var(--primary);

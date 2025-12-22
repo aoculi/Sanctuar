@@ -5,7 +5,7 @@ import styles from './styles.module.css'
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'solid' | 'ghost'
   size?: 'sm' | 'md' | 'lg'
-  color?: 'primary' | 'light' | 'dark'
+  color?: 'primary' | 'light' | 'dark' | 'black'
   children: React.ReactNode
   disabled?: boolean
   asIcon?: boolean
