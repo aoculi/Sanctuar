@@ -1,13 +1,19 @@
 import { useCallback } from 'react'
 
-import { useBookmarkValidation } from '@/components/hooks/validation'
 import type { Bookmark } from '@/lib/types'
 import { generateId } from '@/lib/utils'
+import { validateBookmarkInput } from '@/lib/validation'
 import { useManifest } from './useManifest'
 
 export function useBookmarks() {
   const { manifest, save, isSaving } = useManifest()
-  const { validateBookmark } = useBookmarkValidation()
+
+  const validateBookmark = useCallback(
+    (data: { url: string; title: string; picture: string; tags: string[] }) => {
+      return validateBookmarkInput(data)
+    },
+    []
+  )
 
   const addBookmark = useCallback(
     async (bookmark: Omit<Bookmark, 'id' | 'created_at' | 'updated_at'>) => {

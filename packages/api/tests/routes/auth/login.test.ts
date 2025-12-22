@@ -32,6 +32,7 @@ describe('POST /auth/login', () => {
   })
 
   it('should login successfully with correct credentials', async () => {
+    const before = Date.now()
     const res = await client.auth.login.$post({
       json: testUsers.alice
     })
@@ -41,12 +42,16 @@ describe('POST /auth/login', () => {
     expect(data).toHaveProperty('user_id')
     expect(data).toHaveProperty('token')
     expect(data).toHaveProperty('expires_at')
+    expect(data).toHaveProperty('created_at')
     expect(data).toHaveProperty('kdf')
     expect(data).toHaveProperty('wrapped_mk')
     expect(data.wrapped_mk).toBeNull()
     expect(data.token).toBeTruthy()
     expect(typeof data.expires_at).toBe('number')
+    expect(typeof data.created_at).toBe('number')
     expect(data.expires_at).toBeGreaterThan(Date.now())
+    expect(data.created_at).toBeGreaterThanOrEqual(before)
+    expect(data.created_at).toBeLessThanOrEqual(Date.now())
   })
 
   it('should return 401 for wrong password', async () => {

@@ -2,13 +2,12 @@ import { Loader2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
+import { useBookmarks } from '@/components/hooks/useBookmarks'
 import { useManifest } from '@/components/hooks/useManifest'
 import usePopupSize from '@/components/hooks/usePopupSize'
-import { STORAGE_KEYS } from '@/lib/constants'
+import { useTags } from '@/components/hooks/useTags'
 import { captureCurrentPage } from '@/lib/pageCapture'
-import { getDefaultSettings, getStorageItem, Settings } from '@/lib/storage'
-import type { Bookmark as BookmarkType } from '@/lib/types'
-import { generateId } from '@/lib/utils'
+import { getDefaultSettings, Settings } from '@/lib/storage'
 import { MAX_TAGS_PER_ITEM } from '@/lib/validation'
 
 import Header from '@/components/parts/Header'
@@ -17,7 +16,6 @@ import ErrorCallout from '@/components/ui/ErrorCallout'
 import Input from '@/components/ui/Input'
 import { TagSelectorField } from '@/components/ui/TagSelectorField'
 
-import { useTags } from '@/components/hooks/useTags'
 import styles from './styles.module.css'
 
 const emptyBookmark = {
@@ -30,9 +28,10 @@ const emptyBookmark = {
 export default function Bookmark({ id }: { id: string | null }) {
   usePopupSize('compact')
   const { navigate } = useNavigation()
-  const { manifest, save, isSaving } = useManifest()
+  const { isSaving } = useManifest()
+  const { addBookmark, updateBookmark, bookmarks } = useBookmarks()
   const { tags } = useTags()
-  const bookmark = manifest?.items.find((item) => item.id === id) || null
+  const bookmark = bookmarks.find((item) => item.id === id) || null
 
   const [settings, setSettings] = useState<Settings>(getDefaultSettings())
   const [form, setForm] = useState(emptyBookmark)
@@ -40,19 +39,6 @@ export default function Bookmark({ id }: { id: string | null }) {
   const [isLoading, setIsLoading] = useState(false)
   const [captureError, setCaptureError] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
-
-  // Load settings when the route is displayed
-  useEffect(() => {
-    const loadSettings = async () => {
-      const storedSettings = await getStorageItem<Settings>(
-        STORAGE_KEYS.SETTINGS
-      )
-      if (storedSettings) {
-        setSettings(storedSettings)
-      }
-    }
-    loadSettings()
-  }, [])
 
   // Initialize form when editing an existing bookmark
   useEffect(() => {
@@ -133,48 +119,23 @@ export default function Bookmark({ id }: { id: string | null }) {
       return
     }
 
-    if (!manifest) {
-      setSaveError('Manifest not loaded. Please try again.')
-      return
-    }
-
     setIsLoading(true)
     setSaveError(null)
 
     try {
-      const now = Date.now()
-
       if (bookmark) {
-        // Update existing bookmark
-        await save({
-          ...manifest,
-          items: manifest.items.map((item) =>
-            item.id === bookmark.id
-              ? {
-                  ...item,
-                  url: form.url.trim(),
-                  title: form.title.trim(),
-                  picture: form.picture.trim(),
-                  tags: form.tags,
-                  updated_at: now
-                }
-              : item
-          )
-        })
-      } else {
-        // Create new bookmark
-        const newBookmark: BookmarkType = {
-          id: generateId(),
+        await updateBookmark(bookmark.id, {
           url: form.url.trim(),
           title: form.title.trim(),
           picture: form.picture.trim(),
-          tags: form.tags,
-          created_at: now,
-          updated_at: now
-        }
-        await save({
-          ...manifest,
-          items: [...manifest.items, newBookmark]
+          tags: form.tags
+        })
+      } else {
+        await addBookmark({
+          url: form.url.trim(),
+          title: form.title.trim(),
+          picture: form.picture.trim(),
+          tags: form.tags
         })
       }
 

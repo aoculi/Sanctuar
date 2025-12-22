@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 
-import { loadManifestData } from '@/components/hooks/useManifest'
+import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
+import { useBookmarks } from '@/components/hooks/useBookmarks'
+import { useTags } from '@/components/hooks/useTags'
 import { filterBookmarks } from '@/lib/bookmarkUtils'
-import { STORAGE_KEYS } from '@/lib/constants'
-import { getDefaultSettings, getStorageItem, Settings } from '@/lib/storage'
-import type { Bookmark, ManifestV1, Tag } from '@/lib/types'
+import type { Bookmark } from '@/lib/types'
 
 import { BookmarkCard } from '@/components/parts/Bookmarks/BookmarkCard'
 import Text from '@/components/ui/Text'
@@ -22,43 +22,19 @@ export default function BookmarkList({
   currentTagId,
   setSelectedBookmark
 }: Props) {
-  const [bookmarks, setBookmarks] = useState<Bookmark[]>([])
-  const [settings, setSettings] = useState<Settings>(getDefaultSettings())
-  const [manifest, setManifest] = useState<ManifestV1 | null>(null)
-  const [tags, setTags] = useState<Tag[]>([])
-
-  useEffect(() => {
-    const loadData = async () => {
-      const [storedData, storedSettings] = await Promise.all([
-        loadManifestData(),
-        getStorageItem<Settings>(STORAGE_KEYS.SETTINGS)
-      ])
-
-      if (storedData) {
-        setManifest(storedData.manifest)
-        setBookmarks(storedData.manifest.items || [])
-        if (storedData.manifest.tags) {
-          setTags(storedData.manifest.tags)
-        }
-      }
-
-      if (storedSettings) {
-        setSettings(storedSettings)
-      }
-    }
-
-    loadData()
-  }, [])
+  const { bookmarks, deleteBookmark } = useBookmarks()
+  const { tags, showHiddenTags } = useTags()
+  const { setFlash } = useNavigation()
 
   const onDelete = (id: string) => {
     if (confirm('Are you sure you want to delete this bookmark?')) {
       try {
-        // deleteBookmark(id)
+        deleteBookmark(id)
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : 'Failed to delete bookmark'
-        // setMessage(errorMessage)
-        // setTimeout(() => setMessage(null), 5000)
+        setFlash(errorMessage)
+        setTimeout(() => setFlash(null), 5000)
       }
     }
   }
@@ -70,14 +46,14 @@ export default function BookmarkList({
 
   // Bookmarks that should be visible given the hidden tag setting
   const visibleBookmarks = useMemo(() => {
-    if (settings.showHiddenTags) {
+    if (showHiddenTags) {
       return bookmarks
     }
 
     return bookmarks.filter(
       (bookmark) => !bookmark.tags.some((tagId) => hiddenTagIds.has(tagId))
     )
-  }, [bookmarks, settings.showHiddenTags, hiddenTagIds])
+  }, [bookmarks, showHiddenTags, hiddenTagIds])
 
   // Filter bookmarks based on search and selected tag
   const filteredBookmarks = useMemo(() => {

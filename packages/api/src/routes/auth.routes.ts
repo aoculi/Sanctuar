@@ -120,6 +120,7 @@ auth.post(
  *     "user_id": "u_xxxxx",
  *     "token": "<JWT>",
  *     "expires_at": 1730000000000,
+ *     "created_at": 1730000000000,
  *     "kdf": {
  *       "algo": "argon2id",
  *       "salt": "<base64>",
@@ -264,7 +265,8 @@ auth.get('/session', requireAuth, async (c) => {
  * Response 200:
  *   {
  *     "token": "<new JWT>",
- *     "expires_at": 1730000000000
+ *     "expires_at": 1730000000000,
+ *     "created_at": 1730000000000
  *   }
  *
  * Errors:
@@ -285,7 +287,8 @@ auth.post('/refresh', requireAuth, rateLimitRefresh, async (c) => {
     return c.json(
       {
         token: result.token,
-        expires_at: result.expiresAt
+        expires_at: result.expiresAt,
+        created_at: result.createdAt
       },
       200
     )

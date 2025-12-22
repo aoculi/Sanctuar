@@ -32,6 +32,7 @@ export type LoginResponse = {
   user_id: string
   token: string
   expires_at: number
+  created_at: number
   kdf: any
   wrapped_mk: string | null
 }
@@ -53,6 +54,7 @@ export type SessionResponse = {
 export type RefreshTokenResponse = {
   token: string
   expires_at: number
+  created_at: number
 }
 
 export const fetchSession = () =>

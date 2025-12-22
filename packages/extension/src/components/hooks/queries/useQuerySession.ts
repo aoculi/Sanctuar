@@ -13,19 +13,24 @@ export const QUERY_KEYS = {
 }
 
 export const useQuerySession = () => {
-  return useQuery<SessionResponse>({
-    queryKey: QUERY_KEYS.session(),
-    queryFn: fetchSession,
-    enabled: false,
-    staleTime: 0
-  })
-}
+  const getSession = () =>
+    useQuery<SessionResponse>({
+      queryKey: QUERY_KEYS.session(),
+      queryFn: fetchSession,
+      enabled: false,
+      staleTime: 0
+    })
 
-export const useQueryRefreshToken = () => {
-  return useQuery<RefreshTokenResponse>({
-    queryKey: QUERY_KEYS.refreshToken(),
-    queryFn: fetchRefreshToken,
-    enabled: false,
-    staleTime: 0
-  })
+  const getRefreshToken = () =>
+    useQuery<RefreshTokenResponse>({
+      queryKey: QUERY_KEYS.refreshToken(),
+      queryFn: fetchRefreshToken,
+      enabled: false,
+      staleTime: 0
+    })
+
+  return {
+    getSession,
+    getRefreshToken
+  }
 }
