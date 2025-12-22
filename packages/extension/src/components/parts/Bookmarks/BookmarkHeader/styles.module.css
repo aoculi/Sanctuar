@@ -28,6 +28,8 @@
   box-shadow: none;
   outline: none;
   z-index: 0;
+  color: white;
+  font-size: 14px;
 }
 
 .searchInput::placeholder {

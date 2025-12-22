@@ -1,12 +1,12 @@
-import { ListFilter, Tag } from 'lucide-react'
+import { FolderOpen, Funnel, Plus, TagIcon, TagsIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
+import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
 import { useBookmarks } from '@/components/hooks/useBookmarks'
 import { useTags } from '@/components/hooks/useTags'
 import type { Tag as EntityTag } from '@/lib/types'
 
 import TagComponent from '@/components/parts/Tags/Tag'
-import TagHeader from '@/components/parts/Tags/TagHeader'
 import Button from '@/components/ui/Button'
 import { DropdownMenu } from '@/components/ui/DropdownMenu'
 import ErrorCallout from '@/components/ui/ErrorCallout'
@@ -26,6 +26,7 @@ export default function Tags({
   const [sortMode, setSortMode] = useState<'name' | 'count'>('name')
   const { tags, showHiddenTags, deleteTag } = useTags()
   const { bookmarks } = useBookmarks()
+  const { navigate } = useNavigation()
 
   const onDeleteTag = (id: string) => {
     if (
@@ -70,28 +71,20 @@ export default function Tags({
     }
   }, [tags, bookmarks, sortMode, showHiddenTags])
 
+  const bookmarkWithoutTags = bookmarks.filter(
+    (bookmark) => bookmark.tags.length === 0
+  )
+
   return (
     <div className={styles.container}>
-      <TagHeader />
-
       {error && <ErrorCallout>{error}</ErrorCallout>}
 
       <div className={styles.content}>
-        <div className={styles.contentActions}>
-          <Button
-            size='sm'
-            onClick={() => onSelectFilterTag('all')}
-            variant={currentTagId === 'all' ? 'solid' : 'ghost'}
-            color={currentTagId === 'all' ? 'primary' : 'light'}
-          >
-            <Tag size={16} strokeWidth={2} />
-            All tags ({bookmarks.length})
-          </Button>
-
+        <div className={styles.headerActions}>
           <DropdownMenu.Root>
             <DropdownMenu.Trigger asChild>
-              <Button asIcon={true} size='sm' color='light'>
-                <ListFilter strokeWidth={1} size={15} />
+              <Button asIcon={true} size='sm' variant='ghost' color='light'>
+                <Funnel strokeWidth={2} size={16} />
               </Button>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content>
@@ -109,6 +102,41 @@ export default function Tags({
               </DropdownMenu.Item>
             </DropdownMenu.Content>
           </DropdownMenu.Root>
+
+          <Button
+            asIcon={true}
+            size='sm'
+            color='light'
+            onClick={() => navigate('/tag')}
+          >
+            <Plus strokeWidth={2} size={16} />
+          </Button>
+        </div>
+
+        <div className={styles.contentActionsButtons}>
+          <TagComponent
+            key='all'
+            onClick={() => onSelectFilterTag('all')}
+            name='All bookmarks'
+            count={bookmarks.length}
+            all={true}
+            active={currentTagId === 'all'}
+            onEdit={() => setSelectedTag('all')}
+            onDelete={() => onDeleteTag('all')}
+            icon={<TagsIcon size={18} strokeWidth={2} />}
+          />
+
+          <TagComponent
+            key='unsorted'
+            onClick={() => onSelectFilterTag('unsorted')}
+            name='Unsorted'
+            count={bookmarkWithoutTags.length}
+            all={true}
+            active={currentTagId === 'unsorted'}
+            onEdit={() => setSelectedTag('unsorted')}
+            onDelete={() => onDeleteTag('unsorted')}
+            icon={<FolderOpen size={18} strokeWidth={2} />}
+          />
         </div>
 
         <div className={styles.list}>
@@ -121,6 +149,7 @@ export default function Tags({
               ({ tag, count }: { tag: EntityTag; count: number }) => (
                 <TagComponent
                   key={tag.id}
+                  icon={<TagIcon size={16} strokeWidth={2} />}
                   onClick={() => onSelectFilterTag(tag.id)}
                   name={tag.name}
                   count={count}

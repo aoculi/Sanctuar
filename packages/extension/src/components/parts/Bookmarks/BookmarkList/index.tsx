@@ -85,9 +85,13 @@ export default function BookmarkList({
 
     // Filter by selected tag (if not "all" or null)
     if (currentTagId && currentTagId !== 'all') {
-      filtered = filtered.filter((bookmark) =>
-        bookmark.tags.includes(currentTagId)
-      )
+      if (currentTagId === 'unsorted') {
+        filtered = filtered.filter((bookmark) => bookmark.tags.length === 0)
+      } else {
+        filtered = filtered.filter((bookmark) =>
+          bookmark.tags.includes(currentTagId)
+        )
+      }
     }
 
     return filtered

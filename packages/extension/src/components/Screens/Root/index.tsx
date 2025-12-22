@@ -8,10 +8,10 @@ import { SettingsProvider } from '@/components/hooks/providers/useSettingsProvid
 
 import Text from '@/components/ui/Text'
 import Bookmark from '../Bookmark'
-import Bookmarks from '../Bookmarks'
 import Login from '../Login'
 import Register from '../Register'
 import Tag from '../Tag'
+import Vault from '../Vault'
 
 import styles from './styles.module.css'
 
@@ -50,7 +50,7 @@ function RootContent() {
         return <Register onRegisterSuccess={handleRegisterSuccess} />
       case '/vault':
         return (
-          <Bookmarks
+          <Vault
             setSelectedBookmark={setSelectedBookmark}
             setSelectedTag={setSelectedTag}
           />
