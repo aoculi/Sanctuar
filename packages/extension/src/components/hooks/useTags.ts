@@ -60,7 +60,7 @@ export function useTags() {
         const validationData = {
           name: updates.name ?? existingTag.name,
           hidden: updates.hidden ?? existingTag.hidden,
-          color: updates.color ?? existingTag.color
+          color: 'color' in updates ? updates.color : existingTag.color
         }
 
         await save({

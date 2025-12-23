@@ -1,0 +1,84 @@
+.component {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 8px;
+}
+
+.colorButton {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 2px solid var(--border);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+  position: relative;
+  padding: 0;
+  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.colorButton:hover {
+  transform: scale(1.05);
+  border-color: var(--primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.colorButton.selected {
+  border-color: var(--primary);
+  box-shadow:
+    0 0 0 2px var(--background-1),
+    0 0 0 4px var(--primary);
+}
+
+.noColorButton {
+  background-color: var(--background-4);
+  color: var(--text);
+  border-style: dashed;
+}
+
+.noColorButton:hover {
+  background-color: var(--background-3);
+}
+
+.noColorButton.noColorSelected {
+  background-color: var(--background-2);
+  border-style: solid;
+  border-color: var(--primary);
+}
+
+.customColorButton {
+  background-color: var(--background-4);
+  color: var(--text);
+}
+
+.customColorButton:hover {
+  background-color: var(--background-3);
+}
+
+.customColorPreview {
+  position: absolute;
+  inset: 4px;
+  border-radius: calc(var(--border-radius) - 2px);
+  pointer-events: none;
+}
+
+.hiddenInput {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}

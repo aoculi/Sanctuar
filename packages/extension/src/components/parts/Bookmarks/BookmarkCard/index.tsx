@@ -3,7 +3,11 @@ import { useMemo } from 'react'
 
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
 import { useSelection } from '@/components/hooks/providers/useSelectionProvider'
-import { createTagMap, getTagNameFromMap } from '@/lib/bookmarkUtils'
+import {
+  createTagMap,
+  getTagColor,
+  getTagNameFromMap
+} from '@/lib/bookmarkUtils'
 import type { Bookmark, Tag } from '@/lib/types'
 import { formatDate, getHostname } from '@/lib/utils'
 
@@ -51,11 +55,20 @@ export function BookmarkCard({ bookmark, tags, onDelete }: Props) {
           <div className={styles.tagsContainer}>
             <div className={styles.tags}>
               {bookmark.tags.length > 0 &&
-                bookmark.tags.map((tagId: string) => (
-                  <span key={tagId} className={styles.tag}>
-                    {getTagNameFromMap(tagId, tagMap)}
-                  </span>
-                ))}
+                bookmark.tags.map((tagId: string) => {
+                  const color = getTagColor(tagId, tags)
+                  return (
+                    <span
+                      key={tagId}
+                      className={[styles.tag, color ? styles.colored : ''].join(
+                        ' '
+                      )}
+                      style={{ backgroundColor: color ?? 'transparent' }}
+                    >
+                      {getTagNameFromMap(tagId, tagMap)}
+                    </span>
+                  )
+                })}
             </div>
 
             <Text

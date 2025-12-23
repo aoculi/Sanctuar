@@ -14,7 +14,8 @@ export default function Tag({
   onClick,
   onEdit,
   onDelete,
-  icon
+  icon,
+  color
 }: {
   name: string
   count: number
@@ -24,6 +25,7 @@ export default function Tag({
   onEdit?: () => void
   onDelete?: () => void
   icon: React.ReactNode
+  color: string | null
 }) {
   return (
     <div className={styles.tagWrapper}>
@@ -35,7 +37,9 @@ export default function Tag({
         <div className={styles.tagIconLabelWrapper}>
           {icon}
           <div className={styles.tagLabel}>
-            <Text size='2'>{name}</Text>
+            <Text size='2' style={{ color: color ?? 'inherit' }}>
+              {name}
+            </Text>
           </div>
         </div>
         <div className={`${styles.tagEnd} ${!all ? styles.countItem : ''}`}>

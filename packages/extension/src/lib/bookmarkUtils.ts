@@ -80,3 +80,9 @@ export function filterBookmarks(
     })
   })
 }
+
+export const getTagColor = (tagId: string, tags: Tag[]): string | null => {
+  const tag = tags.find((t: Tag) => t.id === tagId)
+  if (!tag) return null
+  return tag.color || null
+}

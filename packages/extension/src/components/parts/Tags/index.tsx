@@ -12,6 +12,7 @@ import Button from '@/components/ui/Button'
 import { DropdownMenu } from '@/components/ui/DropdownMenu'
 import ErrorCallout from '@/components/ui/ErrorCallout'
 
+import { getTagColor } from '@/lib/bookmarkUtils'
 import styles from './styles.module.css'
 
 export default function Tags({
@@ -85,6 +86,7 @@ export default function Tags({
             key='all'
             onClick={() => onSelectFilterTag('all')}
             name='All bookmarks'
+            color={null}
             count={bookmarks.length}
             all={true}
             active={currentTagId === 'all'}
@@ -100,6 +102,7 @@ export default function Tags({
             key='unsorted'
             onClick={() => onSelectFilterTag('unsorted')}
             name='Unsorted'
+            color={null}
             count={bookmarkWithoutTags.length}
             all={true}
             active={currentTagId === 'unsorted'}
@@ -152,22 +155,32 @@ export default function Tags({
 
           {sortedTags.length > 0 &&
             sortedTags.map(
-              ({ tag, count }: { tag: EntityTag; count: number }) => (
-                <TagComponent
-                  key={tag.id}
-                  icon={<TagIcon size={16} strokeWidth={2} />}
-                  onClick={() => onSelectFilterTag(tag.id)}
-                  name={tag.name}
-                  count={count}
-                  all={false}
-                  active={currentTagId === tag.id}
-                  onEdit={() => {
-                    setSelectedTag(tag.id)
-                    navigate('/tag')
-                  }}
-                  onDelete={() => onDeleteTag(tag.id)}
-                />
-              )
+              ({ tag, count }: { tag: EntityTag; count: number }) => {
+                const color = getTagColor(tag.id, tags)
+                return (
+                  <TagComponent
+                    key={tag.id}
+                    icon={
+                      <TagIcon
+                        size={16}
+                        strokeWidth={2}
+                        style={{ color: color ?? 'inherit' }}
+                      />
+                    }
+                    color={color}
+                    onClick={() => onSelectFilterTag(tag.id)}
+                    name={tag.name}
+                    count={count}
+                    all={false}
+                    active={currentTagId === tag.id}
+                    onEdit={() => {
+                      setSelectedTag(tag.id)
+                      navigate('/tag')
+                    }}
+                    onDelete={() => onDeleteTag(tag.id)}
+                  />
+                )
+              }
             )}
         </div>
       </div>

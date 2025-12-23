@@ -11,6 +11,7 @@ import { validateTagName } from '@/lib/validation'
 import Header from '@/components/parts/Header'
 import Button from '@/components/ui/Button'
 import { Checkbox } from '@/components/ui/Checkbox'
+import ColorPicker from '@/components/ui/ColorPicker'
 import ErrorCallout from '@/components/ui/ErrorCallout'
 import Input from '@/components/ui/Input'
 import Text from '@/components/ui/Text'
@@ -19,7 +20,8 @@ import styles from './styles.module.css'
 
 const defaultTag = {
   name: '',
-  hidden: false
+  hidden: false,
+  color: undefined as string | undefined
 }
 export default function Tag() {
   usePopupSize('compact')
@@ -33,7 +35,8 @@ export default function Tag() {
     if (tag) {
       setForm({
         name: tag.name,
-        hidden: tag?.hidden ?? false
+        hidden: tag?.hidden ?? false,
+        color: tag?.color
       })
     }
   }, [tag])
@@ -69,12 +72,14 @@ export default function Tag() {
       if (tag) {
         await updateTag(tag.id, {
           name: form.name.trim(),
-          hidden: form.hidden
+          hidden: form.hidden,
+          color: form.color
         })
       } else {
         await createTag({
           name: form.name.trim(),
-          hidden: form.hidden
+          hidden: form.hidden,
+          color: form.color
         })
       }
 
@@ -100,9 +105,11 @@ export default function Tag() {
       return true
     }
 
-    // For existing tags, check if name or hidden changed
+    // For existing tags, check if name, hidden, or color changed
     return (
-      form.name.trim() !== tag.name || form.hidden !== (tag.hidden ?? false)
+      form.name.trim() !== tag.name ||
+      form.hidden !== (tag.hidden ?? false) ||
+      form.color !== tag.color
     )
   }, [form, tag])
 
@@ -126,6 +133,16 @@ export default function Tag() {
               if (errors.name) setErrors({ ...errors, name: '' })
             }}
           />
+
+          <div className={styles.colorSection}>
+            <Text as='label' size='2' className={styles.colorLabel}>
+              Color
+            </Text>
+            <ColorPicker
+              value={form.color}
+              onChange={(color) => setForm((prev) => ({ ...prev, color }))}
+            />
+          </div>
 
           <Text as='label' size='2'>
             <Checkbox
