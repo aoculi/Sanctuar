@@ -12,7 +12,10 @@ import {
 } from '@/api/auth-api'
 import { fetchVault, fetchVaultManifest } from '@/api/vault-api'
 import { useAuthSession } from '@/components/hooks/providers/useAuthSessionProvider'
-import { saveManifestData } from '@/components/hooks/providers/useManifestProvider'
+import {
+  saveManifestData,
+  useManifest
+} from '@/components/hooks/providers/useManifestProvider'
 import { ApiError } from '@/lib/api'
 import { decryptManifest } from '@/lib/manifest'
 import { unlock } from '@/lib/unlock'
@@ -32,6 +35,7 @@ export type AuthPhase =
 
 export const useQueryAuth = () => {
   const { setSession, clearSession } = useAuthSession()
+  const { setManifestFromLogin } = useManifest()
   const queryClient = useQueryClient()
   const [phase, setPhase] = useState<AuthPhase>('idle')
 
@@ -58,7 +62,7 @@ export const useQueryAuth = () => {
 
       // Phase 3: Unlock vault (derive keys)
       setPhase('unlocking')
-      const unlockResult = await unlock({
+      await unlock({
         password: variables.password,
         userId: loginData.user_id,
         vaultId: loginData.user_id,
@@ -66,15 +70,18 @@ export const useQueryAuth = () => {
         wrappedMk: loginData.wrapped_mk
       })
 
-      // Phase 4: Decrypt manifest
-      if (encryptedManifest && !unlockResult.isFirstUnlock) {
+      // Phase 4: Decrypt manifest (if it exists)
+      if (encryptedManifest) {
         setPhase('decrypting')
         const manifest = await decryptManifest(encryptedManifest)
-        await saveManifestData({
+        const manifestData = {
           manifest,
           etag: encryptedManifest.etag,
           serverVersion: encryptedManifest.version
-        })
+        }
+        await saveManifestData(manifestData)
+        // Update provider state directly to avoid race conditions
+        setManifestFromLogin(manifestData)
       }
 
       setPhase('idle')
@@ -105,7 +112,7 @@ export const useQueryAuth = () => {
 
       // Phase 3: Unlock vault
       setPhase('unlocking')
-      const unlockResult = await unlock({
+      await unlock({
         password: variables.password,
         userId: loginData.user_id,
         vaultId: loginData.user_id,
@@ -113,15 +120,18 @@ export const useQueryAuth = () => {
         wrappedMk: loginData.wrapped_mk
       })
 
-      // Phase 4: Decrypt manifest
-      if (encryptedManifest && !unlockResult.isFirstUnlock) {
+      // Phase 4: Decrypt manifest (if it exists)
+      if (encryptedManifest) {
         setPhase('decrypting')
         const manifest = await decryptManifest(encryptedManifest)
-        await saveManifestData({
+        const manifestData = {
           manifest,
           etag: encryptedManifest.etag,
           serverVersion: encryptedManifest.version
-        })
+        }
+        await saveManifestData(manifestData)
+        // Update provider state directly to avoid race conditions
+        setManifestFromLogin(manifestData)
       }
 
       setPhase('idle')
