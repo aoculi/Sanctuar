@@ -16,12 +16,14 @@ import Button from '@/components/ui/Button'
 import ErrorCallout from '@/components/ui/ErrorCallout'
 import Input from '@/components/ui/Input'
 import { TagSelectorField } from '@/components/ui/TagSelectorField'
+import Textarea from '@/components/ui/Textarea'
 
 import styles from './styles.module.css'
 
 const emptyBookmark = {
   url: '',
   title: '',
+  note: '',
   picture: '',
   tags: [] as string[]
 }
@@ -49,6 +51,7 @@ export default function Bookmark() {
       setForm({
         url: bookmark.url,
         title: bookmark.title,
+        note: bookmark.note,
         picture: bookmark.picture,
         tags: bookmark.tags
       })
@@ -71,6 +74,7 @@ export default function Bookmark() {
         setForm({
           url: result.bookmark.url,
           title: result.bookmark.title,
+          note: result.bookmark.note,
           picture: result.bookmark.picture,
           tags: result.bookmark.tags
         })
@@ -130,6 +134,7 @@ export default function Bookmark() {
         await updateBookmark(bookmark.id, {
           url: form.url?.trim(),
           title: form.title?.trim(),
+          note: form.note?.trim(),
           picture: form.picture?.trim(),
           tags: form.tags
         })
@@ -137,6 +142,7 @@ export default function Bookmark() {
         await addBookmark({
           url: form.url?.trim(),
           title: form.title?.trim(),
+          note: form.note?.trim(),
           picture: form.picture?.trim(),
           tags: form.tags
         })
@@ -167,6 +173,7 @@ export default function Bookmark() {
     // For existing bookmarks, check if any field changed
     const urlChanged = form.url?.trim() !== bookmark?.url
     const titleChanged = form.title?.trim() !== bookmark?.title
+    const noteChanged = form.note?.trim() !== bookmark?.note
     const pictureChanged = form.picture?.trim() !== bookmark?.picture
 
     // Check if tags changed (compare arrays)
@@ -175,7 +182,9 @@ export default function Bookmark() {
       form.tags.some((tag) => !bookmark.tags.includes(tag)) ||
       bookmark.tags.some((tag) => !form.tags.includes(tag))
 
-    return urlChanged || titleChanged || pictureChanged || tagsChanged
+    return (
+      urlChanged || titleChanged || noteChanged || pictureChanged || tagsChanged
+    )
   }, [form, bookmark])
 
   const selectableTags = useMemo(() => {
@@ -254,6 +263,17 @@ export default function Bookmark() {
               if (errors.title) setErrors({ ...errors, title: '' })
             }}
             placeholder='Bookmark title'
+          />
+
+          <Textarea
+            size='lg'
+            value={form.note}
+            onChange={(e) => {
+              const next = e.target.value
+              setForm((prev) => ({ ...prev, note: next }))
+            }}
+            placeholder='Add a note...'
+            rows={4}
           />
 
           <TagSelectorField

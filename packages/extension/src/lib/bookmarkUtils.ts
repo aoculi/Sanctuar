@@ -59,6 +59,7 @@ export function filterBookmarks(
   return bookmarks.filter((bookmark) => {
     const hostname = getHostname(bookmark.url).toLowerCase()
     const titleLower = bookmark.title.toLowerCase()
+    const noteLower = (bookmark.note || '').toLowerCase()
 
     // Use optimized tag lookup
     const tagNames = bookmark.tags
@@ -73,7 +74,8 @@ export function filterBookmarks(
         titleLower.includes(token) ||
         hostname.includes(token) ||
         tagNames.includes(token) ||
-        urlLower.includes(token)
+        urlLower.includes(token) ||
+        noteLower.includes(token)
       )
     })
   })

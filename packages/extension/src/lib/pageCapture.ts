@@ -91,6 +91,7 @@ export async function captureCurrentPage(): Promise<CaptureResult> {
       bookmark: {
         url: tab.url,
         title: tab.title,
+        note: '',
         picture: tab.favIconUrl || '',
         tags: []
       }

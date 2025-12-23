@@ -23,6 +23,7 @@ export function isValidUrl(url: string): boolean {
 export function validateBookmarkInput(data: {
   url: string
   title: string
+  note: string
   picture: string
   tags: string[]
 }): string | null {

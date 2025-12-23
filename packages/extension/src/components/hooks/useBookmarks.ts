@@ -9,7 +9,13 @@ export function useBookmarks() {
   const { manifest, save } = useManifest()
 
   const validateBookmark = useCallback(
-    (data: { url: string; title: string; picture: string; tags: string[] }) => {
+    (data: {
+      url: string
+      title: string
+      note: string
+      picture: string
+      tags: string[]
+    }) => {
       return validateBookmarkInput(data)
     },
     []
@@ -23,6 +29,7 @@ export function useBookmarks() {
       const validationError = validateBookmark({
         url: bookmark.url,
         title: bookmark.title,
+        note: bookmark.note,
         picture: bookmark.picture,
         tags: bookmark.tags
       })
@@ -62,6 +69,7 @@ export function useBookmarks() {
           const validationData = {
             url: updates.url ?? existingBookmark.url,
             title: updates.title ?? existingBookmark.title,
+            note: updates.note ?? existingBookmark.note,
             picture: updates.picture ?? existingBookmark.picture,
             tags: updates.tags ?? existingBookmark.tags
           }
