@@ -156,7 +156,7 @@ export default function Tags({
           {sortedTags.length > 0 &&
             sortedTags.map(
               ({ tag, count }: { tag: EntityTag; count: number }) => {
-                const color = getTagColor(tag.id, tags)
+                const colorInfo = getTagColor(tag.id, tags)
                 return (
                   <TagComponent
                     key={tag.id}
@@ -164,10 +164,10 @@ export default function Tags({
                       <TagIcon
                         size={16}
                         strokeWidth={2}
-                        style={{ color: color ?? 'inherit' }}
+                        style={{ color: colorInfo?.tagColor ?? 'inherit' }}
                       />
                     }
-                    color={color}
+                    color={colorInfo?.tagColor ?? null}
                     onClick={() => onSelectFilterTag(tag.id)}
                     name={tag.name}
                     count={count}

@@ -81,8 +81,63 @@ export function filterBookmarks(
   })
 }
 
-export const getTagColor = (tagId: string, tags: Tag[]): string | null => {
+/**
+ * Calculate the relative luminance of a color (WCAG formula)
+ * @param hex - Hex color string (e.g., "#ff0000" or "ff0000")
+ * @returns Relative luminance value between 0 and 1
+ */
+function getLuminance(hex: string): number {
+  // Remove # if present
+  const cleanHex = hex.replace('#', '')
+
+  // Parse RGB values
+  const r = parseInt(cleanHex.substring(0, 2), 16) / 255
+  const g = parseInt(cleanHex.substring(2, 4), 16) / 255
+  const b = parseInt(cleanHex.substring(4, 6), 16) / 255
+
+  // Apply gamma correction
+  const [rLinear, gLinear, bLinear] = [r, g, b].map((val) => {
+    return val <= 0.03928 ? val / 12.92 : Math.pow((val + 0.055) / 1.055, 2.4)
+  })
+
+  // Calculate relative luminance using WCAG formula
+  return 0.2126 * rLinear + 0.7152 * gLinear + 0.0722 * bLinear
+}
+
+/**
+ * Get the best text color (black or white) for a given background color
+ * @param backgroundColor - Hex color string
+ * @returns "#000000" for light backgrounds, "#ffffff" for dark backgrounds
+ */
+function getContrastTextColor(backgroundColor: string): string {
+  const luminance = getLuminance(backgroundColor)
+  // Use black text on light backgrounds (luminance > 0.5), white on dark
+  return luminance > 0.5 ? '#000000' : '#ffffff'
+}
+
+export type TagColorInfo = {
+  tagColor: string
+  textColor: string
+}
+
+/**
+ * Get tag color information including optimal text color for readability
+ * @param tagId - Tag ID to look up
+ * @param tags - Array of tags
+ * @returns Object with tagColor and textColor, or null if tag not found or has no color
+ */
+export const getTagColor = (
+  tagId: string,
+  tags: Tag[]
+): TagColorInfo | null => {
   const tag = tags.find((t: Tag) => t.id === tagId)
-  if (!tag) return null
-  return tag.color || null
+  if (!tag || !tag.color) return null
+
+  const tagColor = tag.color
+  const textColor = getContrastTextColor(tagColor)
+
+  return {
+    tagColor,
+    textColor
+  }
 }

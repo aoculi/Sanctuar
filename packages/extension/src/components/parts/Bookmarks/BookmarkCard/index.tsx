@@ -56,14 +56,18 @@ export function BookmarkCard({ bookmark, tags, onDelete }: Props) {
             <div className={styles.tags}>
               {bookmark.tags.length > 0 &&
                 bookmark.tags.map((tagId: string) => {
-                  const color = getTagColor(tagId, tags)
+                  const colorInfo = getTagColor(tagId, tags)
                   return (
                     <span
                       key={tagId}
-                      className={[styles.tag, color ? styles.colored : ''].join(
-                        ' '
-                      )}
-                      style={{ backgroundColor: color ?? 'transparent' }}
+                      className={[
+                        styles.tag,
+                        colorInfo ? styles.colored : ''
+                      ].join(' ')}
+                      style={{
+                        backgroundColor: colorInfo?.tagColor ?? 'transparent',
+                        color: colorInfo?.textColor ?? 'inherit'
+                      }}
                     >
                       {getTagNameFromMap(tagId, tagMap)}
                     </span>

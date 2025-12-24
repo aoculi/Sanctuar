@@ -1,5 +1,6 @@
 import { Palette, X } from 'lucide-react'
-import React, { useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { ChromePicker } from 'react-color'
 
 import styles from './styles.module.css'
 
@@ -27,21 +28,20 @@ const PREDEFINED_COLORS = [
 ]
 
 export default function ColorPicker({ value, onChange }: ColorPickerProps) {
-  const colorInputRef = useRef<HTMLInputElement>(null)
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false)
+  const popoverRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
 
   const handlePredefinedColorClick = (color: string) => {
     onChange(color)
   }
 
   const handleCustomColorClick = () => {
-    // Trigger the native color picker
-    setTimeout(() => {
-      colorInputRef.current?.click()
-    }, 0)
+    setIsPopoverOpen(true)
   }
 
-  const handleCustomColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(e.target.value)
+  const handleColorChange = (color: { hex: string }) => {
+    onChange(color.hex)
   }
 
   const handleNoColorClick = () => {
@@ -50,6 +50,29 @@ export default function ColorPicker({ value, onChange }: ColorPickerProps) {
 
   const isPredefinedColor = value && PREDEFINED_COLORS.includes(value)
   const hasNoColor = !value || value === null || value === undefined
+
+  // Close popover when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        isPopoverOpen &&
+        popoverRef.current &&
+        !popoverRef.current.contains(event.target as Node) &&
+        triggerRef.current &&
+        !triggerRef.current.contains(event.target as Node)
+      ) {
+        setIsPopoverOpen(false)
+      }
+    }
+
+    if (isPopoverOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isPopoverOpen])
 
   return (
     <div className={styles.component}>
@@ -77,6 +100,7 @@ export default function ColorPicker({ value, onChange }: ColorPickerProps) {
           <X size={14} />
         </button>
         <button
+          ref={triggerRef}
           type='button'
           className={`${styles.colorButton} ${styles.customColorButton} ${
             !isPredefinedColor && value ? styles.selected : ''
@@ -93,14 +117,15 @@ export default function ColorPicker({ value, onChange }: ColorPickerProps) {
           )}
         </button>
       </div>
-      <input
-        ref={colorInputRef}
-        type='color'
-        value={value || '#000000'}
-        onChange={handleCustomColorChange}
-        className={styles.hiddenInput}
-        aria-label='Custom color picker'
-      />
+      {isPopoverOpen && (
+        <div ref={popoverRef} className={styles.popover}>
+          <ChromePicker
+            color={value || '#000000'}
+            onChange={handleColorChange}
+            disableAlpha={false}
+          />
+        </div>
+      )}
     </div>
   )
 }

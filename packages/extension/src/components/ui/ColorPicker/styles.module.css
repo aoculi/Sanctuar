@@ -3,6 +3,7 @@
   flex-direction: column;
   gap: 8px;
   width: 100%;
+  position: relative;
 }
 
 .grid {
@@ -75,10 +76,13 @@
   pointer-events: none;
 }
 
-.hiddenInput {
+.popover {
   position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
-  pointer-events: none;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 100;
+}
+
+.popover :global(.chrome-picker) {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
 }
