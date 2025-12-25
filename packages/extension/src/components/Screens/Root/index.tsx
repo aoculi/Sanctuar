@@ -7,6 +7,7 @@ import {
 } from '@/components/hooks/providers/useNavigationProvider'
 import { SelectionProvider } from '@/components/hooks/providers/useSelectionProvider'
 import { SettingsProvider } from '@/components/hooks/providers/useSettingsProvider'
+import { useRouteGuard } from '@/components/hooks/useRouteGuard'
 
 import Bookmark from '@/components/Screens/Bookmark'
 import Login from '@/components/Screens/Login'
@@ -19,6 +20,7 @@ import Text from '@/components/ui/Text'
 import styles from './styles.module.css'
 
 function RootContent() {
+  useRouteGuard()
   const { route, flash } = useNavigation()
 
   const renderRoute = () => {

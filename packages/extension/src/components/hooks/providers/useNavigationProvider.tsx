@@ -3,12 +3,8 @@ import {
   ReactNode,
   useCallback,
   useContext,
-  useEffect,
   useState
 } from 'react'
-
-import { useAuthSession } from '@/components/hooks/providers/useAuthSessionProvider'
-import { loadManifestData } from '@/components/hooks/providers/useManifestProvider'
 
 export type Route =
   | '/login'
@@ -50,47 +46,12 @@ type NavigationProviderProps = {
   initialRoute?: Route
 }
 
-/**
- * Navigation Provider Component
- * Provides navigation, flash messages, and settings modal state to children
- */
 export function NavigationProvider({
   children,
   initialRoute = '/login'
 }: NavigationProviderProps) {
   const [route, setRoute] = useState<Route>(initialRoute)
   const [flash, setFlashState] = useState<string | null>(null)
-
-  const { session, isLoading } = useAuthSession()
-
-  // Auto-redirect to login if session is cleared (logout)
-  // Note: Navigation TO vault is handled explicitly by Login/Register onSuccess
-  useEffect(() => {
-    if (isLoading) return
-
-    if (
-      !session.userId &&
-      route !== '/login' &&
-      route !== '/register' &&
-      route !== '/settings'
-    ) {
-      setRoute('/login')
-      return
-    }
-
-    const checkManifest = async () => {
-      const data = await loadManifestData()
-
-      // has session and manifest
-      if (session.userId && data?.manifest) {
-        if (route === '/login' || route === '/register') {
-          setRoute('/bookmark')
-          return
-        }
-      }
-    }
-    checkManifest()
-  }, [isLoading, session.userId, route])
 
   const navigate = useCallback((newRoute: Route) => {
     setRoute(newRoute)
