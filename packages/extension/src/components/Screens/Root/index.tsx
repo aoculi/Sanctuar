@@ -19,24 +19,14 @@ import Text from '@/components/ui/Text'
 import styles from './styles.module.css'
 
 function RootContent() {
-  const { route, flash, setFlash, navigate } = useNavigation()
-
-  const handleLoginSuccess = () => {
-    setFlash(null)
-    navigate('/bookmark')
-  }
-
-  const handleRegisterSuccess = () => {
-    setFlash(null)
-    navigate('/bookmark')
-  }
+  const { route, flash } = useNavigation()
 
   const renderRoute = () => {
     switch (route as Route) {
       case '/login':
-        return <Login onLoginSuccess={handleLoginSuccess} />
+        return <Login />
       case '/register':
-        return <Register onRegisterSuccess={handleRegisterSuccess} />
+        return <Register />
       case '/settings':
         return <Settings />
       case '/vault':

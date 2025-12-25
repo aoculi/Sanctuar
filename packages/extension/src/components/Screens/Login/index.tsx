@@ -30,16 +30,17 @@ function getButtonLabel(phase: AuthPhase): string {
   }
 }
 
-interface LoginProps {
-  onLoginSuccess: () => void
-}
-
-export default function Login({ onLoginSuccess }: LoginProps) {
+export default function Login() {
   usePopupSize('compact')
   const { login, phase } = useQueryAuth()
-  const { navigate } = useNavigation()
+  const { navigate, setFlash } = useNavigation()
 
   const mutation = login
+
+  const onLoginSuccess = () => {
+    setFlash(null)
+    navigate('/bookmark')
+  }
 
   const { formData, error, disabled, handleSubmit, handleChange } = useAuthForm(
     {

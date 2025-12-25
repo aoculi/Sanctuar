@@ -30,16 +30,17 @@ function getButtonLabel(phase: AuthPhase): string {
   }
 }
 
-interface RegisterProps {
-  onRegisterSuccess: () => void
-}
-
-export default function Register({ onRegisterSuccess }: RegisterProps) {
+export default function Register() {
   usePopupSize('compact')
   const { register, phase } = useQueryAuth()
-  const { navigate } = useNavigation()
+  const { navigate, setFlash } = useNavigation()
 
   const mutation = register
+
+  const onRegisterSuccess = () => {
+    setFlash(null)
+    navigate('/bookmark')
+  }
 
   const { formData, error, disabled, handleSubmit, handleChange } = useAuthForm(
     {
