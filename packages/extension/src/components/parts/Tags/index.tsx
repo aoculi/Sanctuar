@@ -12,7 +12,6 @@ import { DropdownMenu } from '@/components/ui/DropdownMenu'
 import ErrorCallout from '@/components/ui/ErrorCallout'
 
 import { getTagColor } from '@/lib/bookmarkUtils'
-import { MAX_TAGS_PER_ITEM } from '@/lib/validation'
 import styles from './styles.module.css'
 
 export default function Tags({
@@ -74,26 +73,6 @@ export default function Tags({
   const bookmarkWithoutTags = bookmarks.filter(
     (bookmark) => bookmark.tags.length === 0
   )
-
-  const handleAssignTag = async (bookmarkId: string, tagId: string) => {
-    const bookmark = bookmarks.find((b) => b.id === bookmarkId)
-    if (!bookmark) return
-
-    // Check if tag already assigned
-    if (bookmark.tags.includes(tagId)) return
-
-    // Check max tags limit
-    if (bookmark.tags.length >= MAX_TAGS_PER_ITEM) {
-      setError(`Maximum ${MAX_TAGS_PER_ITEM} tags per bookmark`)
-      setTimeout(() => setError(null), 5000)
-      return
-    }
-
-    // Add tag
-    await updateBookmark(bookmarkId, {
-      tags: [...bookmark.tags, tagId]
-    })
-  }
 
   return (
     <div className={styles.container}>
@@ -191,7 +170,6 @@ export default function Tags({
                     all={false}
                     active={currentTagId === tag.id}
                     tagId={tag.id}
-                    onAssignTag={handleAssignTag}
                     onEdit={() => {
                       navigate('/tag', { tag: tag.id })
                     }}

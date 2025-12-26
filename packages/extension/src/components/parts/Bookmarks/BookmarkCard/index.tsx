@@ -1,18 +1,19 @@
-import { EllipsisVertical } from 'lucide-react'
-import { useCallback, useMemo, useState } from 'react'
+import { Edit, Tag as TagIcon, Trash2 } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
+import { useBookmarks } from '@/components/hooks/useBookmarks'
 import {
   createTagMap,
   getTagColor,
   getTagNameFromMap
 } from '@/lib/bookmarkUtils'
-import { setupBookmarkDrag } from '@/lib/dragAndDrop'
 import type { Bookmark, Tag } from '@/lib/types'
 import { formatDate, getHostname } from '@/lib/utils'
 
 import Button from '@/components/ui/Button'
 import { DropdownMenu } from '@/components/ui/DropdownMenu'
+import { TagSelectorField } from '@/components/ui/TagSelectorField'
 import Text from '@/components/ui/Text'
 
 import styles from './styles.module.css'
@@ -25,36 +26,30 @@ type BookmarkCardProps = {
 
 export function BookmarkCard({ bookmark, tags, onDelete }: BookmarkCardProps) {
   const { navigate } = useNavigation()
-  const [isDragging, setIsDragging] = useState(false)
+  const { updateBookmark } = useBookmarks()
+  const [tagManagerOpen, setTagManagerOpen] = useState(false)
+  const [selectedTags, setSelectedTags] = useState<string[]>(bookmark.tags)
 
   const tagMap = useMemo(() => createTagMap(tags), [tags])
 
-  const handleDragStart = useCallback(
-    (e: React.DragEvent) => {
-      setIsDragging(true)
-      setupBookmarkDrag(e, bookmark.id)
-    },
-    [bookmark.id]
-  )
+  // Sync selectedTags with bookmark.tags when bookmark changes
+  useEffect(() => {
+    setSelectedTags(bookmark.tags)
+  }, [bookmark.tags])
 
-  const handleDragEnd = useCallback(() => {
-    setIsDragging(false)
-  }, [])
-
-  const componentClassName = [
-    styles.component,
-    isDragging ? styles.dragging : ''
-  ]
-    .filter(Boolean)
-    .join(' ')
+  const handleTagsChange = async (newTags: string[]) => {
+    setSelectedTags(newTags)
+    try {
+      await updateBookmark(bookmark.id, { tags: newTags })
+    } catch (error) {
+      // Revert on error
+      setSelectedTags(bookmark.tags)
+      console.error('Failed to update bookmark tags:', error)
+    }
+  }
 
   return (
-    <div
-      className={componentClassName}
-      draggable={true}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
+    <div className={styles.component}>
       <a
         className={styles.card}
         href={bookmark.url}
@@ -76,26 +71,53 @@ export function BookmarkCard({ bookmark, tags, onDelete }: BookmarkCardProps) {
           </Text>
 
           <div className={styles.tagsContainer}>
-            <div className={styles.tags}>
-              {bookmark.tags.length > 0 &&
-                bookmark.tags.map((tagId: string) => {
-                  const colorInfo = getTagColor(tagId, tags)
-                  return (
-                    <span
-                      key={tagId}
-                      className={[
-                        styles.tag,
-                        colorInfo ? styles.colored : ''
-                      ].join(' ')}
-                      style={{
-                        backgroundColor: colorInfo?.tagColor ?? 'transparent',
-                        color: colorInfo?.textColor ?? 'white'
-                      }}
-                    >
-                      {getTagNameFromMap(tagId, tagMap)}
-                    </span>
-                  )
-                })}
+            <div className={styles.tagsWrapper}>
+              <div className={styles.tags}>
+                {bookmark.tags.length > 0 &&
+                  bookmark.tags.map((tagId: string) => {
+                    const colorInfo = getTagColor(tagId, tags)
+                    return (
+                      <span
+                        key={tagId}
+                        className={[
+                          styles.tag,
+                          colorInfo ? styles.colored : ''
+                        ].join(' ')}
+                        style={{
+                          backgroundColor: colorInfo?.tagColor ?? 'transparent',
+                          color: colorInfo?.textColor ?? 'white'
+                        }}
+                      >
+                        {getTagNameFromMap(tagId, tagMap)}
+                      </span>
+                    )
+                  })}
+              </div>
+              <DropdownMenu.Root
+                open={tagManagerOpen}
+                onOpenChange={setTagManagerOpen}
+              >
+                <DropdownMenu.Trigger asChild>
+                  <Button
+                    asIcon={true}
+                    color='dark'
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                    }}
+                    title='Manage tags'
+                  >
+                    <TagIcon size={16} />
+                  </Button>
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Content className={styles.tagManagerDropdown}>
+                  <TagSelectorField
+                    tags={tags}
+                    selectedTags={selectedTags}
+                    onChange={handleTagsChange}
+                  />
+                </DropdownMenu.Content>
+              </DropdownMenu.Root>
             </div>
 
             <Text
@@ -111,26 +133,32 @@ export function BookmarkCard({ bookmark, tags, onDelete }: BookmarkCardProps) {
         </div>
       </a>
 
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger asChild className={styles.dropdownMenu}>
-          <Button asIcon={true} color='dark'>
-            <EllipsisVertical size={16} />
-          </Button>
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Content>
-          <DropdownMenu.Item
-            onClick={() => {
-              navigate('/bookmark', { bookmark: bookmark.id })
-            }}
-          >
-            Edit
-          </DropdownMenu.Item>
-          <DropdownMenu.Separator />
-          <DropdownMenu.Item onClick={() => onDelete(bookmark.id)} color='red'>
-            Delete
-          </DropdownMenu.Item>
-        </DropdownMenu.Content>
-      </DropdownMenu.Root>
+      <div className={styles.actions}>
+        <Button
+          asIcon={true}
+          color='dark'
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            navigate('/bookmark', { bookmark: bookmark.id })
+          }}
+          title='Edit'
+        >
+          <Edit size={16} />
+        </Button>
+        <Button
+          asIcon={true}
+          color='dark'
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onDelete(bookmark.id)
+          }}
+          title='Delete'
+        >
+          <Trash2 size={16} />
+        </Button>
+      </div>
     </div>
   )
 }

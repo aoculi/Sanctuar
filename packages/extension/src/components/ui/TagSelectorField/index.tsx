@@ -108,7 +108,7 @@ export const TagSelectorField = ({
       <Input
         ref={inputRef}
         size='lg'
-        placeholder={selectedTagObjects.length > 0 ? '' : 'Select tags...'}
+        placeholder='Select tags...'
         value={searchQuery}
         onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
           setSearchQuery(e.target.value)
@@ -118,34 +118,34 @@ export const TagSelectorField = ({
         onKeyDown={handleKeyDown}
       >
         <Tag size={16} />
-
-        <div className={styles.inputContent}>
-          {/* Selected tags displayed as badges */}
-          {selectedTagObjects.length > 0 && (
-            <div className={styles.selectedTags}>
-              {selectedTagObjects.map((tag) => {
-                const colorInfo = getTagColor(tag.id, tags)
-                return (
-                  <Button
-                    key={tag.id}
-                    color='light'
-                    size='sm'
-                    onClick={(e) => handleRemoveTag(tag.id, e)}
-                    className={colorInfo ? styles.coloredTag : ''}
-                    style={{
-                      backgroundColor: colorInfo?.tagColor ?? undefined,
-                      color: colorInfo?.textColor ?? undefined
-                    }}
-                  >
-                    <span className={styles.tagName}>{tag.name}</span>
-                    <X className={styles.removeIcon} height='12' width='12' />
-                  </Button>
-                )
-              })}
-            </div>
-          )}
-        </div>
       </Input>
+
+      {/* Selected tags displayed below the input */}
+      {selectedTagObjects.length > 0 && (
+        <div className={styles.selectedTagsContainer}>
+          <div className={styles.selectedTags}>
+            {selectedTagObjects.map((tag) => {
+              const colorInfo = getTagColor(tag.id, tags)
+              return (
+                <Button
+                  key={tag.id}
+                  color='light'
+                  size='sm'
+                  onClick={(e) => handleRemoveTag(tag.id, e)}
+                  className={colorInfo ? styles.coloredTag : ''}
+                  style={{
+                    backgroundColor: colorInfo?.tagColor ?? undefined,
+                    color: colorInfo?.textColor ?? undefined
+                  }}
+                >
+                  <span className={styles.tagName}>{tag.name}</span>
+                  <X className={styles.removeIcon} height='12' width='12' />
+                </Button>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Autocomplete suggestions */}
       {isOpen && filteredTags.length > 0 && (

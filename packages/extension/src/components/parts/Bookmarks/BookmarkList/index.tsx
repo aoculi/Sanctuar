@@ -1,5 +1,4 @@
-import { Funnel } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
 import { useBookmarks } from '@/components/hooks/useBookmarks'
@@ -8,8 +7,6 @@ import { filterBookmarks } from '@/lib/bookmarkUtils'
 import type { Bookmark } from '@/lib/types'
 
 import { BookmarkCard } from '@/components/parts/Bookmarks/BookmarkCard'
-import Button from '@/components/ui/Button'
-import { DropdownMenu } from '@/components/ui/DropdownMenu'
 import Text from '@/components/ui/Text'
 
 import styles from './styles.module.css'
@@ -17,10 +14,16 @@ import styles from './styles.module.css'
 type Props = {
   searchQuery: string
   currentTagId: string | null
+  sortMode: 'updated_at' | 'title'
+  selectedTags: string[]
 }
 
-export default function BookmarkList({ searchQuery, currentTagId }: Props) {
-  const [sortMode, setSortMode] = useState<'updated_at' | 'title'>('updated_at')
+export default function BookmarkList({
+  searchQuery,
+  currentTagId,
+  sortMode,
+  selectedTags
+}: Props) {
   const { bookmarks, deleteBookmark } = useBookmarks()
   const { tags, showHiddenTags } = useTags()
   const { setFlash } = useNavigation()
@@ -54,12 +57,17 @@ export default function BookmarkList({ searchQuery, currentTagId }: Props) {
     )
   }, [bookmarks, showHiddenTags, hiddenTagIds])
 
-  // Filter bookmarks based on search and selected tag
+  // Filter bookmarks based on search and selected tags
   const filteredBookmarks = useMemo(() => {
     let filtered = filterBookmarks(visibleBookmarks, tags, searchQuery)
 
-    // Filter by selected tag (if not "all" or null)
-    if (currentTagId && currentTagId !== 'all') {
+    // Filter by selected tags (if any are selected)
+    if (selectedTags.length > 0) {
+      filtered = filtered.filter((bookmark) =>
+        selectedTags.some((tagId) => bookmark.tags.includes(tagId))
+      )
+    } else if (currentTagId && currentTagId !== 'all') {
+      // Fallback to legacy currentTagId filtering if no selectedTags
       if (currentTagId === 'unsorted') {
         filtered = filtered.filter((bookmark) => bookmark.tags.length === 0)
       } else {
@@ -79,41 +87,17 @@ export default function BookmarkList({ searchQuery, currentTagId }: Props) {
     }
 
     return sorted
-  }, [visibleBookmarks, tags, searchQuery, currentTagId, sortMode])
+  }, [
+    visibleBookmarks,
+    tags,
+    searchQuery,
+    currentTagId,
+    sortMode,
+    selectedTags
+  ])
 
   return (
     <div className={styles.container}>
-      <div className={styles.header}>
-        <Text size='2' color='light'>
-          Bookmarks ({filteredBookmarks.length}
-          {filteredBookmarks.length !== visibleBookmarks.length
-            ? ` of ${visibleBookmarks.length}`
-            : ''}
-          )
-        </Text>
-        <DropdownMenu.Root>
-          <DropdownMenu.Trigger asChild>
-            <Button asIcon={true} size='sm' variant='ghost' color='light'>
-              <Funnel strokeWidth={2} size={16} />
-            </Button>
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Content>
-            <DropdownMenu.Item
-              onClick={() => setSortMode('updated_at')}
-              disabled={sortMode === 'updated_at'}
-            >
-              Sort by updated date
-            </DropdownMenu.Item>
-            <DropdownMenu.Item
-              onClick={() => setSortMode('title')}
-              disabled={sortMode === 'title'}
-            >
-              Sort by title
-            </DropdownMenu.Item>
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
-      </div>
-
       {visibleBookmarks.length === 0 ? (
         <Text size='2' color='light' style={{ padding: '20px 20px 0' }}>
           {bookmarks.length === 0

@@ -69,12 +69,6 @@
   background-color: rgba(255, 255, 255, 0.12) !important;
 }
 
-.tag.dragOver {
-  background-color: rgba(255, 255, 255, 0.15) !important;
-  border-color: var(--primary);
-  transform: scale(1.02);
-}
-
 .tagIconLabelWrapper {
   display: flex;
   flex-direction: row;

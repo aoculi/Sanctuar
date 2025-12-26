@@ -1,27 +1,9 @@
 .component {
   position: relative;
-  cursor: grab;
-  transition:
-    opacity 0.2s ease,
-    transform 0.2s ease;
-}
-
-.component:active {
-  cursor: grabbing;
-}
-
-.component.dragging {
-  opacity: 0.5;
-  transform: scale(0.98);
-  cursor: grabbing;
-}
-
-.component.dragging .card {
-  pointer-events: none;
 }
 
 .card {
-  padding: 10px 20px;
+  padding: 10px 15px;
   transition: background-color 0.2s ease;
   display: flex;
   flex-direction: row;
@@ -67,11 +49,24 @@
   justify-content: space-between;
 }
 
+.tagsWrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
 .tags {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   margin: 8px 0;
+}
+
+.tagManagerDropdown {
+  min-width: 300px;
+  max-width: 400px;
+  padding: 12px !important;
 }
 
 .tag {
@@ -94,9 +89,12 @@
   text-align: right;
 }
 
-.dropdownMenu {
+.actions {
   position: absolute;
   top: 12px;
   right: 20px;
   z-index: 3;
+  display: flex;
+  gap: 4px;
+  align-items: center;
 }

@@ -5,36 +5,35 @@ import usePopupSize from '@/components/hooks/usePopupSize'
 import BookmarkHeader from '@/components/parts/Bookmarks/BookmarkHeader'
 import BookmarkList from '@/components/parts/Bookmarks/BookmarkList'
 import Header from '@/components/parts/Header'
-import Tags from '@/components/parts/Tags'
 
 import styles from './styles.module.css'
 
 export default function Vault() {
   usePopupSize('large')
 
-  const [currentTagId, setCurrentTagId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
-
-  const onSelectFilterTag = (id: string) => {
-    setCurrentTagId(id)
-  }
+  const [sortMode, setSortMode] = useState<'updated_at' | 'title'>('updated_at')
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
 
   return (
     <div className={styles.component}>
       <Header canSwitchToBookmark={true} />
       <div className={styles.content}>
-        <Tags
-          currentTagId={currentTagId}
-          onSelectFilterTag={onSelectFilterTag}
+        <BookmarkHeader
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          sortMode={sortMode}
+          onSortModeChange={setSortMode}
+          selectedTags={selectedTags}
+          onSelectedTagsChange={setSelectedTags}
         />
-        <div className={styles.right}>
-          <BookmarkHeader
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-          />
 
-          <BookmarkList searchQuery={searchQuery} currentTagId={currentTagId} />
-        </div>
+        <BookmarkList
+          searchQuery={searchQuery}
+          currentTagId={null}
+          sortMode={sortMode}
+          selectedTags={selectedTags}
+        />
       </div>
     </div>
   )

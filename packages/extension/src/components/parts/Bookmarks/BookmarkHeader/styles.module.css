@@ -7,7 +7,47 @@
   align-items: center;
   height: 41px;
   border-bottom: 1px solid var(--border);
-  background-color: rgba(0, 0, 0, 0.2);
+  gap: 10px;
+}
+
+.actionsContainer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 0 0 20px;
+}
+
+.actionButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px !important;
+  white-space: nowrap;
+}
+
+.actionLabel {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.chevron {
+  opacity: 0.7;
+  transition: transform 0.2s ease;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.filterActive {
+  background-color: var(--primary) !important;
+  opacity: 0.8;
+}
+
+.filterDropdown {
+  min-width: 300px;
+  max-width: 400px;
+  padding: 12px !important;
 }
 
 .searchBarContainer {
@@ -16,6 +56,14 @@
   justify-content: flex-start;
   gap: 10px;
   padding: 0 20px;
+  position: relative;
+  background-color: rgba(0, 0, 0, 0.2);
+  height: 100%;
+  border-radius: 0;
+  border-left: 1px solid var(--border);
+  flex: 1;
+  min-width: 200px;
+  max-width: 300px;
 }
 
 .searchInput {
