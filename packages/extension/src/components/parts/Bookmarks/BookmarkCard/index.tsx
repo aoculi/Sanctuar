@@ -1,4 +1,10 @@
-import { Edit, Tag as TagIcon, Trash2 } from 'lucide-react'
+import {
+  Edit,
+  HeartMinus,
+  HeartPlus,
+  Tag as TagIcon,
+  Trash2
+} from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
@@ -48,6 +54,16 @@ export function BookmarkCard({ bookmark, tags, onDelete }: BookmarkCardProps) {
     }
   }
 
+  const handleTogglePinned = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    try {
+      await updateBookmark(bookmark.id, { pinned: !(bookmark.pinned ?? false) })
+    } catch (error) {
+      console.error('Failed to update bookmark pinned status:', error)
+    }
+  }
+
   return (
     <div className={styles.component}>
       <a
@@ -72,9 +88,9 @@ export function BookmarkCard({ bookmark, tags, onDelete }: BookmarkCardProps) {
 
           <div className={styles.tagsContainer}>
             <div className={styles.tagsWrapper}>
-              <div className={styles.tags}>
-                {bookmark.tags.length > 0 &&
-                  bookmark.tags.map((tagId: string) => {
+              {bookmark.tags.length > 0 && (
+                <div className={styles.tags}>
+                  {bookmark.tags.map((tagId: string) => {
                     const colorInfo = getTagColor(tagId, tags)
                     return (
                       <span
@@ -92,7 +108,8 @@ export function BookmarkCard({ bookmark, tags, onDelete }: BookmarkCardProps) {
                       </span>
                     )
                   })}
-              </div>
+                </div>
+              )}
               <DropdownMenu.Root
                 open={tagManagerOpen}
                 onOpenChange={setTagManagerOpen}
@@ -134,6 +151,18 @@ export function BookmarkCard({ bookmark, tags, onDelete }: BookmarkCardProps) {
       </a>
 
       <div className={styles.actions}>
+        <Button
+          asIcon={true}
+          color={(bookmark.pinned ?? false) ? 'light' : 'dark'}
+          onClick={handleTogglePinned}
+          title={(bookmark.pinned ?? false) ? 'Unpin' : 'Pin'}
+        >
+          {(bookmark.pinned ?? false) ? (
+            <HeartMinus size={16} />
+          ) : (
+            <HeartPlus size={16} />
+          )}
+        </Button>
         <Button
           asIcon={true}
           color='dark'

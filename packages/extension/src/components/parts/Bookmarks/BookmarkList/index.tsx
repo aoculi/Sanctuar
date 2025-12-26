@@ -77,13 +77,31 @@ export default function BookmarkList({
       }
     }
 
-    // Sort bookmarks
+    // Sort bookmarks - pinned items first, then by sort mode
     const sorted = [...filtered]
     if (sortMode === 'title') {
-      sorted.sort((a, b) => a.title.localeCompare(b.title))
+      sorted.sort((a, b) => {
+        // Pinned items first
+        const aPinned = a.pinned ?? false
+        const bPinned = b.pinned ?? false
+        if (aPinned !== bPinned) {
+          return aPinned ? -1 : 1
+        }
+        // Then by title
+        return a.title.localeCompare(b.title)
+      })
     } else {
-      // Sort by updated_at (most recent first)
-      sorted.sort((a, b) => b.updated_at - a.updated_at)
+      // Sort by updated_at (most recent first), but pinned items first
+      sorted.sort((a, b) => {
+        // Pinned items first
+        const aPinned = a.pinned ?? false
+        const bPinned = b.pinned ?? false
+        if (aPinned !== bPinned) {
+          return aPinned ? -1 : 1
+        }
+        // Then by updated_at (most recent first)
+        return b.updated_at - a.updated_at
+      })
     }
 
     return sorted

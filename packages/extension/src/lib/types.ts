@@ -22,6 +22,7 @@ export interface Bookmark {
   note: string
   picture: string
   tags: string[] // tag ids
+  pinned?: boolean
   created_at: number // epoch ms
   updated_at: number // epoch ms
 }
