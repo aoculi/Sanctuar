@@ -143,15 +143,21 @@ export function BookmarkCard({
                 >
                   <DropdownMenu.Trigger asChild>
                     <Button
-                      asIcon={true}
+                      asIcon={bookmark.tags.length > 0}
+                      size='sm'
+                      variant='ghost'
                       color='dark'
                       onClick={(e) => {
                         e.preventDefault()
                         e.stopPropagation()
                       }}
                       title='Manage tags'
+                      className={styles.tagButton}
                     >
                       <TagIcon size={16} />
+                      {bookmark.tags.length === 0 && (
+                        <span className={styles.tagButtonLabel}>Add tags</span>
+                      )}
                     </Button>
                   </DropdownMenu.Trigger>
                   <DropdownMenu.Content className={styles.tagManagerDropdown}>

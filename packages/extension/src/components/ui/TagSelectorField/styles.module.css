@@ -30,6 +30,23 @@
   opacity: 1;
 }
 
+.selectedTags button {
+  border-radius: 8px !important;
+  padding: 2px 8px !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  min-height: auto !important;
+  height: auto !important;
+}
+
+/* Default tag styling (no color) */
+.selectedTags button:not(.coloredTag) {
+  background-color: transparent !important;
+  border: 1px solid var(--primary) !important;
+  color: white !important;
+}
+
+/* Colored tags - border removed, colors come from inline styles */
 .coloredTag {
   border: none !important;
 }

@@ -93,6 +93,14 @@
   margin: 8px 0;
 }
 
+.tagButton {
+  flex-shrink: 0;
+}
+
+.tagButtonLabel {
+  font-size: 12px;
+}
+
 .tagManagerDropdown {
   min-width: 300px;
   max-width: 400px;

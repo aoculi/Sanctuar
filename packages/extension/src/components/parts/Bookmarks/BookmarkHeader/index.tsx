@@ -148,10 +148,15 @@ export default function BookmarkHeader({
                   size='sm'
                   variant='ghost'
                   color='light'
-                  className={`${styles.actionButton} ${selectedTags.length > 0 ? styles.filterActive : ''}`}
+                  className={styles.actionButton}
                   title='Filter bookmarks by tags'
                 >
                   <Tags strokeWidth={2} size={16} />
+                  {selectedTags.length > 0 && (
+                    <span className={styles.tagBadge}>
+                      {selectedTags.length}
+                    </span>
+                  )}
                   <span className={styles.actionLabel}>Filter</span>
                   <ChevronDown
                     strokeWidth={2}
