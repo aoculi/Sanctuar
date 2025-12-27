@@ -16,6 +16,7 @@ import {
   saveManifestData,
   useManifest
 } from '@/components/hooks/providers/useManifestProvider'
+import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
 import { ApiError } from '@/lib/api'
 import { decryptManifest } from '@/lib/manifest'
 import { unlock } from '@/lib/unlock'
@@ -36,12 +37,16 @@ export type AuthPhase =
 export const useQueryAuth = () => {
   const { setSession, clearSession } = useAuthSession()
   const { setManifestFromLogin, clear: clearManifest } = useManifest()
+  const { setFlash } = useNavigation()
   const queryClient = useQueryClient()
   const [phase, setPhase] = useState<AuthPhase>('idle')
 
   const login = useMutation<LoginResponse, ApiError, LoginInput>({
     mutationKey: QUERY_KEYS.login(),
     retry: false,
+    onMutate: () => {
+      setFlash(null)
+    },
     mutationFn: async (variables) => {
       // Phase 1: Authenticate
       setPhase('authenticating')
@@ -91,6 +96,9 @@ export const useQueryAuth = () => {
   const register = useMutation<RegisterResponse, ApiError, RegisterInput>({
     mutationKey: QUERY_KEYS.register(),
     retry: false,
+    onMutate: () => {
+      setFlash(null)
+    },
     mutationFn: async (variables) => {
       // Phase 1: Register
       setPhase('authenticating')
@@ -138,6 +146,9 @@ export const useQueryAuth = () => {
 
   const logout = useMutation<void, ApiError, void>({
     mutationKey: QUERY_KEYS.logout(),
+    onMutate: () => {
+      setFlash(null)
+    },
     mutationFn: async () => {
       try {
         await fetchLogout()

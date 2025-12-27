@@ -12,7 +12,6 @@ import { MAX_TAGS_PER_ITEM } from '@/lib/validation'
 
 import Header from '@/components/parts/Header'
 import Button from '@/components/ui/Button'
-import ErrorCallout from '@/components/ui/ErrorCallout'
 import Input from '@/components/ui/Input'
 import { TagSelectorField } from '@/components/ui/TagSelectorField'
 import Textarea from '@/components/ui/Textarea'
@@ -32,7 +31,7 @@ const emptyBookmark = {
 
 export default function Bookmark() {
   usePopupSize('compact')
-  const { navigate, selectedBookmark } = useNavigation()
+  const { navigate, selectedBookmark, setFlash } = useNavigation()
   const { isSaving } = useManifest()
   const { addBookmark, updateBookmark, bookmarks } = useBookmarks()
   const { tags } = useTags()
@@ -48,8 +47,6 @@ export default function Bookmark() {
     )
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
-  const [captureError, setCaptureError] = useState<string | null>(null)
-  const [saveError, setSaveError] = useState<string | null>(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
 
   // Initialize form when editing an existing bookmark
@@ -73,12 +70,10 @@ export default function Bookmark() {
         (b) => b.url.trim().toLowerCase() === trimmedUrl.toLowerCase()
       )
       if (duplicate) {
-        setSaveError('This page is already bookmarked')
+        setFlash('This page is already bookmarked')
       } else {
-        setSaveError(null)
       }
     } else {
-      setSaveError(null)
     }
   }, [form.url, bookmarks, bookmark])
 
@@ -91,7 +86,7 @@ export default function Bookmark() {
 
     const loadCurrentPage = async () => {
       setIsLoading(true)
-      setCaptureError(null)
+      setFlash(null)
 
       const result = await captureCurrentPage()
       if (result.ok) {
@@ -103,7 +98,7 @@ export default function Bookmark() {
           tags: result.bookmark.tags
         })
       } else {
-        setCaptureError(result.error)
+        setFlash(result.error)
       }
 
       setIsLoading(false)
@@ -122,7 +117,7 @@ export default function Bookmark() {
     }
 
     setIsRefreshing(true)
-    setCaptureError(null)
+    setFlash(null)
 
     try {
       const result = await refreshBookmarkMetadata(form.url.trim())
@@ -133,12 +128,12 @@ export default function Bookmark() {
           picture: result.favicon
         }))
       } else {
-        setCaptureError(result.error)
+        setFlash(result.error)
       }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to refresh metadata'
-      setCaptureError(errorMessage)
+      setFlash(errorMessage)
     } finally {
       setIsRefreshing(false)
     }
@@ -183,7 +178,6 @@ export default function Bookmark() {
     }
 
     setIsLoading(true)
-    setSaveError(null)
 
     try {
       if (bookmark) {
@@ -206,9 +200,10 @@ export default function Bookmark() {
 
       navigate('/vault')
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Failed to save bookmark'
-      setSaveError(errorMessage)
+      setFlash(
+        'Failed to save bookmark: ' +
+          ((error as Error).message ?? 'Unknown error')
+      )
     } finally {
       setIsLoading(false)
     }
@@ -304,9 +299,6 @@ export default function Bookmark() {
       />
 
       <div className={styles.page}>
-        {captureError && <ErrorCallout>{captureError}</ErrorCallout>}
-        {saveError && <ErrorCallout>{saveError}</ErrorCallout>}
-
         <div className={styles.content}>
           {form.picture && (
             <div className={styles.picture}>

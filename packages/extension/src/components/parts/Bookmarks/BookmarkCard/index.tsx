@@ -40,7 +40,7 @@ export function BookmarkCard({
   isSelected,
   onToggleSelect
 }: BookmarkCardProps) {
-  const { navigate } = useNavigation()
+  const { navigate, setFlash } = useNavigation()
   const { updateBookmark } = useBookmarks()
   const [tagManagerOpen, setTagManagerOpen] = useState(false)
   const [selectedTags, setSelectedTags] = useState<string[]>(bookmark.tags)
@@ -59,6 +59,10 @@ export function BookmarkCard({
     } catch (error) {
       // Revert on error
       setSelectedTags(bookmark.tags)
+      setFlash(
+        'Failed to update bookmark tags: ' +
+          ((error as Error).message ?? 'Unknown error')
+      )
       console.error('Failed to update bookmark tags:', error)
     }
   }
@@ -69,6 +73,10 @@ export function BookmarkCard({
     try {
       await updateBookmark(bookmark.id, { pinned: !(bookmark.pinned ?? false) })
     } catch (error) {
+      setFlash(
+        'Failed to update bookmark: ' +
+          ((error as Error).message ?? 'Unknown error')
+      )
       console.error('Failed to update bookmark pinned status:', error)
     }
   }

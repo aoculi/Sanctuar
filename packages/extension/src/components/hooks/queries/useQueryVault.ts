@@ -7,6 +7,7 @@ import {
   VaultManifestResponse,
   VaultResponse
 } from '@/api/vault-api'
+import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
 import { type ApiError } from '@/lib/api'
 import {
   saveManifest as saveManifestFn,
@@ -27,6 +28,7 @@ const manifestApi = {
 
 export function useQueryVault() {
   const queryClient = useQueryClient()
+  const { setFlash } = useNavigation()
 
   const getVault = useQuery<VaultResponse, ApiError>({
     queryKey: QUERY_KEYS.vault(),
@@ -72,6 +74,9 @@ export function useQueryVault() {
     SaveManifestInput
   >({
     mutationKey: QUERY_KEYS.manifestSave(),
+    onMutate: () => {
+      setFlash(null)
+    },
     mutationFn: (input) => saveManifestFn(input, manifestApi)
   })
 

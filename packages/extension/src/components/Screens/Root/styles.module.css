@@ -1,5 +1,7 @@
 .flash {
-  background-color: rgba(0, 0, 0, 0.5);
-  color: var(--text-light);
-  padding: 10px;
+  background-color: var(--background-1);
+  padding: 5px 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
 }

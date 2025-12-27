@@ -37,9 +37,11 @@ export default function BookmarkList({
       try {
         await deleteBookmark(id)
       } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : 'Failed to delete bookmark'
-        setFlash(errorMessage)
+        setFlash(
+          'Failed to delete bookmark: ' +
+            ((error as Error).message ?? 'Unknown error')
+        )
+
         setTimeout(() => setFlash(null), 5000)
       }
     }

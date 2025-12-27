@@ -63,6 +63,7 @@ export function NavigationProvider({
 
   const navigate = useCallback(
     (newRoute: Route, options?: NavigationOptions) => {
+      setFlashState(null)
       setRoute(newRoute)
 
       if (options?.bookmark) {

@@ -11,7 +11,6 @@ import Header from '@/components/parts/Header'
 import Button from '@/components/ui/Button'
 import { Checkbox } from '@/components/ui/Checkbox'
 import ColorPicker from '@/components/ui/ColorPicker'
-import ErrorCallout from '@/components/ui/ErrorCallout'
 import Input from '@/components/ui/Input'
 import Text from '@/components/ui/Text'
 
@@ -25,7 +24,7 @@ const defaultTag = {
 export default function Tag() {
   usePopupSize('compact')
   const { tags, createTag, updateTag } = useTags()
-  const { navigate, selectedTag } = useNavigation()
+  const { navigate, selectedTag, setFlash } = useNavigation()
 
   const tag = tags.find((tag: tagType) => tag.id === selectedTag) || null
 
@@ -42,7 +41,6 @@ export default function Tag() {
   const [form, setForm] = useState(defaultTag)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
-  const [saveError, setSaveError] = useState<string | null>(null)
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
@@ -83,9 +81,9 @@ export default function Tag() {
 
       navigate('/vault')
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Failed to save tag'
-      setSaveError(errorMessage)
+      setFlash(
+        'Failed to save tag: ' + ((error as Error).message ?? 'Unknown error')
+      )
     } finally {
       setIsLoading(false)
     }
@@ -115,8 +113,6 @@ export default function Tag() {
       <Header title={tag ? 'Edit tag' : 'New tag'} canSwitchToVault={true} />
 
       <div className={styles.page}>
-        {saveError && <ErrorCallout>{saveError}</ErrorCallout>}
-
         <div className={styles.content}>
           <Input
             error={errors.name}

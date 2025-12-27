@@ -73,9 +73,11 @@ export default function BookmarkHeader({
         })
         onDeleteSelected()
       } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : 'Failed to delete bookmarks'
-        setFlash(errorMessage)
+        setFlash(
+          'Failed to delete bookmarks: ' +
+            ((error as Error).message ?? 'Unknown error')
+        )
+
         setTimeout(() => setFlash(null), 5000)
       }
     }
