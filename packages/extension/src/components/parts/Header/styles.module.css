@@ -37,3 +37,38 @@
   padding-right: 2px !important;
   margin-right: 10px !important;
 }
+
+.searchBarContainer {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 6px 10px;
+  background-color: rgba(0, 0, 0, 0.2);
+  height: 100%;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border);
+  min-width: 200px;
+  max-width: 300px;
+}
+
+.searchInput {
+  position: absolute;
+  inset: 0;
+  border: none;
+  margin: 0;
+  padding: 0 0 0 35px;
+  background: none;
+  box-shadow: none;
+  outline: none;
+  z-index: 0;
+  color: white;
+  font-size: 14px;
+}
+
+.searchInput::placeholder {
+  font-size: 14px;
+  color: var(--text-light);
+}

@@ -3,26 +3,27 @@ import {
   ChevronDown,
   HeartMinus,
   HeartPlus,
-  Search,
   Tag,
   Tags,
   Trash2
 } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { useManifest } from '@/components/hooks/providers/useManifestProvider'
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
+import { useBookmarks } from '@/components/hooks/useBookmarks'
 import { useTags } from '@/components/hooks/useTags'
+import { processBookmarks } from '@/lib/bookmarkUtils'
 
 import Button from '@/components/ui/Button'
 import { DropdownMenu } from '@/components/ui/DropdownMenu'
 import { TagSelectorField } from '@/components/ui/TagSelectorField'
+import Text from '@/components/ui/Text'
 
 import styles from './styles.module.css'
 
 export default function BookmarkHeader({
   searchQuery,
-  onSearchChange,
   sortMode,
   onSortModeChange,
   selectedTags,
@@ -31,7 +32,6 @@ export default function BookmarkHeader({
   onDeleteSelected
 }: {
   searchQuery: string
-  onSearchChange: (query: string) => void
   sortMode: 'updated_at' | 'title'
   onSortModeChange: (mode: 'updated_at' | 'title') => void
   selectedTags: string[]
@@ -39,7 +39,8 @@ export default function BookmarkHeader({
   selectedBookmarkIds: Set<string>
   onDeleteSelected: () => void
 }) {
-  const { tags } = useTags()
+  const { tags, showHiddenTags } = useTags()
+  const { bookmarks } = useBookmarks()
   const { navigate, setFlash } = useNavigation()
   const { manifest, save } = useManifest()
   const [sortOpen, setSortOpen] = useState(false)
@@ -103,6 +104,25 @@ export default function BookmarkHeader({
   }
 
   const hasSelection = selectedBookmarkIds.size > 0
+
+  // Process bookmarks: filter and sort
+  const { pinnedBookmarks, nonPinnedBookmarks } = useMemo(() => {
+    return processBookmarks(bookmarks, tags, {
+      searchQuery,
+      selectedTags,
+      sortMode,
+      showHiddenTags
+    })
+  }, [bookmarks, tags, searchQuery, selectedTags, sortMode, showHiddenTags])
+
+  const totalBookmarksCount = pinnedBookmarks.length + nonPinnedBookmarks.length
+
+  // Count how many of the displayed bookmarks are selected
+  const selectedCount = useMemo(() => {
+    return [...pinnedBookmarks, ...nonPinnedBookmarks].filter((bookmark) =>
+      selectedBookmarkIds.has(bookmark.id)
+    ).length
+  }, [pinnedBookmarks, nonPinnedBookmarks, selectedBookmarkIds])
 
   return (
     <div className={styles.container}>
@@ -222,15 +242,12 @@ export default function BookmarkHeader({
           </>
         )}
       </div>
-      <div className={styles.searchBarContainer}>
-        <Search strokeWidth={1} size={16} />
-        <input
-          type='text'
-          placeholder='Search bookmarks...'
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className={styles.searchInput}
-        />
+      <div className={styles.countContainer}>
+        <Text size='2' color='light' align='right'>
+          {totalBookmarksCount}{' '}
+          {totalBookmarksCount === 1 ? 'bookmark' : 'bookmarks'}
+          {selectedCount > 0 && ` (${selectedCount} selected)`}
+        </Text>
       </div>
     </div>
   )

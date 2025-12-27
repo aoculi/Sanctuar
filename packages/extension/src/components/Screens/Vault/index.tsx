@@ -20,11 +20,14 @@ export default function Vault() {
 
   return (
     <div className={styles.component}>
-      <Header canSwitchToBookmark={true} />
+      <Header
+        canSwitchToBookmark={true}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+      />
       <div className={styles.content}>
         <BookmarkHeader
           searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
           sortMode={sortMode}
           onSortModeChange={setSortMode}
           selectedTags={selectedTags}

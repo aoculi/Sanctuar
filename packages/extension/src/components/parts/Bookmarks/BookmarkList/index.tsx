@@ -3,7 +3,7 @@ import { useMemo } from 'react'
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
 import { useBookmarks } from '@/components/hooks/useBookmarks'
 import { useTags } from '@/components/hooks/useTags'
-import { filterBookmarks } from '@/lib/bookmarkUtils'
+import { processBookmarks } from '@/lib/bookmarkUtils'
 import type { Bookmark } from '@/lib/types'
 
 import { BookmarkCard } from '@/components/parts/Bookmarks/BookmarkCard'
@@ -55,86 +55,26 @@ export default function BookmarkList({
     onSelectedBookmarkIdsChange(newSelected)
   }
 
-  // Create a set of hidden tag IDs for efficient lookup
-  const hiddenTagIds = useMemo(() => {
-    return new Set(tags.filter((tag) => tag.hidden).map((tag) => tag.id))
-  }, [tags])
-
-  // Bookmarks that should be visible given the hidden tag setting
-  const visibleBookmarks = useMemo(() => {
-    if (showHiddenTags) {
-      return bookmarks
-    }
-
-    return bookmarks.filter(
-      (bookmark) => !bookmark.tags.some((tagId) => hiddenTagIds.has(tagId))
-    )
-  }, [bookmarks, showHiddenTags, hiddenTagIds])
-
-  // Filter bookmarks based on search and selected tags
-  const { pinnedBookmarks, nonPinnedBookmarks } = useMemo(() => {
-    let filtered = filterBookmarks(visibleBookmarks, tags, searchQuery)
-
-    // Filter by selected tags (if any are selected)
-    if (selectedTags.length > 0) {
-      filtered = filtered.filter((bookmark) =>
-        selectedTags.some((tagId) => bookmark.tags.includes(tagId))
-      )
-    } else if (currentTagId && currentTagId !== 'all') {
-      // Fallback to legacy currentTagId filtering if no selectedTags
-      if (currentTagId === 'unsorted') {
-        filtered = filtered.filter((bookmark) => bookmark.tags.length === 0)
-      } else {
-        filtered = filtered.filter((bookmark) =>
-          bookmark.tags.includes(currentTagId)
-        )
-      }
-    }
-
-    // Separate pinned and non-pinned bookmarks
-    const pinned: Bookmark[] = []
-    const nonPinned: Bookmark[] = []
-
-    filtered.forEach((bookmark) => {
-      if (bookmark.pinned) {
-        pinned.push(bookmark)
-      } else {
-        nonPinned.push(bookmark)
-      }
-    })
-
-    // Sort pinned bookmarks
-    if (sortMode === 'title') {
-      pinned.sort((a, b) => a.title.localeCompare(b.title))
-    } else {
-      pinned.sort((a, b) => b.updated_at - a.updated_at)
-    }
-
-    // Sort non-pinned bookmarks
-    if (sortMode === 'title') {
-      nonPinned.sort((a, b) => a.title.localeCompare(b.title))
-    } else {
-      nonPinned.sort((a, b) => b.updated_at - a.updated_at)
-    }
-
-    return { pinnedBookmarks: pinned, nonPinnedBookmarks: nonPinned }
-  }, [
-    visibleBookmarks,
-    tags,
-    searchQuery,
-    currentTagId,
-    sortMode,
-    selectedTags
-  ])
-
-  const totalBookmarksCount = pinnedBookmarks.length + nonPinnedBookmarks.length
-
-  // Count how many of the displayed bookmarks are selected
-  const selectedCount = useMemo(() => {
-    return [...pinnedBookmarks, ...nonPinnedBookmarks].filter((bookmark) =>
-      selectedBookmarkIds.has(bookmark.id)
-    ).length
-  }, [pinnedBookmarks, nonPinnedBookmarks, selectedBookmarkIds])
+  // Process bookmarks: filter and sort
+  const { visibleBookmarks, pinnedBookmarks, nonPinnedBookmarks } = useMemo(
+    () =>
+      processBookmarks(bookmarks, tags, {
+        searchQuery,
+        selectedTags,
+        sortMode,
+        showHiddenTags,
+        currentTagId
+      }),
+    [
+      bookmarks,
+      tags,
+      searchQuery,
+      selectedTags,
+      sortMode,
+      showHiddenTags,
+      currentTagId
+    ]
+  )
 
   return (
     <div className={styles.container}>
@@ -149,40 +89,31 @@ export default function BookmarkList({
           No bookmarks match your search.
         </Text>
       ) : (
-        <>
-          <div className={styles.countContainer}>
-            <Text size='2' color='light' align='right'>
-              {totalBookmarksCount}{' '}
-              {totalBookmarksCount === 1 ? 'bookmark' : 'bookmarks'}
-              {selectedCount > 0 && ` (${selectedCount} selected)`}
-            </Text>
-          </div>
-          <div className={styles.list}>
-            {pinnedBookmarks.map((bookmark: Bookmark) => (
-              <BookmarkCard
-                key={bookmark.id}
-                bookmark={bookmark}
-                tags={tags}
-                onDelete={onDelete}
-                isSelected={selectedBookmarkIds.has(bookmark.id)}
-                onToggleSelect={() => handleBookmarkToggle(bookmark.id)}
-              />
-            ))}
-            {pinnedBookmarks.length > 0 && nonPinnedBookmarks.length > 0 && (
-              <div className={styles.separator} />
-            )}
-            {nonPinnedBookmarks.map((bookmark: Bookmark) => (
-              <BookmarkCard
-                key={bookmark.id}
-                bookmark={bookmark}
-                tags={tags}
-                onDelete={onDelete}
-                isSelected={selectedBookmarkIds.has(bookmark.id)}
-                onToggleSelect={() => handleBookmarkToggle(bookmark.id)}
-              />
-            ))}
-          </div>
-        </>
+        <div className={styles.list}>
+          {pinnedBookmarks.map((bookmark: Bookmark) => (
+            <BookmarkCard
+              key={bookmark.id}
+              bookmark={bookmark}
+              tags={tags}
+              onDelete={onDelete}
+              isSelected={selectedBookmarkIds.has(bookmark.id)}
+              onToggleSelect={() => handleBookmarkToggle(bookmark.id)}
+            />
+          ))}
+          {pinnedBookmarks.length > 0 && nonPinnedBookmarks.length > 0 && (
+            <div className={styles.separator} />
+          )}
+          {nonPinnedBookmarks.map((bookmark: Bookmark) => (
+            <BookmarkCard
+              key={bookmark.id}
+              bookmark={bookmark}
+              tags={tags}
+              onDelete={onDelete}
+              isSelected={selectedBookmarkIds.has(bookmark.id)}
+              onToggleSelect={() => handleBookmarkToggle(bookmark.id)}
+            />
+          ))}
+        </div>
       )}
     </div>
   )

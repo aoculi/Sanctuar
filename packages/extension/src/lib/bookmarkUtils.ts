@@ -141,3 +141,94 @@ export const getTagColor = (
     textColor
   }
 }
+
+export type ProcessedBookmarks = {
+  visibleBookmarks: Bookmark[]
+  pinnedBookmarks: Bookmark[]
+  nonPinnedBookmarks: Bookmark[]
+}
+
+/**
+ * Process bookmarks by filtering and sorting them based on various criteria
+ * @param bookmarks - Array of all bookmarks
+ * @param tags - Array of all tags
+ * @param options - Processing options
+ * @returns Object containing visible, pinned, and non-pinned bookmarks
+ */
+export function processBookmarks(
+  bookmarks: Bookmark[],
+  tags: Tag[],
+  options: {
+    searchQuery: string
+    selectedTags: string[]
+    sortMode: 'updated_at' | 'title'
+    showHiddenTags: boolean
+    currentTagId?: string | null
+  }
+): ProcessedBookmarks {
+  const { searchQuery, selectedTags, sortMode, showHiddenTags, currentTagId } =
+    options
+
+  // Create a set of hidden tag IDs for efficient lookup
+  const hiddenTagIds = new Set(
+    tags.filter((tag) => tag.hidden).map((tag) => tag.id)
+  )
+
+  // Bookmarks that should be visible given the hidden tag setting
+  const visibleBookmarks = showHiddenTags
+    ? bookmarks
+    : bookmarks.filter(
+        (bookmark) => !bookmark.tags.some((tagId) => hiddenTagIds.has(tagId))
+      )
+
+  // Filter bookmarks based on search and selected tags
+  let filtered = filterBookmarks(visibleBookmarks, tags, searchQuery)
+
+  // Filter by selected tags (if any are selected)
+  if (selectedTags.length > 0) {
+    filtered = filtered.filter((bookmark) =>
+      selectedTags.some((tagId) => bookmark.tags.includes(tagId))
+    )
+  } else if (currentTagId && currentTagId !== 'all') {
+    // Fallback to legacy currentTagId filtering if no selectedTags
+    if (currentTagId === 'unsorted') {
+      filtered = filtered.filter((bookmark) => bookmark.tags.length === 0)
+    } else {
+      filtered = filtered.filter((bookmark) =>
+        bookmark.tags.includes(currentTagId)
+      )
+    }
+  }
+
+  // Separate pinned and non-pinned bookmarks
+  const pinned: Bookmark[] = []
+  const nonPinned: Bookmark[] = []
+
+  filtered.forEach((bookmark) => {
+    if (bookmark.pinned) {
+      pinned.push(bookmark)
+    } else {
+      nonPinned.push(bookmark)
+    }
+  })
+
+  // Sort pinned bookmarks
+  if (sortMode === 'title') {
+    pinned.sort((a, b) => a.title.localeCompare(b.title))
+  } else {
+    pinned.sort((a, b) => b.updated_at - a.updated_at)
+  }
+
+  // Sort non-pinned bookmarks
+  if (sortMode === 'title') {
+    nonPinned.sort((a, b) => a.title.localeCompare(b.title))
+  } else {
+    nonPinned.sort((a, b) => b.updated_at - a.updated_at)
+  }
+
+  return {
+    visibleBookmarks,
+    pinnedBookmarks: pinned,
+    nonPinnedBookmarks: nonPinned
+  }
+}

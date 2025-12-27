@@ -6,12 +6,6 @@
   overflow: hidden;
 }
 
-.countContainer {
-  padding: 10px 20px 5px;
-  display: flex;
-  justify-content: flex-end;
-}
-
 .list {
   display: flex;
   flex-direction: column;
