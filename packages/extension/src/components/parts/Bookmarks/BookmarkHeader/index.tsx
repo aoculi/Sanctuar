@@ -46,6 +46,17 @@ export default function BookmarkHeader({
   const [sortOpen, setSortOpen] = useState(false)
   const [filterOpen, setFilterOpen] = useState(false)
 
+  // Add fake "unsorted" tag for filtering bookmarks without tags
+  const tagsWithUnsorted = useMemo(() => {
+    const unsortedTag = {
+      id: 'unsorted',
+      name: 'Unsorted',
+      color: undefined,
+      hidden: false
+    }
+    return [unsortedTag, ...tags]
+  }, [tags])
+
   // Check if all selected bookmarks are pinned
   const allSelectedPinned = manifest
     ? Array.from(selectedBookmarkIds).every((id) => {
@@ -190,7 +201,7 @@ export default function BookmarkHeader({
               </DropdownMenu.Trigger>
               <DropdownMenu.Content className={styles.filterDropdown}>
                 <TagSelectorField
-                  tags={tags}
+                  tags={tagsWithUnsorted}
                   selectedTags={selectedTags}
                   onChange={onSelectedTagsChange}
                   isDropdownOpen={filterOpen}

@@ -186,9 +186,14 @@ export function processBookmarks(
 
   // Filter by selected tags (if any are selected)
   if (selectedTags.length > 0) {
-    filtered = filtered.filter((bookmark) =>
-      selectedTags.some((tagId) => bookmark.tags.includes(tagId))
-    )
+    // Special handling for 'unsorted' tag - show only bookmarks without tags
+    if (selectedTags.includes('unsorted')) {
+      filtered = filtered.filter((bookmark) => bookmark.tags.length === 0)
+    } else {
+      filtered = filtered.filter((bookmark) =>
+        selectedTags.some((tagId) => bookmark.tags.includes(tagId))
+      )
+    }
   } else if (currentTagId && currentTagId !== 'all') {
     // Fallback to legacy currentTagId filtering if no selectedTags
     if (currentTagId === 'unsorted') {
