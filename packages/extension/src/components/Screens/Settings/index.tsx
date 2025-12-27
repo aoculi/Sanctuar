@@ -145,8 +145,8 @@ export default function Settings() {
                 onChange={(e) =>
                   setFields({ ...fields, showHiddenTags: e.target.checked })
                 }
+                label='Display hidden tags'
               />
-              Display hidden tags
             </Text>
           </div>
 

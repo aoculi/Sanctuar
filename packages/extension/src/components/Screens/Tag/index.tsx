@@ -147,8 +147,8 @@ export default function Tag() {
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setForm((prev) => ({ ...prev, hidden: e.target.checked }))
               }
+              label='Hide tag from list'
             />
-            Hide tag from list
           </Text>
         </div>
 

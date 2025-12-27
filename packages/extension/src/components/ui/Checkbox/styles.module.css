@@ -1,7 +1,6 @@
 .checkboxContainer {
   position: relative;
   height: 15px;
-  margin-right: 10px;
 }
 
 .checkboxContainer input[type='checkbox'] {
@@ -47,4 +46,10 @@
 /* Display checkmark when checked */
 .checkboxContainer input:checked ~ .checkmark::after {
   display: block;
+}
+
+.labelContainer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
