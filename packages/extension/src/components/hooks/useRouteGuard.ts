@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 
 import { useAuthSession } from '@/components/hooks/providers/useAuthSessionProvider'
 import { useManifest } from '@/components/hooks/providers/useManifestProvider'
@@ -25,8 +25,16 @@ export function useRouteGuard() {
   const { session, isLoading: authLoading } = useAuthSession()
   const { manifest, isLoading: manifestLoading } = useManifest()
   const { route, navigate } = useNavigation()
+  const initialUserId = useRef<string | null>(null)
+  const hasCapturedInitialState = useRef(false)
 
   useEffect(() => {
+    // Capture initial user ID on first check (when popup opens, before auth finishes loading)
+    if (!hasCapturedInitialState.current && !authLoading) {
+      initialUserId.current = session.userId
+      hasCapturedInitialState.current = true
+    }
+
     // Wait for both auth and manifest to finish loading
     if (authLoading || manifestLoading) return
 
@@ -37,9 +45,17 @@ export function useRouteGuard() {
     }
 
     // Authenticated user with manifest on auth routes → redirect to main app
+    // Only redirect if user was already authenticated when popup opened (not during active login)
     if (session.userId && manifest && isAuthRoute(route)) {
-      navigate('/bookmark')
-      return
+      const wasAlreadyAuthenticated = initialUserId.current === session.userId
+
+      // Only redirect if user was already authenticated when popup opened
+      // This prevents redirecting during active login (which should go to /vault)
+      if (wasAlreadyAuthenticated) {
+        navigate('/bookmark')
+        return
+      }
+      // If user just logged in, don't redirect - let explicit navigation handle it
     }
   }, [authLoading, manifestLoading, session.userId, manifest, route, navigate])
 }
