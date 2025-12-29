@@ -68,10 +68,7 @@ export default function Settings() {
     duplicateToAllTags,
     setDuplicateToAllTags,
     handleExport
-  } = useBookmarkExport({
-    exportWithTags: true,
-    duplicateToAllTags: false
-  })
+  } = useBookmarkExport()
 
   const { bookmarks } = useBookmarks()
 

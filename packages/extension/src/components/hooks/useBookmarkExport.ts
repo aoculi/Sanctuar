@@ -5,43 +5,20 @@ import { useBookmarks } from '@/components/hooks/useBookmarks'
 import { useTags } from '@/components/hooks/useTags'
 import type { Bookmark } from '@/lib/types'
 
-export interface UseBookmarkExportOptions {
-  exportWithTags: boolean
-  duplicateToAllTags: boolean
-}
-
-export interface UseBookmarkExportReturn {
-  isExporting: boolean
-  exportWithTags: boolean
-  setExportWithTags: (value: boolean) => void
-  duplicateToAllTags: boolean
-  setDuplicateToAllTags: (value: boolean) => void
-  handleExport: () => Promise<void>
-}
-
 function escapeHtml(text: string): string {
   const div = document.createElement('div')
   div.textContent = text
   return div.innerHTML
 }
 
-export function useBookmarkExport(
-  options: UseBookmarkExportOptions
-): UseBookmarkExportReturn {
-  const {
-    exportWithTags: initialExportWithTags,
-    duplicateToAllTags: initialDuplicateToAllTags
-  } = options
-
+export function useBookmarkExport() {
   const { setFlash } = useNavigation()
   const { bookmarks } = useBookmarks()
   const { tags } = useTags()
 
   const [isExporting, setIsExporting] = useState(false)
-  const [exportWithTags, setExportWithTags] = useState(initialExportWithTags)
-  const [duplicateToAllTags, setDuplicateToAllTags] = useState(
-    initialDuplicateToAllTags
-  )
+  const [exportWithTags, setExportWithTags] = useState(true)
+  const [duplicateToAllTags, setDuplicateToAllTags] = useState(false)
 
   const handleExport = async () => {
     if (bookmarks.length === 0) {
