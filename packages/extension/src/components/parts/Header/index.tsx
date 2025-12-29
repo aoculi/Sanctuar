@@ -17,7 +17,6 @@ import { useManifest } from '@/components/hooks/providers/useManifestProvider'
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
 import { useQueryAuth } from '@/components/hooks/queries/useQueryAuth'
 import { useBookmarks } from '@/components/hooks/useBookmarks'
-import { useTags } from '@/components/hooks/useTags'
 import { captureAllTabs } from '@/lib/pageCapture'
 import type { Tag } from '@/lib/types'
 import { generateId } from '@/lib/utils'
@@ -32,6 +31,7 @@ export default function Header({
   title,
   canSwitchToVault = false,
   canSwitchToBookmark = false,
+  canShowMenu = true,
   rightContent,
   searchQuery,
   onSearchChange
@@ -39,6 +39,7 @@ export default function Header({
   title?: string
   canSwitchToVault?: boolean
   canSwitchToBookmark?: boolean
+  canShowMenu?: boolean
   rightContent?: React.ReactNode
   searchQuery?: string
   onSearchChange?: (query: string) => void
@@ -47,7 +48,6 @@ export default function Header({
   const { logout } = useQueryAuth()
   const { isAuthenticated } = useAuthSession()
   const { addBookmark } = useBookmarks()
-  const { createTag } = useTags()
   const { manifest, save } = useManifest()
 
   const handleSaveAllTabs = useCallback(async () => {
@@ -207,24 +207,87 @@ export default function Header({
             </>
           )}
 
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger asChild>
-              <Button asIcon={true} variant='ghost' title='Menu'>
-                <Menu strokeWidth={2} size={18} color='white' />
-              </Button>
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content>
-              <DropdownMenu.Item onClick={() => navigate('/settings')}>
-                <Settings2 strokeWidth={1} size={18} color='white' /> Settings
-              </DropdownMenu.Item>
-              {isAuthenticated && <DropdownMenu.Separator />}
-              {isAuthenticated && (
-                <DropdownMenu.Item onClick={() => logout.mutate()}>
-                  <LogOut strokeWidth={1} size={18} color='white' /> Logout
+          {canShowMenu && (
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger asChild>
+                <Button asIcon={true} variant='ghost' title='Menu'>
+                  <Menu strokeWidth={2} size={18} color='white' />
+                </Button>
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content>
+                <DropdownMenu.Item
+                  onClick={() => {
+                    // Open the options page - compatible with both Chrome and Firefox
+                    try {
+                      // Get the runtime API (works for both Chrome and Firefox)
+                      const runtime =
+                        (typeof chrome !== 'undefined' && chrome.runtime) ||
+                        (typeof browser !== 'undefined' && browser.runtime)
+
+                      if (!runtime) {
+                        setFlash(
+                          'Unable to open settings page. Browser runtime not available.'
+                        )
+                        setTimeout(() => setFlash(null), 5000)
+                        return
+                      }
+
+                      // Open options page as a standalone tab (not in extension management page)
+                      try {
+                        const optionsUrl = runtime.getURL(
+                          '/settings.html' as any
+                        )
+                        if (optionsUrl) {
+                          // Use chrome.tabs.create for better control, fallback to window.open
+                          const tabs =
+                            (typeof chrome !== 'undefined' && chrome.tabs) ||
+                            (typeof browser !== 'undefined' && browser.tabs)
+                          if (tabs && typeof tabs.create === 'function') {
+                            tabs.create({ url: optionsUrl })
+                          } else {
+                            window.open(optionsUrl, '_blank')
+                          }
+                        } else {
+                          setFlash(
+                            'Unable to open settings page. Options page not found.'
+                          )
+                          setTimeout(() => setFlash(null), 5000)
+                        }
+                      } catch (error) {
+                        console.error('Error opening options page:', error)
+                        setFlash(
+                          `Unable to open settings page: ${
+                            error instanceof Error
+                              ? error.message
+                              : 'Unknown error'
+                          }`
+                        )
+                        setTimeout(() => setFlash(null), 5000)
+                      }
+                    } catch (error) {
+                      console.error('Error opening options page:', error)
+                      setFlash(
+                        `Unable to open settings page: ${
+                          error instanceof Error
+                            ? error.message
+                            : 'Unknown error'
+                        }`
+                      )
+                      setTimeout(() => setFlash(null), 5000)
+                    }
+                  }}
+                >
+                  <Settings2 strokeWidth={1} size={18} color='white' /> Settings
                 </DropdownMenu.Item>
-              )}
-            </DropdownMenu.Content>
-          </DropdownMenu.Root>
+                {isAuthenticated && <DropdownMenu.Separator />}
+                {isAuthenticated && (
+                  <DropdownMenu.Item onClick={() => logout.mutate()}>
+                    <LogOut strokeWidth={1} size={18} color='white' /> Logout
+                  </DropdownMenu.Item>
+                )}
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
+          )}
         </div>
       </div>
     </div>

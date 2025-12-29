@@ -40,6 +40,10 @@ export default defineConfig({
         '<all_urls>' // Allow fetching metadata from any URL
       ],
       permissions: basePermissions,
+      options_ui: {
+        page: 'settings.html',
+        open_in_tab: true
+      },
       content_security_policy: {
         extension_pages:
           "script-src 'self' http://localhost:3000 http://localhost:3001 'wasm-unsafe-eval'; object-src 'self'; worker-src 'self';"

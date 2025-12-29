@@ -13,7 +13,6 @@ import { useRouteGuard } from '@/components/hooks/useRouteGuard'
 import Bookmark from '@/components/Screens/Bookmark'
 import Login from '@/components/Screens/Login'
 import Register from '@/components/Screens/Register'
-import Settings from '@/components/Screens/Settings'
 import Tag from '@/components/Screens/Tag'
 import Tags from '@/components/Screens/Tags'
 import Vault from '@/components/Screens/Vault'
@@ -31,8 +30,6 @@ function RootContent() {
         return <Login />
       case '/register':
         return <Register />
-      case '/settings':
-        return <Settings />
       case '/vault':
         return <Vault />
       case '/bookmark':
