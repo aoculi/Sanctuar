@@ -1,24 +1,7 @@
-/**
- * Bookmark import functionality
- * Supports Chrome, Firefox, and Safari bookmark exports
- */
-
 import type { Bookmark, Tag } from './types'
+import { isValidUrl } from './validation'
 
 export type BrowserType = 'chrome' | 'firefox' | 'safari' | 'auto'
-
-function isValidBookmarkUrl(url: string): boolean {
-  try {
-    const parsed = new URL(url)
-    return (
-      parsed.protocol === 'http:' ||
-      parsed.protocol === 'https:' ||
-      parsed.protocol === 'javascript:'
-    )
-  } catch {
-    return false
-  }
-}
 
 export interface ParsedBookmark {
   url: string
@@ -34,9 +17,6 @@ export interface ImportResult {
   errors: string[]
 }
 
-/**
- * Detect browser type from file content or filename
- */
 export function detectBrowserType(
   filename: string,
   content: string
@@ -44,7 +24,6 @@ export function detectBrowserType(
   const lowerFilename = filename.toLowerCase()
   const trimmed = content.trim()
 
-  // Check filename patterns
   if (lowerFilename.includes('chrome') || lowerFilename.includes('bookmarks')) {
     return 'chrome'
   }
@@ -55,24 +34,19 @@ export function detectBrowserType(
     return 'safari'
   }
 
-  // Check if it's JSON format
   if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
     try {
       const data = JSON.parse(trimmed)
-      // Chrome JSON format has "version" and "roots" properties
       if (data.version && data.roots) {
         return 'chrome'
       }
     } catch {
-      // Not valid JSON, continue with HTML detection
+      // Not valid JSON
     }
   }
 
-  // Check content patterns for HTML format
   if (content.includes('NETSCAPE-Bookmark-file-1')) {
-    // Standard HTML bookmark format
     if (content.includes('HREF=')) {
-      // Try to detect by specific markers
       if (
         content.includes('Personal Toolbar') ||
         content.includes('Bookmarks Toolbar')
@@ -94,9 +68,6 @@ export function detectBrowserType(
   return 'auto'
 }
 
-/**
- * Chrome bookmark JSON structure types
- */
 interface ChromeBookmarkNode {
   type: 'url' | 'folder'
   name: string
@@ -129,9 +100,49 @@ interface FirefoxBookmarkNode {
   iconUri?: string
 }
 
-/**
- * Parse Chrome JSON bookmark file
- */
+function chromeTimestampToMs(timestamp: string): number {
+  const chromeEpoch = Date.UTC(1601, 0, 1)
+  const microseconds = parseInt(timestamp, 10)
+  return chromeEpoch + Math.floor(microseconds / 1000)
+}
+
+function firefoxTimestampToMs(timestamp: number): number {
+  return Math.floor(timestamp / 1000)
+}
+
+function addBookmark(
+  bookmarks: ParsedBookmark[],
+  folders: Set<string>,
+  errors: string[],
+  url: string,
+  title: string,
+  folderPath: string[],
+  addDate?: number,
+  lastModified?: number
+): void {
+  if (!url) {
+    errors.push(`Bookmark missing URL: ${title || 'Unknown'}`)
+    return
+  }
+
+  if (!isValidUrl(url)) {
+    errors.push(`Invalid URL: ${url} (${title || 'Unknown'})`)
+    return
+  }
+
+  folderPath.forEach((folder) => {
+    if (folder) folders.add(folder)
+  })
+
+  bookmarks.push({
+    url,
+    title: title || 'Untitled',
+    folderPath: [...folderPath].filter(Boolean),
+    addDate,
+    lastModified
+  })
+}
+
 export function parseChromeJsonBookmarkFile(content: string): ImportResult {
   const bookmarks: ParsedBookmark[] = []
   const folders = new Set<string>()
@@ -145,60 +156,38 @@ export function parseChromeJsonBookmarkFile(content: string): ImportResult {
       return { bookmarks, folders: [], errors }
     }
 
-    function chromeTimestampToMs(timestamp: string): number {
-      const chromeEpoch = Date.UTC(1601, 0, 1)
-      const microseconds = parseInt(timestamp, 10)
-      return chromeEpoch + Math.floor(microseconds / 1000)
-    }
-
     function traverseNode(
       node: ChromeBookmarkNode,
       folderPath: string[] = []
     ): void {
       if (!node.type) {
-        // Skip nodes without type
         return
       }
 
       if (node.type === 'url') {
-        if (!node.url) {
-          errors.push(`Bookmark missing URL: ${node.name || 'Unknown'}`)
-          return
-        }
-
-        if (!isValidBookmarkUrl(node.url)) {
-          errors.push(`Invalid URL: ${node.url} (${node.name || 'Unknown'})`)
-          return
-        }
-
-        folderPath.forEach((folder) => {
-          if (folder) folders.add(folder)
-        })
-
-        const addDate = node.date_added
-          ? chromeTimestampToMs(node.date_added)
-          : undefined
-        const lastModified = node.date_modified
-          ? chromeTimestampToMs(node.date_modified)
-          : undefined
-
-        bookmarks.push({
-          url: node.url,
-          title: node.name || 'Untitled',
-          folderPath: [...folderPath].filter(Boolean),
-          addDate,
-          lastModified
-        })
+        addBookmark(
+          bookmarks,
+          folders,
+          errors,
+          node.url!,
+          node.name,
+          folderPath,
+          node.date_added ? chromeTimestampToMs(node.date_added) : undefined,
+          node.date_modified
+            ? chromeTimestampToMs(node.date_modified)
+            : undefined
+        )
       } else if (node.type === 'folder') {
         const folderName = node.name || 'Untitled Folder'
         const newPath = [...folderPath, folderName]
         folders.add(folderName)
 
-        if (node.children && Array.isArray(node.children)) {
+        if (node.children?.length) {
           node.children.forEach((child) => traverseNode(child, newPath))
         }
       }
     }
+
     if (data.roots.bookmark_bar) {
       traverseNode(data.roots.bookmark_bar, [])
     }
@@ -229,13 +218,9 @@ export function parseFirefoxJsonBookmarkFile(content: string): ImportResult {
   try {
     const data: FirefoxBookmarkNode = JSON.parse(content)
 
-    if (!data.guid || data.guid !== 'root________') {
+    if (data.guid !== 'root________') {
       errors.push('Invalid Firefox bookmark JSON format: missing root')
       return { bookmarks, folders: [], errors }
-    }
-
-    function firefoxTimestampToMs(timestamp: number): number {
-      return Math.floor(timestamp / 1000)
     }
 
     function traverseNode(
@@ -243,50 +228,34 @@ export function parseFirefoxJsonBookmarkFile(content: string): ImportResult {
       folderPath: string[] = []
     ): void {
       if (node.typeCode === 1) {
-        if (!node.uri) {
-          errors.push(`Bookmark missing URI: ${node.title || 'Unknown'}`)
-          return
-        }
-
-        if (!isValidBookmarkUrl(node.uri)) {
-          errors.push(`Invalid URI: ${node.uri} (${node.title || 'Unknown'})`)
-          return
-        }
-
-        folderPath.forEach((folder) => {
-          if (folder) folders.add(folder)
-        })
-
-        const addDate = node.dateAdded
-          ? firefoxTimestampToMs(node.dateAdded)
-          : undefined
-        const lastModified = node.lastModified
-          ? firefoxTimestampToMs(node.lastModified)
-          : undefined
-
-        bookmarks.push({
-          url: node.uri,
-          title: node.title || 'Untitled',
-          folderPath: [...folderPath].filter(Boolean),
-          addDate,
-          lastModified
-        })
+        addBookmark(
+          bookmarks,
+          folders,
+          errors,
+          node.uri!,
+          node.title,
+          folderPath,
+          node.dateAdded ? firefoxTimestampToMs(node.dateAdded) : undefined,
+          node.lastModified
+            ? firefoxTimestampToMs(node.lastModified)
+            : undefined
+        )
       } else if (node.typeCode === 2) {
         const folderName = node.title || 'Untitled Folder'
         if (folderName) {
           const newPath = [...folderPath, folderName]
           folders.add(folderName)
 
-          if (node.children && Array.isArray(node.children)) {
+          if (node.children?.length) {
             node.children.forEach((child) => traverseNode(child, newPath))
           }
-        } else if (node.children && Array.isArray(node.children)) {
+        } else if (node.children?.length) {
           node.children.forEach((child) => traverseNode(child, folderPath))
         }
       }
     }
 
-    if (data.children && Array.isArray(data.children)) {
+    if (data.children?.length) {
       data.children.forEach((child) => traverseNode(child, []))
     }
   } catch (error) {
@@ -302,10 +271,6 @@ export function parseFirefoxJsonBookmarkFile(content: string): ImportResult {
   }
 }
 
-/**
- * Parse HTML bookmark file (Netscape Bookmark File Format)
- * Used by Chrome, Firefox, and Safari
- */
 export function parseHtmlBookmarkFile(content: string): ImportResult {
   const bookmarks: ParsedBookmark[] = []
   const folders = new Set<string>()
@@ -377,8 +342,7 @@ export function parseHtmlBookmarkFile(content: string): ImportResult {
         return
       }
 
-      // Validate URL (allow javascript: protocol for bookmarklets)
-      if (!isValidBookmarkUrl(href)) {
+      if (!isValidUrl(href)) {
         errors.push(`Invalid URL: ${href} (${title})`)
         return
       }
@@ -420,9 +384,6 @@ export function parseHtmlBookmarkFile(content: string): ImportResult {
   }
 }
 
-/**
- * Convert parsed bookmarks to Bookmark format
- */
 export function convertToBookmarks(
   parsedBookmarks: ParsedBookmark[],
   createFolderTags: boolean,
@@ -492,9 +453,6 @@ export function convertToBookmarks(
   return { bookmarks, tagsToCreate }
 }
 
-/**
- * Map folder paths to tag IDs after tags are created
- */
 export function mapFolderPathsToTagIds(
   bookmarksWithPaths: Array<{
     bookmark: Omit<Bookmark, 'id' | 'created_at' | 'updated_at'>
@@ -527,9 +485,6 @@ export function mapFolderPathsToTagIds(
   })
 }
 
-/**
- * Detect file format (HTML or JSON)
- */
 function detectFileFormat(content: string): 'html' | 'json' | 'unknown' {
   const trimmed = content.trim()
 
@@ -571,9 +526,6 @@ function detectJsonFormat(content: string): 'chrome' | 'firefox' | 'unknown' {
   return 'unknown'
 }
 
-/**
- * Process uploaded bookmark file
- */
 export async function processBookmarkFile(
   file: File,
   createFolderTags: boolean,
