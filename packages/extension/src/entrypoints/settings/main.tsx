@@ -5,7 +5,6 @@ import ReactDOM from 'react-dom/client'
 import Settings from '@/components/Screens/Settings'
 import { AuthSessionProvider } from '@/components/hooks/providers/useAuthSessionProvider'
 import { ManifestProvider } from '@/components/hooks/providers/useManifestProvider'
-import { NavigationProvider } from '@/components/hooks/providers/useNavigationProvider'
 import { SettingsProvider } from '@/components/hooks/providers/useSettingsProvider'
 import ErrorBoundary from '@/components/parts/ErrorBoundary'
 
@@ -33,9 +32,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <SettingsProvider>
           <AuthSessionProvider>
             <ManifestProvider>
-              <NavigationProvider initialRoute='/settings'>
-                <Settings />
-              </NavigationProvider>
+              <Settings />
             </ManifestProvider>
           </AuthSessionProvider>
         </SettingsProvider>
