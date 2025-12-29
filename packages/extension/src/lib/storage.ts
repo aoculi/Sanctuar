@@ -162,6 +162,10 @@ export function getDefaultSettings(): Settings {
  * Parse auto-lock timeout string to milliseconds
  */
 export function parseAutoLockTimeout(timeout: string): number {
+  if (timeout === 'never') {
+    return Infinity
+  }
+
   const match = timeout.match(/^(\d+)(min|h)$/)
   if (!match) {
     return DEFAULT_AUTO_LOCK_TIMEOUT_MS

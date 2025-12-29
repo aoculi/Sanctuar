@@ -35,6 +35,7 @@ type AutoLockTimeout =
   | '20min'
   | '30min'
   | '1h'
+  | 'never'
 
 export default function Settings() {
   const { settings, isLoading, updateSettings } = useSettings()
@@ -303,6 +304,7 @@ export default function Settings() {
                     <option value='20min'>20 minutes</option>
                     <option value='30min'>30 minutes</option>
                     <option value='1h'>1 hour</option>
+                    <option value='never'>Never</option>
                   </Select>
                   <Text size='2' color='light'>
                     Automatically lock the vault after inactivity
