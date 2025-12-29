@@ -6,13 +6,24 @@ export const MAX_TAG_NAME_LENGTH = 32
 export const MANIFEST_SIZE_WARNING_THRESHOLD = 4 * 1024 * 1024 // 4MB (warn before 5MB limit)
 
 /**
- * URL validation
+ * URL validation - allows http, https, javascript, and other common bookmark protocols
+ * JavaScript URLs (bookmarklets) and other protocols are valid bookmarks
  */
 export function isValidUrl(url: string): boolean {
   try {
     const parsed = new URL(url)
-    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+    // Allow common bookmark protocols
+    const allowedProtocols = [
+      'http:',
+      'https:',
+      'javascript:',
+      'file:',
+      'data:',
+      'about:'
+    ]
+    return allowedProtocols.includes(parsed.protocol)
   } catch {
+    // If URL parsing fails, it's not a valid URL
     return false
   }
 }
@@ -33,7 +44,7 @@ export function validateBookmarkInput(data: {
 
   const trimmedUrl = data.url.trim()
   if (!isValidUrl(trimmedUrl)) {
-    return 'Please enter a valid URL (must start with http:// or https://)'
+    return 'Please enter a valid URL (http://, https://, javascript:, etc.)'
   }
 
   if (!data.title.trim()) {

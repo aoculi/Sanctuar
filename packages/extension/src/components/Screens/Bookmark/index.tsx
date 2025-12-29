@@ -148,8 +148,18 @@ export default function Bookmark() {
     } else {
       try {
         const parsed = new URL(form.url?.trim())
-        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-          newErrors.url = 'URL must start with http:// or https://'
+        // Allow common bookmark protocols (http, https, javascript, file, data, about)
+        const allowedProtocols = [
+          'http:',
+          'https:',
+          'javascript:',
+          'file:',
+          'data:',
+          'about:'
+        ]
+        if (!allowedProtocols.includes(parsed.protocol)) {
+          newErrors.url =
+            'URL must use a valid protocol (http://, https://, javascript:, etc.)'
         }
       } catch {
         newErrors.url = 'Please enter a valid URL'

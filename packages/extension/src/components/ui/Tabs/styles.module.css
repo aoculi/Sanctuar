@@ -38,6 +38,16 @@
   border-radius: var(--border-radius);
 }
 
+.trigger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.trigger:disabled:hover {
+  color: var(--text-light);
+}
+
 .content {
   outline: none;
 }

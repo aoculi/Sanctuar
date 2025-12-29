@@ -53,6 +53,50 @@ export function useBookmarks() {
     [manifest, validateBookmark, save]
   )
 
+  /**
+   * Batch add multiple bookmarks in a single save operation to avoid version conflicts
+   */
+  const addBookmarks = useCallback(
+    async (
+      bookmarks: Array<Omit<Bookmark, 'id' | 'created_at' | 'updated_at'>>
+    ) => {
+      if (!manifest) return
+
+      const now = Date.now()
+      const newBookmarks: Bookmark[] = []
+
+      // Validate all bookmarks first
+      for (const bookmark of bookmarks) {
+        const validationError = validateBookmark({
+          url: bookmark.url,
+          title: bookmark.title,
+          note: bookmark.note,
+          picture: bookmark.picture,
+          tags: bookmark.tags
+        })
+        if (validationError) {
+          throw new Error(
+            `Validation error for "${bookmark.title}": ${validationError}`
+          )
+        }
+
+        newBookmarks.push({
+          ...bookmark,
+          id: generateId(),
+          created_at: now,
+          updated_at: now
+        })
+      }
+
+      // Add all bookmarks in a single save operation
+      await save({
+        ...manifest,
+        items: [...(manifest.items || []), ...newBookmarks]
+      })
+    },
+    [manifest, validateBookmark, save]
+  )
+
   const updateBookmark = useCallback(
     async (
       id: string,
@@ -114,6 +158,7 @@ export function useBookmarks() {
   return {
     bookmarks: [...(manifest?.items || [])],
     addBookmark,
+    addBookmarks,
     updateBookmark,
     deleteBookmark,
     getBookmark

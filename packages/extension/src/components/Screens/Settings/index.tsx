@@ -1,7 +1,12 @@
-import { Loader2 } from 'lucide-react'
+import { Loader2, TriangleAlert } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
-import { useManifest } from '@/components/hooks/providers/useManifestProvider'
+import { useAuthSession } from '@/components/hooks/providers/useAuthSessionProvider'
+import {
+  loadManifestData,
+  useManifest
+} from '@/components/hooks/providers/useManifestProvider'
+import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
 import { useSettings } from '@/components/hooks/providers/useSettingsProvider'
 import { useBookmarks } from '@/components/hooks/useBookmarks'
 import { useTags } from '@/components/hooks/useTags'
@@ -33,9 +38,11 @@ type AutoLockTimeout =
 
 export default function Settings() {
   const { settings, isLoading, updateSettings } = useSettings()
-  const { addBookmark } = useBookmarks()
+  const { flash, setFlash } = useNavigation()
+  const { addBookmarks } = useBookmarks()
   const { tags, createTag } = useTags()
-  const { manifest } = useManifest()
+  const { manifest, reload: reloadManifest } = useManifest()
+  const { isAuthenticated } = useAuthSession()
 
   const [fields, setFields] = useState({
     showHiddenTags: false,
@@ -48,10 +55,11 @@ export default function Settings() {
     autoLockTimeout: '20min' as AutoLockTimeout
   })
   const [isSaving, setIsSaving] = useState(false)
+  const [activeTab, setActiveTab] = useState('api')
 
   // Import state
   const [importFile, setImportFile] = useState<File | null>(null)
-  const [createFolderTags, setCreateFolderTags] = useState(false)
+  const [createFolderTags, setCreateFolderTags] = useState(true)
   const [isImporting, setIsImporting] = useState(false)
   const [importError, setImportError] = useState<string | null>(null)
   const [importSuccess, setImportSuccess] = useState<string | null>(null)
@@ -91,21 +99,65 @@ export default function Settings() {
     }
   }
 
+  const handleApiSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSaving(true)
+    try {
+      await updateSettings({
+        showHiddenTags: fields.showHiddenTags,
+        apiUrl: fields.apiUrl,
+        autoLockTimeout: fields.autoLockTimeout
+      })
+      setOriginalFields({ ...fields })
+    } catch (error) {
+      console.error('Error saving settings:', error)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleSecuritySubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSaving(true)
+    try {
+      await updateSettings({
+        showHiddenTags: fields.showHiddenTags,
+        apiUrl: fields.apiUrl,
+        autoLockTimeout: fields.autoLockTimeout
+      })
+      setOriginalFields({ ...fields })
+    } catch (error) {
+      console.error('Error saving settings:', error)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   const hasChanged = JSON.stringify(fields) !== JSON.stringify(originalFields)
   const version = chrome.runtime.getManifest().version
 
+  // Switch to API tab if user is on a locked tab and becomes unauthenticated
+  useEffect(() => {
+    if (
+      !isAuthenticated &&
+      (activeTab === 'security' || activeTab === 'import-export')
+    ) {
+      setActiveTab('api')
+    }
+  }, [isAuthenticated, activeTab])
+
   const handleImport = async () => {
     if (!importFile) {
-      setImportError('Please select a bookmark file')
+      setFlash('Please select a bookmark file')
       return
     }
 
     setIsImporting(true)
     setImportError(null)
     setImportSuccess(null)
+    setFlash(null)
 
     try {
-      // Process the file
       const result = await processBookmarkFile(
         importFile,
         createFolderTags,
@@ -113,63 +165,57 @@ export default function Settings() {
       )
 
       if (result.errors.length > 0) {
-        setImportError(result.errors.join('; '))
+        console.warn('Import warnings:', result.errors)
       }
 
       if (result.bookmarksWithPaths.length === 0) {
-        setImportError('No valid bookmarks found in the file')
+        setFlash('No valid bookmarks found in the file')
         setIsImporting(false)
         return
       }
 
-      // Create tags first if needed
-      for (const tagToCreate of result.tagsToCreate) {
-        try {
-          await createTag(tagToCreate)
-        } catch (error) {
-          console.error('Error creating tag:', error)
+      if (result.tagsToCreate.length > 0) {
+        for (const tagToCreate of result.tagsToCreate) {
+          try {
+            await createTag(tagToCreate)
+          } catch (error) {
+            console.error(`Error creating tag "${tagToCreate.name}":`, error)
+          }
         }
       }
 
-      // Get updated tags from manifest (after tag creation)
-      const updatedTags = manifest?.tags || []
+      await reloadManifest()
 
-      // Map folder paths to tag IDs
-      const updatedBookmarks = mapFolderPathsToTagIds(
-        result.bookmarksWithPaths,
-        updatedTags
-      )
+      const latestManifestData = await loadManifestData()
+      const updatedTags =
+        latestManifestData?.manifest.tags || manifest?.tags || []
 
-      // Add all bookmarks
-      let successCount = 0
-      let errorCount = 0
-
-      for (const bookmark of updatedBookmarks) {
-        try {
-          await addBookmark(bookmark)
-          successCount++
-        } catch (error) {
-          console.error('Error importing bookmark:', error)
-          errorCount++
-        }
-      }
-
-      if (successCount > 0) {
-        setImportSuccess(
-          `Successfully imported ${successCount} bookmark${successCount !== 1 ? 's' : ''}${
-            errorCount > 0 ? ` (${errorCount} failed)` : ''
-          }`
+      let updatedBookmarks
+      if (createFolderTags) {
+        updatedBookmarks = mapFolderPathsToTagIds(
+          result.bookmarksWithPaths,
+          updatedTags
         )
-        setImportFile(null)
       } else {
-        setImportError(
-          `Failed to import bookmarks${errorCount > 0 ? `: ${errorCount} errors` : ''}`
+        updatedBookmarks = result.bookmarksWithPaths.map(
+          ({ bookmark }) => bookmark
         )
+      }
+
+      // Add all bookmarks in a single batch operation to avoid version conflicts
+      try {
+        await addBookmarks(updatedBookmarks)
+        const successMessage = `Successfully imported ${updatedBookmarks.length} bookmark${updatedBookmarks.length !== 1 ? 's' : ''}`
+        setFlash(successMessage)
+        setImportFile(null)
+      } catch (error) {
+        const errorMessage = `Failed to import bookmarks: ${error instanceof Error ? error.message : 'Unknown error'}`
+        setFlash(errorMessage)
+        throw error
       }
     } catch (error) {
-      setImportError(
-        `Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`
-      )
+      const errorMessage = `Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      setFlash(errorMessage)
     } finally {
       setIsImporting(false)
     }
@@ -191,158 +237,193 @@ export default function Settings() {
   }
 
   return (
-    <div className={styles.container}>
-      <Header title='Settings' canShowMenu={false} />
-      <div className={styles.content}>
-        <Tabs.Root defaultValue='security'>
-          <Tabs.List>
-            <Tabs.Trigger value='security'>Security</Tabs.Trigger>
-            <Tabs.Trigger value='import-export'>Import/export</Tabs.Trigger>
-          </Tabs.List>
+    <div className={styles.page}>
+      {flash && (
+        <div className={styles.flash}>
+          <TriangleAlert size={16} color='white' />
+          <Text size='2' weight='regular' color='white'>
+            {flash}
+          </Text>
+        </div>
+      )}
+      <div className={styles.container}>
+        <Header title='Settings' canShowMenu={false} />
+        <div className={styles.version}>
+          Version: {import.meta.env.WXT_VERSION} : {version}
+        </div>
+        <div className={styles.content}>
+          <Tabs.Root value={activeTab} onValueChange={setActiveTab}>
+            <Tabs.List>
+              <Tabs.Trigger value='api'>API</Tabs.Trigger>
+              <Tabs.Trigger value='security' disabled={!isAuthenticated}>
+                Security
+              </Tabs.Trigger>
+              <Tabs.Trigger value='import-export' disabled={!isAuthenticated}>
+                Import/export
+              </Tabs.Trigger>
+            </Tabs.List>
 
-          <Tabs.Content value='security'>
-            <form onSubmit={handleSubmit} className={styles.form}>
-              <div className={styles.field}>
-                <Text as='label' size='3' weight='medium'>
-                  API Base URL
-                </Text>
-                <Input
-                  type='url'
-                  placeholder='http://127.0.0.1:3500'
-                  value={fields.apiUrl}
-                  onChange={(e) =>
-                    setFields({ ...fields, apiUrl: e.target.value })
-                  }
-                />
-                <Text size='2' color='light'>
-                  Enter the base URL for the API endpoint
-                </Text>
-              </div>
-
-              <div className={styles.field}>
-                <Text as='label' size='3' weight='medium'>
-                  Auto-lock Timeout
-                </Text>
-                <Select
-                  value={fields.autoLockTimeout}
-                  onChange={(e) =>
-                    setFields({
-                      ...fields,
-                      autoLockTimeout: e.target.value as AutoLockTimeout
-                    })
-                  }
-                >
-                  <option value='1min'>1 minute</option>
-                  <option value='2min'>2 minutes</option>
-                  <option value='5min'>5 minutes</option>
-                  <option value='10min'>10 minutes</option>
-                  <option value='20min'>20 minutes</option>
-                  <option value='30min'>30 minutes</option>
-                  <option value='1h'>1 hour</option>
-                </Select>
-                <Text size='2' color='light'>
-                  Automatically lock the vault after inactivity
-                </Text>
-              </div>
-
-              <div className={styles.field}>
-                <Text as='label' size='2'>
-                  <Checkbox
-                    checked={fields.showHiddenTags}
+            <Tabs.Content value='api'>
+              <form onSubmit={handleApiSubmit} className={styles.form}>
+                <div className={styles.field}>
+                  <Text as='label' size='3' weight='medium'>
+                    API Base URL
+                  </Text>
+                  <Input
+                    type='url'
+                    placeholder='http://127.0.0.1:3500'
+                    value={fields.apiUrl}
                     onChange={(e) =>
-                      setFields({ ...fields, showHiddenTags: e.target.checked })
+                      setFields({ ...fields, apiUrl: e.target.value })
                     }
-                    label='Display hidden tags'
                   />
-                </Text>
-              </div>
-
-              <div className={styles.actionsContainer}>
-                <div className={styles.actions}>
-                  <Button onClick={handleCancel} color='black'>
-                    Cancel
-                  </Button>
-
-                  <Button type='submit' disabled={!hasChanged || isSaving}>
-                    {isSaving && <Loader2 className={styles.spinner} />}
-                    {isSaving ? 'Saving...' : 'Save'}
-                  </Button>
-                </div>
-
-                <div className={styles.version}>
-                  Version: {import.meta.env.WXT_VERSION} : {version}
-                </div>
-              </div>
-            </form>
-          </Tabs.Content>
-
-          <Tabs.Content value='import-export'>
-            <div className={styles.form}>
-              <div className={styles.field}>
-                <Text as='label' size='3' weight='medium'>
-                  Import Bookmarks
-                </Text>
-                <Text size='2' color='light'>
-                  Import bookmarks from Chrome, Firefox, or Safari export files
-                </Text>
-              </div>
-
-              <div className={styles.field}>
-                <FileInput
-                  label='Bookmark File'
-                  accept='.html,.json,text/html,application/json'
-                  value={importFile}
-                  onChange={setImportFile}
-                  disabled={isImporting}
-                  description='Select a bookmark export file (.html or .json) from Chrome, Firefox, or Safari'
-                  error={importError || undefined}
-                />
-              </div>
-
-              <div className={styles.field}>
-                <Text as='label' size='2'>
-                  <Checkbox
-                    checked={createFolderTags}
-                    onChange={(e) => setCreateFolderTags(e.target.checked)}
-                    label='Create tags from folder structure'
-                  />
-                </Text>
-                <Text size='2' color='light'>
-                  If enabled, each folder in the bookmark file will be created
-                  as a tag and assigned to bookmarks in that folder
-                </Text>
-              </div>
-
-              {importSuccess && (
-                <div className={styles.successMessage}>
                   <Text size='2' color='light'>
-                    {importSuccess}
+                    Enter the base URL for the API endpoint
                   </Text>
                 </div>
-              )}
 
-              <div className={styles.actionsContainer}>
-                <div className={styles.actions}>
-                  <Button
-                    onClick={handleCancel}
-                    color='black'
+                <div className={styles.actionsContainer}>
+                  <div className={styles.actions}>
+                    <Button onClick={handleCancel} color='black'>
+                      Cancel
+                    </Button>
+
+                    <Button type='submit' disabled={!hasChanged || isSaving}>
+                      {isSaving && <Loader2 className={styles.spinner} />}
+                      {isSaving ? 'Saving...' : 'Save'}
+                    </Button>
+                  </div>
+                </div>
+              </form>
+            </Tabs.Content>
+
+            <Tabs.Content value='security'>
+              <form onSubmit={handleSecuritySubmit} className={styles.form}>
+                <div className={styles.field}>
+                  <Text as='label' size='3' weight='medium'>
+                    Auto-lock Timeout
+                  </Text>
+                  <Select
+                    value={fields.autoLockTimeout}
+                    onChange={(e) =>
+                      setFields({
+                        ...fields,
+                        autoLockTimeout: e.target.value as AutoLockTimeout
+                      })
+                    }
+                  >
+                    <option value='1min'>1 minute</option>
+                    <option value='2min'>2 minutes</option>
+                    <option value='5min'>5 minutes</option>
+                    <option value='10min'>10 minutes</option>
+                    <option value='20min'>20 minutes</option>
+                    <option value='30min'>30 minutes</option>
+                    <option value='1h'>1 hour</option>
+                  </Select>
+                  <Text size='2' color='light'>
+                    Automatically lock the vault after inactivity
+                  </Text>
+                </div>
+
+                <div className={styles.field}>
+                  <Text as='label' size='2'>
+                    <Checkbox
+                      checked={fields.showHiddenTags}
+                      onChange={(e) =>
+                        setFields({
+                          ...fields,
+                          showHiddenTags: e.target.checked
+                        })
+                      }
+                      label='Display hidden tags'
+                    />
+                  </Text>
+                </div>
+
+                <div className={styles.actionsContainer}>
+                  <div className={styles.actions}>
+                    <Button onClick={handleCancel} color='black'>
+                      Cancel
+                    </Button>
+
+                    <Button type='submit' disabled={!hasChanged || isSaving}>
+                      {isSaving && <Loader2 className={styles.spinner} />}
+                      {isSaving ? 'Saving...' : 'Save'}
+                    </Button>
+                  </div>
+                </div>
+              </form>
+            </Tabs.Content>
+
+            <Tabs.Content value='import-export'>
+              <div className={styles.form}>
+                <div className={styles.field}>
+                  <Text as='label' size='3' weight='medium'>
+                    Import Bookmarks
+                  </Text>
+                  <Text size='2' color='light'>
+                    Import bookmarks from Chrome, Firefox, or Safari export
+                    files
+                  </Text>
+                </div>
+
+                <div className={styles.field}>
+                  <FileInput
+                    label='Bookmark File'
+                    accept='.html,.json,text/html,application/json'
+                    value={importFile}
+                    onChange={setImportFile}
                     disabled={isImporting}
-                  >
-                    Cancel
-                  </Button>
+                    description='Select a bookmark export file (.html or .json) from Chrome, Firefox, or Safari'
+                    error={importError || undefined}
+                  />
+                </div>
 
-                  <Button
-                    onClick={handleImport}
-                    disabled={!importFile || isImporting}
-                  >
-                    {isImporting && <Loader2 className={styles.spinner} />}
-                    {isImporting ? 'Importing...' : 'Import Bookmarks'}
-                  </Button>
+                <div className={styles.field}>
+                  <Text as='label' size='2'>
+                    <Checkbox
+                      checked={createFolderTags}
+                      onChange={(e) => setCreateFolderTags(e.target.checked)}
+                      label='Create tags from folder structure'
+                    />
+                  </Text>
+                  <Text size='2' color='light'>
+                    If enabled, each folder in the bookmark file will be created
+                    as a tag and assigned to bookmarks in that folder
+                  </Text>
+                </div>
+
+                {importSuccess && (
+                  <div className={styles.successMessage}>
+                    <Text size='2' color='light'>
+                      {importSuccess}
+                    </Text>
+                  </div>
+                )}
+
+                <div className={styles.actionsContainer}>
+                  <div className={styles.actions}>
+                    <Button
+                      onClick={handleCancel}
+                      color='black'
+                      disabled={isImporting}
+                    >
+                      Cancel
+                    </Button>
+
+                    <Button
+                      onClick={handleImport}
+                      disabled={!importFile || isImporting}
+                    >
+                      {isImporting && <Loader2 className={styles.spinner} />}
+                      {isImporting ? 'Importing...' : 'Import Bookmarks'}
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
-          </Tabs.Content>
-        </Tabs.Root>
+            </Tabs.Content>
+          </Tabs.Root>
+        </div>
       </div>
     </div>
   )
