@@ -21,3 +21,24 @@
   border-bottom: 1px solid var(--border);
   margin: 5px 0;
 }
+
+.collectionGroup {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 10px;
+}
+
+.collectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin-bottom: 4px;
+  background-color: var(--background-secondary);
+  border-radius: 4px;
+}
+
+.collectionIcon {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
