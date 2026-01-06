@@ -1,9 +1,6 @@
 import { useState } from 'react'
 
-import {
-  loadManifestData,
-  useManifest
-} from '@/components/hooks/providers/useManifestProvider'
+import { useManifest } from '@/components/hooks/providers/useManifestProvider'
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
 import { useBookmarks } from '@/components/hooks/useBookmarks'
 import { useTags } from '@/components/hooks/useTags'
@@ -13,6 +10,9 @@ import {
   prepareBookmarksForImport,
   processBookmarkImport
 } from '@/lib/bookmarkImport'
+import type { Bookmark, Collection, Tag } from '@/lib/types'
+import { generateId } from '@/lib/utils'
+import { validateBookmarkInput } from '@/lib/validation'
 
 export interface UseBookmarkImportOptions {
   preserveFolderStructure: boolean
@@ -45,6 +45,12 @@ export function useBookmarkImport(
       return
     }
 
+    // Check if manifest is loaded before proceeding
+    if (!manifest) {
+      setFlash('Cannot import: manifest not loaded. Please try again.')
+      return
+    }
+
     setIsImporting(true)
     setFlash(null)
 
@@ -66,77 +72,50 @@ export function useBookmarkImport(
         return
       }
 
-      // Step 2: Create tags if needed
-      if (processResult.tagsToCreate.length > 0) {
-        for (const tagToCreate of processResult.tagsToCreate) {
-          try {
-            await createTag(tagToCreate)
-          } catch (error) {
-            console.error(`Error creating tag "${tagToCreate.name}":`, error)
-          }
+      // Step 2: Prepare everything in memory, then save once
+
+      // 2a: Create new tags with IDs
+      const existingTagNames = new Map<string, string>()
+      ;(manifest.tags || []).forEach((tag) => {
+        existingTagNames.set(tag.name.toLowerCase(), tag.id)
+      })
+
+      const newTags: Tag[] = []
+      for (const tagToCreate of processResult.tagsToCreate) {
+        const trimmedName = tagToCreate.name.trim()
+        const lowerName = trimmedName.toLowerCase()
+
+        // Skip if tag already exists
+        if (existingTagNames.has(lowerName)) {
+          continue
         }
-        // Reload manifest to get the newly created tags with their IDs
-        await reloadManifest()
-      }
 
-      // Step 3: Get updated tags and manifest
-      const latestManifestData = await loadManifestData()
-      const updatedTags =
-        latestManifestData?.manifest.tags || manifest?.tags || []
-      const updatedBookmarks =
-        latestManifestData?.manifest.items || manifest?.items || []
-      const latestManifest = latestManifestData?.manifest || manifest
-
-      // Step 4: Create collections from folder structure if enabled
-      if (preserveFolderStructure && latestManifest) {
-        const tagNameToId = new Map<string, string>()
-        updatedTags.forEach((tag) => {
-          tagNameToId.set(tag.name.toLowerCase(), tag.id)
+        const tagId = generateId()
+        newTags.push({
+          ...tagToCreate,
+          id: tagId,
+          name: trimmedName,
+          hidden: tagToCreate.hidden ?? false
         })
-
-        const existingCollections = latestManifest.collections || []
-        const existingCollectionNames = new Set(
-          existingCollections.map((c) => c.name.toLowerCase())
-        )
-
-        // Generate collections from folder tree
-        const newCollections = generateCollectionsFromTree(
-          processResult.folderTree,
-          tagNameToId,
-          undefined,
-          existingCollections.length
-        )
-
-        // Filter out collections that already exist (by name)
-        const collectionsToAdd = newCollections.filter(
-          (c) => !existingCollectionNames.has(c.name.toLowerCase())
-        )
-
-        if (collectionsToAdd.length > 0) {
-          await save({
-            ...latestManifest,
-            collections: [...existingCollections, ...collectionsToAdd]
-          })
-          await reloadManifest()
-        }
+        existingTagNames.set(lowerName, tagId)
       }
 
-      // Step 5: Get fresh manifest data after collections are created
-      const finalManifestData = await loadManifestData()
-      const finalTags = finalManifestData?.manifest.tags || manifest?.tags || []
-      const finalBookmarks =
-        finalManifestData?.manifest.items || manifest?.items || []
+      // 2b: Build complete tag list (existing + new) with IDs
+      const allTags = [...(manifest.tags || []), ...newTags]
+      const tagNameToId = new Map<string, string>()
+      allTags.forEach((tag) => {
+        tagNameToId.set(tag.name.toLowerCase(), tag.id)
+      })
 
-      // Step 6: Prepare bookmarks (map tags and filter duplicates)
+      // 2c: Prepare bookmarks with tag references
       const prepareResult = prepareBookmarksForImport({
         bookmarksWithPaths: processResult.bookmarksWithPaths,
         preserveFolderStructure,
         importDuplicates,
-        tags: finalTags,
-        existingBookmarks: finalBookmarks
+        tags: allTags,
+        existingBookmarks: manifest.items || []
       })
 
-      // Step 7: Add all bookmarks in a single batch operation
       if (prepareResult.bookmarksToImport.length === 0) {
         const message =
           prepareResult.duplicatesCount > 0
@@ -144,13 +123,79 @@ export function useBookmarkImport(
             : 'No bookmarks to import'
         setFlash(message)
         setImportFile(null)
+        setIsImporting(false)
         return
       }
 
-      await addBookmarks(prepareResult.bookmarksToImport)
-      let successMessage = `Successfully imported ${prepareResult.bookmarksToImport.length} bookmark${prepareResult.bookmarksToImport.length !== 1 ? 's' : ''}`
+      // 2d: Create bookmarks with IDs and timestamps
+      const now = Date.now()
+      const newBookmarks: Bookmark[] = []
+      for (const bookmark of prepareResult.bookmarksToImport) {
+        // Validate bookmark
+        const validationError = validateBookmarkInput({
+          url: bookmark.url,
+          title: bookmark.title,
+          note: bookmark.note,
+          picture: bookmark.picture,
+          tags: bookmark.tags
+        })
+        if (validationError) {
+          throw new Error(
+            `Validation error for "${bookmark.title}": ${validationError}`
+          )
+        }
+
+        newBookmarks.push({
+          ...bookmark,
+          id: generateId(),
+          created_at: now,
+          updated_at: now
+        })
+      }
+
+      // 2e: Create collections from folder structure if enabled
+      let newCollections: Collection[] = []
+      if (preserveFolderStructure) {
+        const existingCollections = manifest.collections || []
+        const existingCollectionNames = new Set(
+          existingCollections.map((c) => c.name.toLowerCase())
+        )
+
+        // Generate collections using the tag IDs we just created
+        const generatedCollections = generateCollectionsFromTree(
+          processResult.folderTree,
+          tagNameToId,
+          undefined,
+          existingCollections.length
+        )
+
+        // Filter out collections that already exist (by name)
+        newCollections = generatedCollections.filter(
+          (c) => !existingCollectionNames.has(c.name.toLowerCase())
+        )
+      }
+
+      // Step 3: Save everything in a single operation
+      const updatedManifest = {
+        ...manifest,
+        tags: allTags,
+        items: [...(manifest.items || []), ...newBookmarks],
+        collections: [...(manifest.collections || []), ...newCollections]
+      }
+
+      await save(updatedManifest)
+      await reloadManifest()
+
+      // Step 4: Success message
+      let successMessage = `Successfully imported ${newBookmarks.length} bookmark${newBookmarks.length !== 1 ? 's' : ''}`
       if (prepareResult.duplicatesCount > 0) {
         successMessage += ` (${prepareResult.duplicatesCount} duplicate${prepareResult.duplicatesCount !== 1 ? 's' : ''} skipped)`
+      }
+      if (newTags.length > 0) {
+        successMessage += `, ${newTags.length} tag${newTags.length !== 1 ? 's' : ''}`
+      }
+      if (newCollections.length > 0) {
+        successMessage += `, ${newCollections.length} collection${newCollections.length !== 1 ? 's' : ''}`
       }
       setFlash(successMessage)
       setImportFile(null)

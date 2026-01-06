@@ -12,7 +12,9 @@ export function useTags() {
 
   const createTag = useCallback(
     async (tag: Omit<Tag, 'id'>) => {
-      if (!manifest) return
+      if (!manifest) {
+        throw new Error('Cannot create tag: manifest not loaded')
+      }
 
       // Validate tag name
       const validationError = validateTagName(tag.name)
