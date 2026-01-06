@@ -10,7 +10,11 @@ import {
   type LoginInput,
   type LoginResponse
 } from '@/api/auth-api'
-import { fetchVault, fetchVaultManifest } from '@/api/vault-api'
+import {
+  fetchVault,
+  fetchVaultManifest,
+  putVaultManifest
+} from '@/api/vault-api'
 import { useAuthSession } from '@/components/hooks/providers/useAuthSessionProvider'
 import {
   saveManifestData,
@@ -18,7 +22,11 @@ import {
 } from '@/components/hooks/providers/useManifestProvider'
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
 import { ApiError } from '@/lib/api'
-import { decryptManifest } from '@/lib/manifest'
+import {
+  createEmptyManifest,
+  decryptManifest,
+  encryptManifest
+} from '@/lib/manifest'
 import { unlock } from '@/lib/unlock'
 
 export const QUERY_KEYS = {
@@ -129,14 +137,33 @@ export const useQueryAuth = () => {
         wrappedMk: loginData.wrapped_mk
       })
 
-      // Phase 4: Decrypt manifest (if it exists)
+      // Phase 4: Create or decrypt manifest
       if (encryptedManifest) {
+        // Manifest exists, decrypt it
         setPhase('decrypting')
         const manifest = await decryptManifest(encryptedManifest)
         const manifestData = {
           manifest,
           etag: encryptedManifest.etag,
           serverVersion: encryptedManifest.version
+        }
+        await saveManifestData(manifestData)
+        setManifestFromLogin(manifestData)
+      } else {
+        // No manifest exists, create an empty one for new accounts
+        setPhase('decrypting')
+        const emptyManifest = createEmptyManifest(1)
+        const encrypted = await encryptManifest(emptyManifest, 1)
+
+        const result = await putVaultManifest({
+          body: encrypted,
+          headers: {} // No If-Match header needed for first write (version 1)
+        })
+
+        const manifestData = {
+          manifest: emptyManifest,
+          etag: result.etag,
+          serverVersion: result.version
         }
         await saveManifestData(manifestData)
         setManifestFromLogin(manifestData)

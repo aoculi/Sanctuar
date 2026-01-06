@@ -60,7 +60,9 @@ export function useBookmarks() {
     async (
       bookmarks: Array<Omit<Bookmark, 'id' | 'created_at' | 'updated_at'>>
     ) => {
-      if (!manifest) return
+      if (!manifest) {
+        throw new Error('Cannot add bookmarks: manifest not loaded')
+      }
 
       const now = Date.now()
       const newBookmarks: Bookmark[] = []

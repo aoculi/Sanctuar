@@ -61,11 +61,12 @@ export class InvalidManifestError extends ManifestDecryptionError {
 /**
  * Creates an empty manifest with the given version
  */
-function createEmptyManifest(version: number): ManifestV1 {
+export function createEmptyManifest(version: number): ManifestV1 {
   return {
     version,
     items: [],
-    tags: []
+    tags: [],
+    collections: []
   }
 }
 
@@ -84,6 +85,9 @@ function normalizeManifest(data: unknown, version: number): ManifestV1 {
     version: manifest.version ?? version,
     items: Array.isArray(manifest.items) ? manifest.items : [],
     tags: Array.isArray(manifest.tags) ? manifest.tags : [],
+    collections: Array.isArray(manifest.collections)
+      ? manifest.collections
+      : [],
     chain_head: manifest.chain_head
   }
 }
