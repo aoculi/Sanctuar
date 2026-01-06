@@ -46,6 +46,7 @@ export interface Collection {
   name: string // display name
   icon?: string // lucide icon name (e.g., 'Folder', 'Star', 'Briefcase')
   parentId?: string // for nesting (null = root level)
+  order?: number // manual sort order (lower = first)
   tagFilter: {
     mode: 'any' | 'all' // any = OR, all = AND
     tagIds: string[] // tag IDs to filter by

@@ -5,7 +5,10 @@ import { useManifest } from '@/components/hooks/providers/useManifestProvider'
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
 import usePopupSize from '@/components/hooks/usePopupSize'
 import { useTags } from '@/components/hooks/useTags'
-import { wouldCreateCircularReference } from '@/lib/collectionUtils'
+import {
+  getNextCollectionOrder,
+  wouldCreateCircularReference
+} from '@/lib/collectionUtils'
 import type { Collection as CollectionType } from '@/lib/types'
 import { generateId } from '@/lib/utils'
 import { validateCollectionName } from '@/lib/validation'
@@ -20,14 +23,18 @@ import Text from '@/components/ui/Text'
 
 import styles from './styles.module.css'
 
-const defaultCollection = {
+type FormState = {
+  name: string
+  icon?: string
+  parentId?: string
+  tagFilter: { mode: 'any' | 'all'; tagIds: string[] }
+}
+
+const defaultForm: FormState = {
   name: '',
-  icon: undefined as string | undefined,
-  parentId: undefined as string | undefined,
-  tagFilter: {
-    mode: 'any' as 'any' | 'all',
-    tagIds: [] as string[]
-  }
+  icon: undefined,
+  parentId: undefined,
+  tagFilter: { mode: 'any', tagIds: [] }
 }
 
 export default function Collection() {
@@ -36,58 +43,54 @@ export default function Collection() {
   const { manifest, save } = useManifest()
   const { navigate, selectedCollection, setFlash } = useNavigation()
 
-  const collection = useMemo(() => {
-    return (
-      manifest?.collections?.find(
-        (c: CollectionType) => c.id === selectedCollection
-      ) || null
-    )
-  }, [manifest?.collections, selectedCollection])
+  const collections = manifest?.collections || []
 
-  const [form, setForm] = useState(defaultCollection)
+  const existingCollection = useMemo(
+    () => collections.find((c) => c.id === selectedCollection) || null,
+    [collections, selectedCollection]
+  )
+
+  const [form, setForm] = useState<FormState>(defaultForm)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
 
-  const collections = manifest?.collections || []
-
   useEffect(() => {
-    if (collection) {
+    if (existingCollection) {
       setForm({
-        name: collection.name,
-        icon: collection.icon,
-        parentId: collection.parentId,
-        tagFilter: {
-          mode: collection.tagFilter.mode,
-          tagIds: [...collection.tagFilter.tagIds]
-        }
+        name: existingCollection.name,
+        icon: existingCollection.icon,
+        parentId: existingCollection.parentId,
+        tagFilter: { ...existingCollection.tagFilter }
       })
     }
-  }, [collection])
+  }, [existingCollection])
 
-  const validateForm = (): boolean => {
+  const updateForm = <K extends keyof FormState>(
+    key: K,
+    value: FormState[K]
+  ) => {
+    setForm((prev) => ({ ...prev, [key]: value }))
+    if (errors[key]) setErrors((prev) => ({ ...prev, [key]: '' }))
+  }
+
+  const validate = (): boolean => {
     const newErrors: Record<string, string> = {}
 
-    // Name validation
-    const validationError = validateCollectionName(form.name)
-    if (validationError) {
-      newErrors.name = validationError
-    }
+    const nameError = validateCollectionName(form.name)
+    if (nameError) newErrors.name = nameError
 
-    // Tag validation - at least one tag required
     if (form.tagFilter.tagIds.length === 0) {
       newErrors.tags = 'Select at least one tag'
     }
 
-    // Circular reference validation
     if (
       wouldCreateCircularReference(
         collections,
-        collection?.id || null,
+        existingCollection?.id || null,
         form.parentId
       )
     ) {
-      newErrors.parentId =
-        'Cannot select this parent as it would create a circular reference'
+      newErrors.parentId = 'Would create a circular reference'
     }
 
     setErrors(newErrors)
@@ -96,96 +99,82 @@ export default function Collection() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    if (!validateForm() || isLoading || !manifest) {
-      return
-    }
+    if (!validate() || isLoading || !manifest) return
 
     setIsLoading(true)
 
     try {
       const now = Date.now()
+      const trimmedName = form.name.trim()
 
-      if (collection) {
-        // Update existing collection
-        const updatedCollections = (manifest.collections || []).map((c) =>
-          c.id === collection.id
-            ? {
-                ...c,
-                name: form.name.trim(),
-                icon: form.icon,
-                parentId: form.parentId || undefined,
-                tagFilter: form.tagFilter,
-                updated_at: now
-              }
-            : c
-        )
-
+      if (existingCollection) {
+        // Update existing
         await save({
           ...manifest,
-          collections: updatedCollections
+          collections: collections.map((c) =>
+            c.id === existingCollection.id
+              ? {
+                  ...c,
+                  name: trimmedName,
+                  icon: form.icon,
+                  parentId: form.parentId,
+                  tagFilter: form.tagFilter,
+                  updated_at: now
+                }
+              : c
+          )
         })
       } else {
-        // Create new collection
+        // Create new
         const newCollection: CollectionType = {
           id: generateId(),
-          name: form.name.trim(),
+          name: trimmedName,
           icon: form.icon,
-          parentId: form.parentId || undefined,
+          parentId: form.parentId,
+          order: getNextCollectionOrder(collections, form.parentId),
           tagFilter: form.tagFilter,
           created_at: now,
           updated_at: now
         }
-
         await save({
           ...manifest,
-          collections: [...(manifest.collections || []), newCollection]
+          collections: [...collections, newCollection]
         })
       }
 
       navigate('/collections')
     } catch (error) {
-      setFlash(
-        'Failed to save collection: ' +
-          ((error as Error).message ?? 'Unknown error')
-      )
+      setFlash(`Failed to save: ${(error as Error).message}`)
     } finally {
       setIsLoading(false)
     }
   }
 
-  // Check if there are changes and name is set
   const hasChanges = useMemo(() => {
-    if (!form.name.trim() || form.tagFilter.tagIds.length === 0) {
-      return false
-    }
+    if (!form.name.trim() || form.tagFilter.tagIds.length === 0) return false
+    if (!existingCollection) return true
 
-    if (!collection) {
-      // For new collections, there's a change if name and tags are set
-      return true
-    }
-
-    // For existing collections, check if name, icon, parentId, or tagFilter changed
     const tagIdsChanged =
-      form.tagFilter.tagIds.length !== collection.tagFilter.tagIds.length ||
+      form.tagFilter.tagIds.length !==
+        existingCollection.tagFilter.tagIds.length ||
       form.tagFilter.tagIds.some(
-        (id) => !collection.tagFilter.tagIds.includes(id)
+        (id) => !existingCollection.tagFilter.tagIds.includes(id)
       )
 
     return (
-      form.name.trim() !== collection.name ||
-      form.icon !== collection.icon ||
-      form.parentId !== collection.parentId ||
-      form.tagFilter.mode !== collection.tagFilter.mode ||
+      form.name.trim() !== existingCollection.name ||
+      form.icon !== existingCollection.icon ||
+      form.parentId !== existingCollection.parentId ||
+      form.tagFilter.mode !== existingCollection.tagFilter.mode ||
       tagIdsChanged
     )
-  }, [form, collection])
+  }, [form, existingCollection])
 
   return (
     <div className={styles.component}>
       <Header
-        title={collection ? 'Edit collection' : 'New collection'}
-        canSwitchToVault={true}
+        title={existingCollection ? 'Edit collection' : 'New collection'}
+        canSwitchToVault
       />
 
       <div className={styles.page}>
@@ -196,11 +185,7 @@ export default function Collection() {
             type='text'
             placeholder='Collection name'
             value={form.name}
-            onChange={(e) => {
-              const nextName = e.target.value
-              setForm((prev) => ({ ...prev, name: nextName }))
-              if (errors.name) setErrors({ ...errors, name: '' })
-            }}
+            onChange={(e) => updateForm('name', e.target.value)}
           />
 
           <div className={styles.section}>
@@ -209,7 +194,7 @@ export default function Collection() {
             </Text>
             <IconPicker
               value={form.icon}
-              onChange={(icon) => setForm((prev) => ({ ...prev, icon }))}
+              onChange={(icon) => updateForm('icon', icon)}
             />
           </div>
 
@@ -221,18 +206,13 @@ export default function Collection() {
               size='lg'
               error={errors.parentId}
               value={form.parentId || ''}
-              onChange={(e) => {
-                const newParentId = e.target.value || undefined
-                setForm((prev) => ({
-                  ...prev,
-                  parentId: newParentId
-                }))
-                if (errors.parentId) setErrors({ ...errors, parentId: '' })
-              }}
+              onChange={(e) =>
+                updateForm('parentId', e.target.value || undefined)
+              }
             >
               <option value=''>None (root level)</option>
               {collections
-                .filter((c) => c.id !== collection?.id)
+                .filter((c) => c.id !== existingCollection?.id)
                 .map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
@@ -245,7 +225,7 @@ export default function Collection() {
               </Text>
             )}
             <Text size='2' color='light' className={styles.hint}>
-              Select a parent collection to nest this collection inside it.
+              Nest this collection inside another.
             </Text>
           </div>
 
@@ -256,13 +236,9 @@ export default function Collection() {
             <TagSelectorField
               tags={tags}
               selectedTags={form.tagFilter.tagIds}
-              onChange={(tagIds) => {
-                setForm((prev) => ({
-                  ...prev,
-                  tagFilter: { ...prev.tagFilter, tagIds }
-                }))
-                if (errors.tags) setErrors({ ...errors, tags: '' })
-              }}
+              onChange={(tagIds) =>
+                updateForm('tagFilter', { ...form.tagFilter, tagIds })
+              }
             />
             {errors.tags && (
               <Text size='1' className={styles.error}>
@@ -279,13 +255,10 @@ export default function Collection() {
               size='lg'
               value={form.tagFilter.mode}
               onChange={(e) =>
-                setForm((prev) => ({
-                  ...prev,
-                  tagFilter: {
-                    ...prev.tagFilter,
-                    mode: e.target.value as 'any' | 'all'
-                  }
-                }))
+                updateForm('tagFilter', {
+                  ...form.tagFilter,
+                  mode: e.target.value as 'any' | 'all'
+                })
               }
             >
               <option value='any'>Match ANY tag (OR)</option>
@@ -293,25 +266,19 @@ export default function Collection() {
             </Select>
             <Text size='2' color='light' className={styles.hint}>
               {form.tagFilter.mode === 'any'
-                ? 'Bookmarks with at least one of the selected tags will appear.'
-                : 'Only bookmarks that have ALL selected tags will appear.'}
+                ? 'Bookmarks with at least one selected tag will appear.'
+                : 'Only bookmarks with ALL selected tags will appear.'}
             </Text>
           </div>
         </div>
 
         <div className={styles.actions}>
-          <Button
-            onClick={() => {
-              navigate('/collections')
-            }}
-            color='black'
-          >
+          <Button onClick={() => navigate('/collections')} color='black'>
             Cancel
           </Button>
-
           <Button onClick={handleSubmit} disabled={!hasChanges || isLoading}>
             {isLoading && <Loader2 className={styles.spinner} />}
-            {collection ? 'Save' : 'Create'}
+            {existingCollection ? 'Save' : 'Create'}
           </Button>
         </div>
       </div>
