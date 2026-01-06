@@ -12,9 +12,8 @@ import { fetchRefreshToken } from '@/api/auth-api'
 import { MIN_REFRESH_INTERVAL, STORAGE_KEYS } from '@/lib/constants'
 import {
   clearStorageItem,
-  getSettings,
+  getAutoLockTimeout,
   getStorageItem,
-  parseAutoLockTimeout,
   setStorageItem
 } from '@/lib/storage'
 
@@ -31,8 +30,8 @@ type AuthSessionContextType = {
   isLoading: boolean
   session: AuthSession
   isAuthenticated: boolean
-  setSession: (response: LoginResponse) => void
-  clearSession: () => void
+  setSession: (response: LoginResponse) => Promise<void>
+  clearSession: () => Promise<void>
 }
 
 const defaultSession: AuthSession = {
@@ -48,8 +47,8 @@ export const AuthSessionContext = createContext<AuthSessionContextType>({
   isLoading: true,
   session: defaultSession,
   isAuthenticated: false,
-  setSession: () => {},
-  clearSession: () => {}
+  setSession: async () => {},
+  clearSession: async () => {}
 })
 
 export const useAuthSession = () => {
@@ -105,10 +104,8 @@ export function AuthSessionProvider({ children }: AuthSessionProviderProps) {
         return
       }
 
-      const settings = await getSettings()
-      const autoLockTimeoutMs = settings
-        ? parseAutoLockTimeout(settings.autoLockTimeout)
-        : MIN_REFRESH_INTERVAL
+      // Get auto-lock timeout (defaults to 20 minutes if settings not configured)
+      const autoLockTimeoutMs = await getAutoLockTimeout()
 
       // Calculate time since session was created/refreshed
       const sessionCreatedAt = session.createdAt
@@ -136,7 +133,10 @@ export function AuthSessionProvider({ children }: AuthSessionProviderProps) {
           try {
             await setStorageItem(STORAGE_KEYS.SESSION, updatedSession)
           } catch (storageError) {
-            console.warn('Failed to save session to storage:', storageError)
+            console.warn(
+              'Failed to save refreshed session to storage:',
+              storageError
+            )
           }
           setIsLoading(false)
           return
@@ -172,8 +172,29 @@ export function AuthSessionProvider({ children }: AuthSessionProviderProps) {
 
     try {
       await setStorageItem(STORAGE_KEYS.SESSION, data)
+
+      // Verify it was saved - retry a few times in case of timing issues
+      let verifySession: AuthSession | null = null
+      for (let i = 0; i < 3; i++) {
+        verifySession = await getStorageItem<AuthSession>(STORAGE_KEYS.SESSION)
+        if (verifySession && verifySession.token) {
+          break
+        }
+        if (i < 2) {
+          // Wait a bit before retrying
+          await new Promise((resolve) => setTimeout(resolve, 50))
+        }
+      }
+
+      if (!verifySession || !verifySession.token) {
+        console.error(
+          'Session verification failed: session not found in storage after retries'
+        )
+        throw new Error('Failed to verify session was saved')
+      }
     } catch (error) {
-      console.warn('Failed to save session to storage:', error)
+      console.error('Failed to save session to storage:', error)
+      throw error // Re-throw to ensure login fails if storage fails
     }
   }, [])
 

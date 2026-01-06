@@ -22,7 +22,7 @@ function isAuthRoute(route: Route): boolean {
  * Route guard hook that handles authentication-based redirects
  */
 export function useRouteGuard() {
-  const { session, isLoading: authLoading } = useAuthSession()
+  const { session, isLoading: authLoading, isAuthenticated } = useAuthSession()
   const { manifest, isLoading: manifestLoading } = useManifest()
   const { route, navigate } = useNavigation()
   const initialUserId = useRef<string | null>(null)
@@ -36,26 +36,38 @@ export function useRouteGuard() {
     }
 
     // Wait for both auth and manifest to finish loading
-    if (authLoading || manifestLoading) return
+    if (authLoading || manifestLoading) {
+      return
+    }
 
     // Unauthenticated user trying to access protected route → redirect to login
-    if (!session.userId && !isPublicRoute(route)) {
+    if (!isAuthenticated && !isPublicRoute(route)) {
       navigate('/login')
       return
     }
 
-    // Authenticated user with manifest on auth routes → redirect to main app
+    // Authenticated user on auth routes → redirect to main app
     // Only redirect if user was already authenticated when popup opened (not during active login)
-    if (session.userId && manifest && isAuthRoute(route)) {
+    if (isAuthenticated && session.userId && isAuthRoute(route)) {
       const wasAlreadyAuthenticated = initialUserId.current === session.userId
 
       // Only redirect if user was already authenticated when popup opened
       // This prevents redirecting during active login (which should go to /vault)
       if (wasAlreadyAuthenticated) {
-        navigate('/bookmark')
+        // If manifest exists, go to bookmark, otherwise go to vault
+        const targetRoute = manifest ? '/bookmark' : '/vault'
+        navigate(targetRoute)
         return
       }
       // If user just logged in, don't redirect - let explicit navigation handle it
     }
-  }, [authLoading, manifestLoading, session.userId, manifest, route, navigate])
+  }, [
+    authLoading,
+    manifestLoading,
+    isAuthenticated,
+    session.userId,
+    manifest,
+    route,
+    navigate
+  ])
 }
