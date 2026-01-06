@@ -124,17 +124,27 @@
   border: none;
 }
 
-.updatedText {
-  text-align: right;
-  padding-top: 15px;
-}
-
 .actions {
   position: absolute;
   top: 12px;
   right: 20px;
   z-index: 3;
+
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.component:hover .actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+.actionsContainer {
   display: flex;
   gap: 4px;
   align-items: center;
+}
+.updatedText {
+  text-align: right;
+  padding-top: 2px;
 }

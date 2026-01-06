@@ -177,52 +177,53 @@ export function BookmarkCard({
                   </DropdownMenu.Content>
                 </DropdownMenu.Root>
               </div>
-
-              <Text size='1' color='light' className={styles.updatedText}>
-                Updated: {formatDate(bookmark.updated_at)}
-              </Text>
             </div>
           </div>
         </div>
       </a>
 
       <div className={styles.actions}>
-        <Button
-          asIcon={true}
-          color={(bookmark.pinned ?? false) ? 'light' : 'dark'}
-          onClick={handleTogglePinned}
-          title={(bookmark.pinned ?? false) ? 'Unpin' : 'Pin'}
-        >
-          {(bookmark.pinned ?? false) ? (
-            <HeartMinus size={16} />
-          ) : (
-            <HeartPlus size={16} />
-          )}
-        </Button>
-        <Button
-          asIcon={true}
-          color='dark'
-          onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            navigate('/bookmark', { bookmark: bookmark.id })
-          }}
-          title='Edit'
-        >
-          <Edit size={16} />
-        </Button>
-        <Button
-          asIcon={true}
-          color='dark'
-          onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            onDelete(bookmark.id)
-          }}
-          title='Delete'
-        >
-          <Trash2 size={16} />
-        </Button>
+        <div className={styles.actionsContainer}>
+          <Button
+            asIcon={true}
+            color={(bookmark.pinned ?? false) ? 'light' : 'dark'}
+            onClick={handleTogglePinned}
+            title={(bookmark.pinned ?? false) ? 'Unpin' : 'Pin'}
+          >
+            {(bookmark.pinned ?? false) ? (
+              <HeartMinus size={16} />
+            ) : (
+              <HeartPlus size={16} />
+            )}
+          </Button>
+          <Button
+            asIcon={true}
+            color='dark'
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              navigate('/bookmark', { bookmark: bookmark.id })
+            }}
+            title='Edit'
+          >
+            <Edit size={16} />
+          </Button>
+          <Button
+            asIcon={true}
+            color='dark'
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onDelete(bookmark.id)
+            }}
+            title='Delete'
+          >
+            <Trash2 size={16} />
+          </Button>
+        </div>
+        <Text size='1' color='light' className={styles.updatedText}>
+          Updated: {formatDate(bookmark.updated_at)}
+        </Text>
       </div>
     </div>
   )
