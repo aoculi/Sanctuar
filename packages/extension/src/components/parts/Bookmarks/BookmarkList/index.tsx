@@ -1,4 +1,10 @@
-import { ChevronDown, ChevronRight, Folder, Inbox } from 'lucide-react'
+import {
+  ChevronDown,
+  ChevronRight,
+  ExternalLink,
+  Folder,
+  Inbox
+} from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { useManifest } from '@/components/hooks/providers/useManifestProvider'
@@ -106,6 +112,16 @@ export default function BookmarkList({
     })
   }
 
+  const handleOpenAllBookmarks = async (
+    e: React.MouseEvent,
+    bookmarks: Bookmark[]
+  ) => {
+    e.stopPropagation() // Prevent collapsing/expanding the collection
+    for (const bookmark of bookmarks) {
+      await chrome.tabs.create({ url: bookmark.url })
+    }
+  }
+
   // Check if tag filtering is active
   const isTagFilteringActive =
     selectedTags.length > 0 || (currentTagId !== null && currentTagId !== 'all')
@@ -201,6 +217,18 @@ export default function BookmarkList({
                     <Text size='2' weight='medium' color='light'>
                       {collection.name}
                     </Text>
+                    {collectionBookmarks.length > 0 && (
+                      <button
+                        type='button'
+                        className={styles.openAllButton}
+                        onClick={(e) =>
+                          handleOpenAllBookmarks(e, collectionBookmarks)
+                        }
+                        title='Open all bookmarks in new tabs'
+                      >
+                        <ExternalLink size={14} />
+                      </button>
+                    )}
                     <span className={styles.badge}>
                       {collectionBookmarks.length}
                     </span>
@@ -239,6 +267,18 @@ export default function BookmarkList({
                 <Text size='2' weight='medium' color='light'>
                   Uncategorized
                 </Text>
+                {uncategorizedBookmarks.length > 0 && (
+                  <button
+                    type='button'
+                    className={styles.openAllButton}
+                    onClick={(e) =>
+                      handleOpenAllBookmarks(e, uncategorizedBookmarks)
+                    }
+                    title='Open all bookmarks in new tabs'
+                  >
+                    <ExternalLink size={14} />
+                  </button>
+                )}
                 <span className={styles.badge}>
                   {uncategorizedBookmarks.length}
                 </span>
