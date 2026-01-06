@@ -1,5 +1,5 @@
-import { Folder } from 'lucide-react'
-import { useMemo } from 'react'
+import { ChevronDown, ChevronRight, Folder, Inbox } from 'lucide-react'
+import { useMemo, useState } from 'react'
 
 import { useManifest } from '@/components/hooks/providers/useManifestProvider'
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
@@ -89,6 +89,23 @@ export default function BookmarkList({
   // Get collections
   const collections = manifest?.collections || []
 
+  // Track which collections are expanded (all collapsed by default)
+  const [expandedCollections, setExpandedCollections] = useState<Set<string>>(
+    new Set()
+  )
+
+  const toggleCollapse = (collectionId: string) => {
+    setExpandedCollections((prev) => {
+      const next = new Set(prev)
+      if (next.has(collectionId)) {
+        next.delete(collectionId)
+      } else {
+        next.add(collectionId)
+      }
+      return next
+    })
+  }
+
   // Group bookmarks by collection and build tree structure
   const collectionsWithBookmarks = useMemo(
     () =>
@@ -105,6 +122,26 @@ export default function BookmarkList({
     () => getBookmarkIdsInCollections(collectionsWithBookmarks),
     [collectionsWithBookmarks]
   )
+
+  // Bookmarks not in any collection
+  const uncategorizedBookmarks = useMemo(
+    () =>
+      nonPinnedBookmarks.filter(
+        (bookmark) => !bookmarkIdsInCollections.has(bookmark.id)
+      ),
+    [nonPinnedBookmarks, bookmarkIdsInCollections]
+  )
+
+  // Virtual collection ID for uncategorized bookmarks
+  const UNCATEGORIZED_ID = '__uncategorized__'
+
+  // Check if a collection should be hidden (any ancestor is collapsed)
+  const isHiddenByParent = (collectionId: string): boolean => {
+    const collection = collections.find((c) => c.id === collectionId)
+    if (!collection?.parentId) return false
+    if (!expandedCollections.has(collection.parentId)) return true
+    return isHiddenByParent(collection.parentId)
+  }
 
   return (
     <div className={styles.container}>
@@ -137,15 +174,24 @@ export default function BookmarkList({
             )}
           {collectionsWithBookmarks.map(
             ({ collection, bookmarks: collectionBookmarks, depth }) => {
+              // Skip if this collection's parent is collapsed
+              if (isHiddenByParent(collection.id)) return null
+
               const Icon = collection.icon
                 ? getIconByName(collection.icon)
                 : Folder
+              const isExpanded = expandedCollections.has(collection.id)
+              const ChevronIcon = isExpanded ? ChevronDown : ChevronRight
+
               return (
                 <div key={collection.id} className={styles.collectionGroup}>
-                  <div
+                  <button
+                    type='button'
                     className={styles.collectionHeader}
                     style={{ paddingLeft: `${depth * 20 + 12}px` }}
+                    onClick={() => toggleCollapse(collection.id)}
                   >
+                    <ChevronIcon size={14} />
                     <Icon size={16} className={styles.collectionIcon} />
                     <Text size='2' weight='medium' color='light'>
                       {collection.name}
@@ -155,8 +201,9 @@ export default function BookmarkList({
                         </span>
                       )}
                     </Text>
-                  </div>
-                  {collectionBookmarks.length > 0 &&
+                  </button>
+                  {isExpanded &&
+                    collectionBookmarks.length > 0 &&
                     collectionBookmarks.map((bookmark: Bookmark) => (
                       <BookmarkCard
                         key={bookmark.id}
@@ -171,19 +218,41 @@ export default function BookmarkList({
               )
             }
           )}
-          {/* Show remaining non-pinned bookmarks that don't belong to any collection */}
-          {nonPinnedBookmarks
-            .filter((bookmark) => !bookmarkIdsInCollections.has(bookmark.id))
-            .map((bookmark: Bookmark) => (
-              <BookmarkCard
-                key={bookmark.id}
-                bookmark={bookmark}
-                tags={tags}
-                onDelete={onDelete}
-                isSelected={selectedBookmarkIds.has(bookmark.id)}
-                onToggleSelect={() => handleBookmarkToggle(bookmark.id)}
-              />
-            ))}
+          {/* Virtual collection for bookmarks not in any collection */}
+          {uncategorizedBookmarks.length > 0 && (
+            <div className={styles.collectionGroup}>
+              <button
+                type='button'
+                className={styles.collectionHeader}
+                style={{ paddingLeft: '12px' }}
+                onClick={() => toggleCollapse(UNCATEGORIZED_ID)}
+              >
+                {expandedCollections.has(UNCATEGORIZED_ID) ? (
+                  <ChevronDown size={14} />
+                ) : (
+                  <ChevronRight size={14} />
+                )}
+                <Inbox size={16} className={styles.collectionIcon} />
+                <Text size='2' weight='medium' color='light'>
+                  Uncategorized
+                  <span style={{ marginLeft: '8px', opacity: 0.7 }}>
+                    ({uncategorizedBookmarks.length})
+                  </span>
+                </Text>
+              </button>
+              {expandedCollections.has(UNCATEGORIZED_ID) &&
+                uncategorizedBookmarks.map((bookmark: Bookmark) => (
+                  <BookmarkCard
+                    key={bookmark.id}
+                    bookmark={bookmark}
+                    tags={tags}
+                    onDelete={onDelete}
+                    isSelected={selectedBookmarkIds.has(bookmark.id)}
+                    onToggleSelect={() => handleBookmarkToggle(bookmark.id)}
+                  />
+                ))}
+            </div>
+          )}
         </div>
       )}
     </div>
