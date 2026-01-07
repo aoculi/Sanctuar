@@ -7,18 +7,19 @@ import { useSettings } from '@/components/hooks/providers/useSettingsProvider'
 import { useBookmarkExport } from '@/components/hooks/useBookmarkExport'
 import { useBookmarkImport } from '@/components/hooks/useBookmarkImport'
 import { useBookmarks } from '@/components/hooks/useBookmarks'
-import { PinEntryModal } from '@/components/parts/PinEntryModal'
 import { PinSetupModal } from '@/components/parts/PinSetupModal'
 import Header from '@/components/parts/Header'
 import Button from '@/components/ui/Button'
 import { Checkbox } from '@/components/ui/Checkbox'
+import { Drawer } from '@/components/ui/Drawer'
 import FileInput from '@/components/ui/FileInput'
 import Input from '@/components/ui/Input'
 import Select from '@/components/ui/Select'
 import { Tabs } from '@/components/ui/Tabs'
 import Text from '@/components/ui/Text'
+import { KeyRound } from 'lucide-react'
 import { STORAGE_KEYS } from '@/lib/constants'
-import { setupPin } from '@/lib/pin'
+import { setupPin, verifyPin } from '@/lib/pin'
 import type { KeystoreData } from '@/lib/unlock'
 import {
   getStorageItem,
@@ -69,7 +70,11 @@ export default function Settings() {
   const [importDuplicates, setImportDuplicates] = useState(false)
 
   const [showPinSetupModal, setShowPinSetupModal] = useState(false)
-  const [showChangePinModal, setShowChangePinModal] = useState(false)
+  const [showPinVerifyModal, setShowPinVerifyModal] = useState(false)
+  const [verifyPin_pin, setVerifyPin_pin] = useState('')
+  const [verifyPin_error, setVerifyPin_error] = useState<string | null>(null)
+  const [verifyPin_isVerifying, setVerifyPin_isVerifying] = useState(false)
+  const [isSavingSecurity, setIsSavingSecurity] = useState(false)
 
   const { importFile, setImportFile, isImporting, handleImport } =
     useBookmarkImport({
@@ -157,15 +162,23 @@ export default function Settings() {
       )
       await setStorageItem(STORAGE_KEYS.PIN_STORE, pinStore)
 
-      // Update settings
+      // Update fields
+      updateField('unlockMethod', 'pin')
+      updateField('pinEnabled', true)
+
+      // Adjust auto-lock timeout if needed
+      const newTimeout = fields.autoLockTimeout === 'never' ? '20min' : fields.autoLockTimeout
+      if (fields.autoLockTimeout === 'never') {
+        updateField('autoLockTimeout', newTimeout)
+      }
+
+      // Auto-save settings
       await updateSettings({
         ...fields,
         unlockMethod: 'pin',
-        pinEnabled: true
+        pinEnabled: true,
+        autoLockTimeout: newTimeout
       })
-
-      updateField('unlockMethod', 'pin')
-      updateField('pinEnabled', true)
 
       setShowPinSetupModal(false)
     } catch (error) {
@@ -176,9 +189,94 @@ export default function Settings() {
     }
   }
 
-  const handlePinChange = async (pin: string) => {
-    await handlePinSetup(pin)
-    setShowChangePinModal(false)
+  const handlePinVerifySubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (verifyPin_pin.length !== 6) return
+
+    setVerifyPin_isVerifying(true)
+    setVerifyPin_error(null)
+
+    try {
+      // Get PIN store
+      const pinStore = await getStorageItem<PinStoreData>(STORAGE_KEYS.PIN_STORE)
+      if (!pinStore) {
+        throw new Error('No PIN configured')
+      }
+
+      // Verify PIN
+      const isValid = await verifyPin(verifyPin_pin, pinStore)
+      if (!isValid) {
+        setVerifyPin_error('Invalid PIN')
+        setVerifyPin_isVerifying(false)
+        return
+      }
+
+      // PIN is valid, disable PIN mode
+      const newFields = {
+        ...fields,
+        unlockMethod: 'password' as const,
+        autoLockTimeout: 'never' as AutoLockTimeout
+      }
+      await updateSettings(newFields)
+      setFields(newFields)
+      setOriginalFields(newFields)
+
+      // Close modal and reset
+      setShowPinVerifyModal(false)
+      setVerifyPin_pin('')
+      setVerifyPin_error(null)
+    } catch (error) {
+      console.error('PIN verification error:', error)
+      setVerifyPin_error(
+        error instanceof Error ? error.message : 'Verification failed'
+      )
+    } finally {
+      setVerifyPin_isVerifying(false)
+    }
+  }
+
+  const handlePinVerifyClose = () => {
+    setShowPinVerifyModal(false)
+    setVerifyPin_pin('')
+    setVerifyPin_error(null)
+  }
+
+  const handleUnlockMethodChange = (method: 'password' | 'pin') => {
+    if (method === 'password' && fields.unlockMethod === 'pin' && fields.pinEnabled) {
+      // Require PIN verification to disable PIN mode
+      setShowPinVerifyModal(true)
+    } else if (method === 'pin') {
+      // Always show PIN setup modal when selecting PIN mode
+      setShowPinSetupModal(true)
+    }
+  }
+
+  const saveSecuritySettings = async (unlockMethod?: string, autoLockTimeout?: string) => {
+    setIsSavingSecurity(true)
+    try {
+      await updateSettings({
+        showHiddenTags: fields.showHiddenTags,
+        apiUrl: fields.apiUrl,
+        autoLockTimeout: autoLockTimeout || fields.autoLockTimeout,
+        unlockMethod: (unlockMethod as 'password' | 'pin') || fields.unlockMethod,
+        pinEnabled: fields.pinEnabled
+      })
+      setOriginalFields({ ...fields })
+    } catch (error) {
+      console.error('Error saving settings:', error)
+    } finally {
+      setIsSavingSecurity(false)
+    }
+  }
+
+  const handleAutoLockTimeoutChange = async (timeout: AutoLockTimeout) => {
+    updateField('autoLockTimeout', timeout)
+    await saveSecuritySettings(undefined, timeout)
+  }
+
+  const handleShowHiddenTagsChange = async (checked: boolean) => {
+    updateField('showHiddenTags', checked)
+    await saveSecuritySettings()
   }
 
   const handleCancel = () => {
@@ -263,7 +361,16 @@ export default function Settings() {
             </Tabs.Content>
 
             <Tabs.Content value='security'>
-              <form onSubmit={handleSaveSettings} className={styles.form}>
+              <div className={styles.form}>
+                {isSavingSecurity && (
+                  <div className={styles.savingIndicator}>
+                    <Loader2 className={styles.spinner} />
+                    <Text size='2' color='light'>
+                      Saving...
+                    </Text>
+                  </div>
+                )}
+
                 <div className={styles.field}>
                   <Text as='label' size='3' weight='medium'>
                     Unlock Method
@@ -276,10 +383,8 @@ export default function Settings() {
                         name='unlockMethod'
                         value='password'
                         checked={fields.unlockMethod === 'password'}
-                        onChange={() => {
-                          updateField('unlockMethod', 'password')
-                          updateField('autoLockTimeout', 'never')
-                        }}
+                        onChange={() => handleUnlockMethodChange('password')}
+                        disabled={isSavingSecurity}
                       />
                       <Text size='2'>Always unlock</Text>
                     </label>
@@ -290,15 +395,8 @@ export default function Settings() {
                         name='unlockMethod'
                         value='pin'
                         checked={fields.unlockMethod === 'pin'}
-                        onChange={() => {
-                          if (!fields.pinEnabled) {
-                            setShowPinSetupModal(true)
-                          }
-                          updateField('unlockMethod', 'pin')
-                          if (fields.autoLockTimeout === 'never') {
-                            updateField('autoLockTimeout', '20min')
-                          }
-                        }}
+                        onChange={() => handleUnlockMethodChange('pin')}
+                        disabled={isSavingSecurity}
                       />
                       <Text size='2'>PIN code (6 digits)</Text>
                     </label>
@@ -319,11 +417,11 @@ export default function Settings() {
                     <Select
                       value={fields.autoLockTimeout}
                       onChange={(e) =>
-                        updateField(
-                          'autoLockTimeout',
+                        handleAutoLockTimeoutChange(
                           e.target.value as AutoLockTimeout
                         )
                       }
+                      disabled={isSavingSecurity}
                     >
                       <option value='1min'>1 minute</option>
                       <option value='2min'>2 minutes</option>
@@ -339,25 +437,14 @@ export default function Settings() {
                   </div>
                 )}
 
-                {fields.pinEnabled && fields.unlockMethod === 'pin' && (
-                  <div className={styles.field}>
-                    <Button
-                      variant='ghost'
-                      onClick={() => setShowChangePinModal(true)}
-                      type='button'
-                    >
-                      Change PIN
-                    </Button>
-                  </div>
-                )}
-
                 <div className={styles.field}>
                   <Text as='label' size='2'>
                     <Checkbox
                       checked={fields.showHiddenTags}
                       onChange={(e) =>
-                        updateField('showHiddenTags', e.target.checked)
+                        handleShowHiddenTagsChange(e.target.checked)
                       }
+                      disabled={isSavingSecurity}
                       label='Display hidden tags'
                     />
                   </Text>
@@ -366,13 +453,7 @@ export default function Settings() {
                     bookmarks with hidden tags in results
                   </Text>
                 </div>
-
-                <SettingsActions
-                  hasChanged={hasChanged}
-                  isSaving={isSaving}
-                  onCancel={handleCancel}
-                />
-              </form>
+              </div>
             </Tabs.Content>
 
             <Tabs.Content value='import'>
@@ -518,11 +599,74 @@ export default function Settings() {
         onSuccess={handlePinSetup}
       />
 
-      <PinSetupModal
-        open={showChangePinModal}
-        onClose={() => setShowChangePinModal(false)}
-        onSuccess={handlePinChange}
-      />
+      <Drawer
+        open={showPinVerifyModal}
+        title='Verify PIN'
+        description='Enter your PIN to disable PIN unlock'
+        width={400}
+        onClose={handlePinVerifyClose}
+      >
+        <div style={{ padding: '20px' }}>
+          <form
+            onSubmit={handlePinVerifySubmit}
+            style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
+          >
+            <Input
+              type='text'
+              inputMode='numeric'
+              pattern='[0-9]*'
+              placeholder='000000'
+              value={verifyPin_pin}
+              onChange={(e) => {
+                setVerifyPin_pin(e.target.value.replace(/\D/g, '').slice(0, 6))
+                if (verifyPin_error) setVerifyPin_error(null)
+              }}
+              disabled={verifyPin_isVerifying}
+              autoFocus
+              style={{
+                textAlign: 'center',
+                fontSize: '24px',
+                letterSpacing: '8px',
+                fontFamily: 'monospace'
+              }}
+            >
+              <KeyRound size={16} />
+            </Input>
+
+            {verifyPin_error && (
+              <div
+                style={{
+                  padding: '12px',
+                  backgroundColor: 'rgba(255, 59, 48, 0.1)',
+                  border: '1px solid rgba(255, 59, 48, 0.3)',
+                  borderRadius: '6px',
+                  color: '#ff3b30'
+                }}
+              >
+                <Text size='2'>{verifyPin_error}</Text>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <Button
+                variant='ghost'
+                onClick={handlePinVerifyClose}
+                disabled={verifyPin_isVerifying}
+                type='button'
+              >
+                Cancel
+              </Button>
+              <Button
+                type='submit'
+                disabled={verifyPin_pin.length !== 6 || verifyPin_isVerifying}
+              >
+                {verifyPin_isVerifying && <Loader2 style={{ marginRight: '8px', animation: 'spin 1s linear infinite' }} />}
+                {verifyPin_isVerifying ? 'Verifying...' : 'Verify'}
+              </Button>
+            </div>
+          </form>
+        </div>
+      </Drawer>
     </div>
   )
 }
