@@ -19,8 +19,8 @@ import Text from '@/components/ui/Text'
 import styles from './styles.module.css'
 
 export default function CollectionList() {
-  const { manifest, save } = useManifest()
-  const { collections, deleteCollection } = useCollections()
+  const { manifest } = useManifest()
+  const { collections, deleteCollection, reorderCollections } = useCollections()
   const { bookmarks } = useBookmarks()
   const { setFlash } = useNavigation()
 
@@ -56,8 +56,7 @@ export default function CollectionList() {
 
   const handleDrop = async (targetId: string, zone: DropZone) => {
     if (!draggedId || !manifest || draggedId === targetId) {
-      setDraggedId(null)
-      setDragOver(null)
+      clearDragState()
       return
     }
 
@@ -66,17 +65,19 @@ export default function CollectionList() {
     if ('error' in result) {
       setFlash(result.error)
       setTimeout(() => setFlash(null), 3000)
-    } else {
-      try {
-        await save({ ...manifest, collections: result })
-      } catch (error) {
-        setFlash(`Failed to move: ${(error as Error).message}`)
-        setTimeout(() => setFlash(null), 5000)
-      }
+      clearDragState()
+      return
     }
 
-    setDraggedId(null)
-    setDragOver(null)
+    try {
+      await reorderCollections(result)
+      // Only clear state after successful save
+      clearDragState()
+    } catch (error) {
+      setFlash(`Failed to move: ${(error as Error).message}`)
+      setTimeout(() => setFlash(null), 5000)
+      clearDragState()
+    }
   }
 
   const clearDragState = () => {

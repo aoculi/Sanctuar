@@ -15,6 +15,7 @@ export type CollectionWithBookmarks = {
  * Sort collections by manual order, falling back to alphabetical
  */
 function sortByOrder(collections: Collection[]): Collection[] {
+  if (!collections || collections.length === 0) return []
   return [...collections].sort((a, b) => {
     const orderA = a.order ?? Number.MAX_SAFE_INTEGER
     const orderB = b.order ?? Number.MAX_SAFE_INTEGER
@@ -22,14 +23,30 @@ function sortByOrder(collections: Collection[]): Collection[] {
   })
 }
 
+export interface HierarchyResult {
+  childrenMap: Map<string | undefined, Collection[]>
+  roots: Collection[]
+  parentMap: Map<string, string | undefined>
+}
+
 /**
  * Build parent-child relationships for collections
+ * Returns childrenMap for traversing down the tree, roots for top-level collections,
+ * and parentMap for O(1) parent lookups when traversing up
  */
-function buildHierarchy(collections: Collection[]) {
-  const childrenMap = new Map<string, Collection[]>()
+function buildHierarchy(collections: Collection[]): HierarchyResult {
+  const childrenMap = new Map<string | undefined, Collection[]>()
+  const parentMap = new Map<string, string | undefined>()
   const roots: Collection[] = []
 
+  if (!collections || collections.length === 0) {
+    return { childrenMap, roots, parentMap }
+  }
+
   for (const c of collections) {
+    // Store parent relationship for O(1) lookup
+    parentMap.set(c.id, c.parentId)
+
     if (!c.parentId) {
       roots.push(c)
     } else {
@@ -39,7 +56,7 @@ function buildHierarchy(collections: Collection[]) {
     }
   }
 
-  return { childrenMap, roots }
+  return { childrenMap, roots, parentMap }
 }
 
 /**
@@ -61,24 +78,42 @@ export function getBookmarksForCollection(
 
 /**
  * Count bookmarks per collection (including all subcollections recursively)
+ * Optimized: O(n + m) instead of O(n*m) by using single-pass counting
  */
 export function countBookmarksPerCollection(
   collections: Collection[],
   bookmarks: Bookmark[]
 ): Map<string, number> {
-  // First, get direct bookmark counts for each collection
-  const directCounts = new Map<string, number>()
-  for (const c of collections) {
-    directCounts.set(c.id, getBookmarksForCollection(c, bookmarks).length)
+  if (!collections || collections.length === 0) {
+    return new Map()
   }
 
-  // Build parent-child hierarchy
-  const { childrenMap, roots } = buildHierarchy(collections)
+  // Phase 1: Initialize direct counts to 0 for all collections - O(n)
+  const directCounts = new Map<string, number>()
+  for (const c of collections) {
+    directCounts.set(c.id, 0)
+  }
 
-  // Recursively sum counts (direct + all descendants)
+  // Phase 2: Single pass over bookmarks to count direct associations - O(m)
+  for (const bookmark of bookmarks) {
+    if (bookmark.collectionId) {
+      const current = directCounts.get(bookmark.collectionId) || 0
+      directCounts.set(bookmark.collectionId, current + 1)
+    }
+  }
+
+  // Phase 3: Build hierarchy once - O(n)
+  const { childrenMap } = buildHierarchy(collections)
+
+  // Phase 4: Post-order traversal to sum counts with memoization - O(n)
   const totalCounts = new Map<string, number>()
 
   const sumCounts = (collectionId: string): number => {
+    // Check cache first
+    if (totalCounts.has(collectionId)) {
+      return totalCounts.get(collectionId)!
+    }
+
     const directCount = directCounts.get(collectionId) || 0
     const children = childrenMap.get(collectionId) || []
     const childrenTotal = children.reduce(
@@ -90,9 +125,11 @@ export function countBookmarksPerCollection(
     return total
   }
 
-  // Process from roots to ensure all collections are counted
-  for (const root of roots) {
-    sumCounts(root.id)
+  // Trigger computation for all collections
+  for (const collection of collections) {
+    if (!totalCounts.has(collection.id)) {
+      sumCounts(collection.id)
+    }
   }
 
   return totalCounts
@@ -118,9 +155,9 @@ export function flattenCollectionsWithDepth(
 /**
  * Get all descendant collection IDs for a given collection (recursive)
  */
-function getDescendantCollectionIds(
+export function getDescendantCollectionIds(
   collectionId: string,
-  childrenMap: Map<string, Collection[]>
+  childrenMap: Map<string | undefined, Collection[]>
 ): Set<string> {
   const descendants = new Set<string>()
   const children = childrenMap.get(collectionId) || []
@@ -136,6 +173,59 @@ function getDescendantCollectionIds(
 }
 
 /**
+ * Convenience function to get all descendant IDs from a collections array
+ */
+export function getAllDescendantIds(
+  collectionId: string,
+  collections: Collection[]
+): Set<string> {
+  const { childrenMap } = buildHierarchy(collections)
+  return getDescendantCollectionIds(collectionId, childrenMap)
+}
+
+/**
+ * Build a map of bookmarks grouped by collection ID
+ */
+function buildBookmarksByCollectionMap(
+  collections: Collection[],
+  bookmarks: Bookmark[],
+  sortMode: 'updated_at' | 'title' = 'updated_at'
+): Map<string, Bookmark[]> {
+  return new Map(
+    collections.map((c) => [
+      c.id,
+      getBookmarksForCollection(c, bookmarks, sortMode)
+    ])
+  )
+}
+
+/**
+ * Check if a collection or any of its descendants have bookmarks
+ * Uses recursion to check the entire subtree
+ */
+function hasBookmarks(
+  collectionId: string,
+  bookmarksByCollection: Map<string, Bookmark[]>,
+  childrenMap: Map<string | undefined, Collection[]>
+): boolean {
+  // Check if this collection has bookmarks
+  const collectionBookmarks = bookmarksByCollection.get(collectionId) || []
+  if (collectionBookmarks.length > 0) {
+    return true
+  }
+
+  // Check if any descendant has bookmarks
+  const children = childrenMap.get(collectionId) || []
+  for (const child of children) {
+    if (hasBookmarks(child.id, bookmarksByCollection, childrenMap)) {
+      return true
+    }
+  }
+
+  return false
+}
+
+/**
  * Flatten collections with their bookmarks for bookmark list view
  * Bookmarks are directly associated with collections via collectionId
  * When filtering by tags, only includes collections that have matching bookmarks
@@ -147,40 +237,20 @@ export function flattenCollectionsWithBookmarks(
   sortMode: 'updated_at' | 'title' = 'updated_at'
 ): CollectionWithBookmarks[] {
   const { childrenMap, roots } = buildHierarchy(collections)
-
-  // Get all bookmarks that belong to each collection
-  const bookmarksByCollection = new Map(
-    collections.map((c) => [
-      c.id,
-      getBookmarksForCollection(c, bookmarks, sortMode)
-    ])
+  const bookmarksByCollection = buildBookmarksByCollectionMap(
+    collections,
+    bookmarks,
+    sortMode
   )
-
-  // Helper function to check if a collection or any of its descendants have matching bookmarks
-  const hasMatchingBookmarks = (collectionId: string): boolean => {
-    // Check if this collection has matching bookmarks
-    const collectionBookmarks = bookmarksByCollection.get(collectionId) || []
-    if (collectionBookmarks.length > 0) {
-      return true
-    }
-
-    // Check if any descendant has matching bookmarks
-    const children = childrenMap.get(collectionId) || []
-    for (const child of children) {
-      if (hasMatchingBookmarks(child.id)) {
-        return true
-      }
-    }
-
-    return false
-  }
 
   const flatten = (
     items: Collection[],
     depth: number
   ): CollectionWithBookmarks[] =>
     sortByOrder(items)
-      .filter((collection) => hasMatchingBookmarks(collection.id))
+      .filter((collection) =>
+        hasBookmarks(collection.id, bookmarksByCollection, childrenMap)
+      )
       .flatMap((collection) => [
         {
           collection,
@@ -208,21 +278,26 @@ export function getBookmarkIdsInCollections(
 
 /**
  * Check if setting a parent would create a circular reference
+ * Uses parentMap for O(1) parent lookups instead of O(n) linear search
  */
 export function wouldCreateCircularReference(
   collections: Collection[],
   collectionId: string | null,
   parentId: string | undefined
 ): boolean {
-  if (!parentId) return false
+  if (!parentId || !collectionId) return false
+  if (parentId === collectionId) return true // Direct self-reference
+
+  // Build parent map once for O(1) lookups
+  const { parentMap } = buildHierarchy(collections)
 
   let currentId: string | undefined = parentId
-  const visited = new Set<string>()
+  const visited = new Set<string>([collectionId]) // Pre-populate with the collection we're moving
 
   while (currentId) {
-    if (visited.has(currentId) || currentId === collectionId) return true
+    if (visited.has(currentId)) return true // Found a cycle
     visited.add(currentId)
-    currentId = collections.find((c) => c.id === currentId)?.parentId
+    currentId = parentMap.get(currentId) // O(1) lookup instead of O(n)
   }
 
   return false

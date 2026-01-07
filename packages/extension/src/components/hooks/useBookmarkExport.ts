@@ -4,6 +4,7 @@ import { useManifest } from '@/components/hooks/providers/useManifestProvider'
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
 import { useBookmarks } from '@/components/hooks/useBookmarks'
 import { useCollections } from '@/components/hooks/useCollections'
+import { getDescendantCollectionIds } from '@/lib/collectionUtils'
 import type { Bookmark, Collection } from '@/lib/types'
 
 function escapeHtml(text: string): string {
@@ -27,26 +28,6 @@ interface CollectionNode {
   collection: Collection
   bookmarks: Bookmark[]
   children: CollectionNode[]
-}
-
-/**
- * Get all descendant collection IDs for a given collection (recursive)
- */
-function getDescendantCollectionIds(
-  collectionId: string,
-  childrenMap: Map<string | undefined, Collection[]>
-): Set<string> {
-  const descendants = new Set<string>()
-  const children = childrenMap.get(collectionId) || []
-
-  for (const child of children) {
-    descendants.add(child.id)
-    // Recursively get descendants of this child
-    const childDescendants = getDescendantCollectionIds(child.id, childrenMap)
-    childDescendants.forEach((id) => descendants.add(id))
-  }
-
-  return descendants
 }
 
 function buildCollectionTree(

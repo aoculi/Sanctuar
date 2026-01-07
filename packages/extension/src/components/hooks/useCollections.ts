@@ -156,8 +156,18 @@ export function useCollections() {
     async (id: string) => {
       if (!manifest) return
 
+      const collections = manifest.collections || []
+
+      // Check if collection has children
+      const hasChildren = collections.some((c) => c.parentId === id)
+      if (hasChildren) {
+        throw new Error(
+          'Cannot delete collection with child collections. Please move or delete child collections first.'
+        )
+      }
+
       // Remove collection from collections array
-      const updatedCollections = (manifest.collections || []).filter(
+      const updatedCollections = collections.filter(
         (collection) => collection.id !== id
       )
 
@@ -187,11 +197,40 @@ export function useCollections() {
     [manifest]
   )
 
+  const reorderCollections = useCallback(
+    async (updatedCollections: Collection[]) => {
+      if (!manifest) return
+
+      // Validate that all collection IDs are present and no duplicates
+      const originalIds = new Set(
+        (manifest.collections || []).map((c) => c.id)
+      )
+      const updatedIds = new Set(updatedCollections.map((c) => c.id))
+
+      if (originalIds.size !== updatedIds.size) {
+        throw new Error('Collection count mismatch during reorder')
+      }
+
+      for (const id of originalIds) {
+        if (!updatedIds.has(id)) {
+          throw new Error(`Collection ${id} missing after reorder`)
+        }
+      }
+
+      await save({
+        ...manifest,
+        collections: updatedCollections
+      })
+    },
+    [manifest, save]
+  )
+
   return {
-    collections: [...(manifest?.collections || [])],
+    collections: manifest?.collections || [],
     createCollection,
     updateCollection,
     deleteCollection,
-    getCollection
+    getCollection,
+    reorderCollections
   }
 }
