@@ -5,10 +5,7 @@ import {
   AuthSessionProvider,
   useAuthSession
 } from '@/components/hooks/providers/useAuthSessionProvider'
-import {
-  ManifestProvider,
-  useManifest
-} from '@/components/hooks/providers/useManifestProvider'
+import { ManifestProvider } from '@/components/hooks/providers/useManifestProvider'
 import {
   NavigationProvider,
   Route,
@@ -35,17 +32,11 @@ function RootContent() {
   useRouteGuard()
   const { route, flash, navigate } = useNavigation()
   const { session } = useAuthSession()
-  const { isLoading: isManifestLoading } = useManifest()
 
   useEffect(() => {
     const checkLockState = async () => {
-      // Only check lock state if not already on pin-unlock route
-      if (route === '/pin-unlock') {
-        return
-      }
-
-      // Don't redirect to PIN unlock if manifest is loading (during login/register)
-      if (isManifestLoading) {
+      // Don't redirect during authentication flows
+      if (route === '/login' || route === '/register' || route === '/pin-unlock') {
         return
       }
 
@@ -61,7 +52,7 @@ function RootContent() {
     }
 
     checkLockState()
-  }, [session.userId, session.token, route, navigate, isManifestLoading])
+  }, [session.userId, session.token, route, navigate])
 
   const renderRoute = () => {
     switch (route as Route) {
