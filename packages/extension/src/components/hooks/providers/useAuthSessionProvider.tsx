@@ -157,6 +157,39 @@ export function AuthSessionProvider({ children }: AuthSessionProviderProps) {
     loadAndRefreshSession()
   }, [clearSession])
 
+  // Listen for storage changes to sync authentication state across windows/tabs
+  useEffect(() => {
+    const handleStorageChange = async (
+      changes: { [key: string]: chrome.storage.StorageChange },
+      areaName: string
+    ) => {
+      // Only react to local storage changes for the session key
+      if (areaName !== 'local' || !changes[STORAGE_KEYS.SESSION]) {
+        return
+      }
+
+      const change = changes[STORAGE_KEYS.SESSION]
+      const newSession = change.newValue as AuthSession | undefined
+
+      // Session was cleared (logout in another window)
+      if (!newSession || !newSession.token) {
+        setSessionState(defaultSession)
+        setIsAuthenticated(false)
+        return
+      }
+
+      // Session was created/updated (login or refresh in another window)
+      setSessionState(newSession)
+      setIsAuthenticated(true)
+    }
+
+    chrome.storage.onChanged.addListener(handleStorageChange)
+
+    return () => {
+      chrome.storage.onChanged.removeListener(handleStorageChange)
+    }
+  }, [])
+
   const setSession = useCallback(async (response: LoginResponse) => {
     const data: AuthSession = {
       userId: response.user_id,
