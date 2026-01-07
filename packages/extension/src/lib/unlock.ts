@@ -8,6 +8,7 @@
  */
 
 import type { KdfParams } from '@/api/auth-api'
+import type { AuthSession } from '@/components/hooks/providers/useAuthSessionProvider'
 import { apiClient, createApiError, type ApiError } from '@/lib/api'
 import { AAD_LABELS, constructAadWmk, STORAGE_KEYS } from '@/lib/constants'
 import {
@@ -225,6 +226,16 @@ export async function unlockWithPin(pin: string): Promise<UnlockResult> {
       aadContext: pinStore.aadContext
     }
     await setStorageItem(STORAGE_KEYS.KEYSTORE, keystoreData)
+
+    // Update session's createdAt timestamp to reset auto-lock timer
+    const session = await getStorageItem<AuthSession>(STORAGE_KEYS.SESSION)
+    if (session) {
+      const updatedSession = {
+        ...session,
+        createdAt: Date.now()
+      }
+      await setStorageItem(STORAGE_KEYS.SESSION, updatedSession)
+    }
 
     // Reset lock state on successful unlock
     await resetLockState()
