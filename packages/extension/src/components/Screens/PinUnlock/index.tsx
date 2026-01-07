@@ -1,13 +1,14 @@
 import { Loader2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
+import { useAuthSession } from '@/components/hooks/providers/useAuthSessionProvider'
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
 import { useQueryPin } from '@/components/hooks/queries/useQueryPin'
 import usePopupSize from '@/components/hooks/usePopupSize'
+import { PIN_FAILED_ATTEMPTS_THRESHOLD } from '@/lib/pin'
+
 import Button from '@/components/ui/Button'
 import Text from '@/components/ui/Text'
-import { PIN_FAILED_ATTEMPTS_THRESHOLD } from '@/lib/pin'
-import { useAuthSession } from '@/components/hooks/providers/useAuthSessionProvider'
 
 import styles from './styles.module.css'
 
@@ -65,7 +66,10 @@ export default function PinUnlock() {
     }
   }
 
-  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (
+    index: number,
+    e: React.KeyboardEvent<HTMLInputElement>
+  ) => {
     // Handle backspace
     if (e.key === 'Backspace') {
       if (!pinDigits[index] && index > 0) {
@@ -85,10 +89,16 @@ export default function PinUnlock() {
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault()
-    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
+    const pastedData = e.clipboardData
+      .getData('text')
+      .replace(/\D/g, '')
+      .slice(0, 6)
 
     if (pastedData) {
-      const newDigits = pastedData.split('').concat(['', '', '', '', '', '']).slice(0, 6)
+      const newDigits = pastedData
+        .split('')
+        .concat(['', '', '', '', '', ''])
+        .slice(0, 6)
       setPinDigits(newDigits)
 
       // Focus last filled input or first empty
@@ -97,7 +107,7 @@ export default function PinUnlock() {
     }
   }
 
-  const handlePasswordLogin = async () => {
+  const handleLogout = async () => {
     await clearSession('hard')
     navigate('/login')
   }
@@ -120,10 +130,10 @@ export default function PinUnlock() {
         {isLocked ? (
           <div className={styles.lockedMessage}>
             <Text size='2' align='center'>
-              Too many failed attempts. Please login with your password.
+              Too many failed attempts. Please logout and try again.
             </Text>
-            <Button onClick={handlePasswordLogin} className={styles.button}>
-              Login with Password
+            <Button onClick={handleLogout} className={styles.button}>
+              Logout
             </Button>
           </div>
         ) : (
@@ -168,14 +178,14 @@ export default function PinUnlock() {
               </div>
             )}
 
-            <div className={styles.passwordLink}>
+            <div className={styles.logoutLink}>
               <Button
                 variant='ghost'
-                onClick={handlePasswordLogin}
+                onClick={handleLogout}
                 disabled={unlockWithPin.isPending}
                 color='light'
               >
-                Use password instead
+                Logout
               </Button>
             </div>
           </>
