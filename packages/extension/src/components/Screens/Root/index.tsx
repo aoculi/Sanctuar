@@ -13,11 +13,11 @@ import {
 } from '@/components/hooks/providers/useNavigationProvider'
 import { SettingsProvider } from '@/components/hooks/providers/useSettingsProvider'
 import { useRouteGuard } from '@/components/hooks/useRouteGuard'
-import { PinEntryModal } from '@/components/parts/PinEntryModal'
 import Bookmark from '@/components/Screens/Bookmark'
 import Collection from '@/components/Screens/Collection'
 import Collections from '@/components/Screens/Collections'
 import Login from '@/components/Screens/Login'
+import PinUnlock from '@/components/Screens/PinUnlock'
 import Register from '@/components/Screens/Register'
 import Tag from '@/components/Screens/Tag'
 import Tags from '@/components/Screens/Tags'
@@ -31,8 +31,8 @@ import styles from './styles.module.css'
 function RootContent() {
   useRouteGuard()
   const { route, flash, navigate } = useNavigation()
-  const { session, clearSession } = useAuthSession()
-  const [showPinEntry, setShowPinEntry] = useState(false)
+  const { session } = useAuthSession()
+  const [showPinUnlock, setShowPinUnlock] = useState(false)
 
   useEffect(() => {
     const checkLockState = async () => {
@@ -42,37 +42,25 @@ function RootContent() {
         const settings = await getSettings()
 
         if (!keystore && settings?.unlockMethod === 'pin') {
-          setShowPinEntry(true)
+          setShowPinUnlock(true)
+          navigate('/pin-unlock')
+        } else {
+          setShowPinUnlock(false)
         }
+      } else {
+        setShowPinUnlock(false)
       }
     }
 
     checkLockState()
-  }, [session.userId, session.token])
-
-  const handlePinSuccess = () => {
-    setShowPinEntry(false)
-    navigate('/vault')
-  }
-
-  const handlePasswordLogin = async () => {
-    setShowPinEntry(false)
-    await clearSession('hard')
-    navigate('/login')
-  }
-
-  // Render PIN entry modal if soft-locked
-  if (showPinEntry) {
-    return (
-      <PinEntryModal
-        open={showPinEntry}
-        onSuccess={handlePinSuccess}
-        onPasswordLogin={handlePasswordLogin}
-      />
-    )
-  }
+  }, [session.userId, session.token, navigate])
 
   const renderRoute = () => {
+    // Show PIN unlock screen if soft-locked
+    if (showPinUnlock) {
+      return <PinUnlock />
+    }
+
     switch (route as Route) {
       case '/login':
         return <Login />

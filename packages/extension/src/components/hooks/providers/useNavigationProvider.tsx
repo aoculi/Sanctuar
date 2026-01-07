@@ -16,6 +16,7 @@ export type Route =
   | '/collection'
   | '/collections'
   | '/settings'
+  | '/pin-unlock'
 
 type NavigationOptions = {
   bookmark?: string | null

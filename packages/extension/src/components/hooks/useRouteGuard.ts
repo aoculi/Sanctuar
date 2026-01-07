@@ -7,7 +7,7 @@ import {
   useNavigation
 } from '@/components/hooks/providers/useNavigationProvider'
 
-const PUBLIC_ROUTES: Route[] = ['/login', '/register', '/settings']
+const PUBLIC_ROUTES: Route[] = ['/login', '/register', '/settings', '/pin-unlock']
 const AUTH_ROUTES: Route[] = ['/login', '/register']
 
 function isPublicRoute(route: Route): boolean {
