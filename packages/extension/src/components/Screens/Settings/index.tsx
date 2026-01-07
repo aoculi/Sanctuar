@@ -132,7 +132,7 @@ export default function Settings() {
     }
   }
 
-  const handlePinSetup = async (pin: string, password: string) => {
+  const handlePinSetup = async (pin: string) => {
     try {
       // Verify user is unlocked
       const keystoreData =
@@ -176,8 +176,8 @@ export default function Settings() {
     }
   }
 
-  const handlePinChange = async (pin: string, password: string) => {
-    await handlePinSetup(pin, password)
+  const handlePinChange = async (pin: string) => {
+    await handlePinSetup(pin)
     setShowChangePinModal(false)
   }
 

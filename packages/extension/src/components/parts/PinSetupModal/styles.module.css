@@ -15,6 +15,10 @@
   font-family: monospace;
 }
 
+.button {
+  width: 100%;
+}
+
 .actions {
   display: flex;
   gap: 12px;
@@ -23,6 +27,14 @@
 
 .actions button {
   flex: 1;
+}
+
+.error {
+  padding: 12px;
+  background-color: rgba(255, 59, 48, 0.1);
+  border: 1px solid rgba(255, 59, 48, 0.3);
+  border-radius: 6px;
+  color: #ff3b30;
 }
 
 .spinner {

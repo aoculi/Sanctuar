@@ -1,11 +1,10 @@
 /**
  * Modal for setting up a new PIN
- * Requires password confirmation before setting PIN
- * 3-step process: Password → PIN → Confirm PIN
+ * 2-step process: PIN → Confirm PIN
  */
 
 import { useState } from 'react'
-import { KeyRound, Lock, Loader2 } from 'lucide-react'
+import { KeyRound, Loader2 } from 'lucide-react'
 
 import Button from '@/components/ui/Button'
 import { Drawer } from '@/components/ui/Drawer'
@@ -14,12 +13,12 @@ import Text from '@/components/ui/Text'
 
 import styles from './styles.module.css'
 
-type SetupStep = 'password' | 'pin' | 'confirm'
+type SetupStep = 'pin' | 'confirm'
 
 interface PinSetupModalProps {
   open: boolean
   onClose: () => void
-  onSuccess: (pin: string, password: string) => Promise<void>
+  onSuccess: (pin: string) => Promise<void>
 }
 
 export function PinSetupModal({
@@ -27,20 +26,11 @@ export function PinSetupModal({
   onClose,
   onSuccess
 }: PinSetupModalProps) {
-  const [step, setStep] = useState<SetupStep>('password')
-  const [password, setPassword] = useState('')
+  const [step, setStep] = useState<SetupStep>('pin')
   const [pin, setPin] = useState('')
   const [confirmPin, setConfirmPin] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const handlePasswordSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (password) {
-      setStep('pin')
-      setError(null)
-    }
-  }
 
   const handlePinSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -54,13 +44,14 @@ export function PinSetupModal({
     e.preventDefault()
 
     if (pin !== confirmPin) {
-      setError('PINs do not match')
+      setError('PINs do not match. Please try again.')
       return
     }
 
     setIsSubmitting(true)
+    setError(null)
     try {
-      await onSuccess(pin, password)
+      await onSuccess(pin)
       handleClose()
     } catch (err: unknown) {
       setError((err as Error).message || 'Failed to setup PIN')
@@ -70,8 +61,7 @@ export function PinSetupModal({
   }
 
   const handleClose = () => {
-    setStep('password')
-    setPassword('')
+    setStep('pin')
     setPin('')
     setConfirmPin('')
     setError(null)
@@ -82,41 +72,17 @@ export function PinSetupModal({
     if (step === 'confirm') {
       setStep('pin')
       setConfirmPin('')
-    } else if (step === 'pin') {
-      setStep('password')
-      setPin('')
+      setError(null)
     }
-    setError(null)
   }
 
   const renderStep = () => {
     switch (step) {
-      case 'password':
-        return (
-          <form onSubmit={handlePasswordSubmit} className={styles.form}>
-            <Text size='2' color='light'>
-              Confirm your password to continue
-            </Text>
-            <Input
-              type='password'
-              placeholder='Password'
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoFocus
-            >
-              <Lock size={16} />
-            </Input>
-            <Button type='submit' disabled={!password}>
-              Continue
-            </Button>
-          </form>
-        )
-
       case 'pin':
         return (
           <form onSubmit={handlePinSubmit} className={styles.form}>
             <Text size='2' color='light'>
-              Enter a 6-digit PIN
+              Enter a 6-digit PIN to protect your vault
             </Text>
             <Input
               type='text'
@@ -132,14 +98,13 @@ export function PinSetupModal({
             >
               <KeyRound size={16} />
             </Input>
-            <div className={styles.actions}>
-              <Button variant='ghost' onClick={handleBack}>
-                Back
-              </Button>
-              <Button type='submit' disabled={pin.length !== 6}>
-                Continue
-              </Button>
-            </div>
+            <Button
+              type='submit'
+              disabled={pin.length !== 6}
+              className={styles.button}
+            >
+              Continue
+            </Button>
           </form>
         )
 
@@ -155,18 +120,20 @@ export function PinSetupModal({
               pattern='[0-9]*'
               placeholder='000000'
               value={confirmPin}
-              onChange={(e) =>
+              onChange={(e) => {
                 setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 6))
-              }
+                // Clear error when user types
+                if (error) setError(null)
+              }}
               autoFocus
               className={styles.pinInput}
             >
               <KeyRound size={16} />
             </Input>
             {error && (
-              <Text size='2'>
-                {error}
-              </Text>
+              <div className={styles.error}>
+                <Text size='2'>{error}</Text>
+              </div>
             )}
             <div className={styles.actions}>
               <Button
