@@ -145,6 +145,9 @@ export function AuthSessionProvider({ children }: AuthSessionProviderProps) {
         if (unlockMethod === 'pin') {
           // Soft lock: clear keystore but keep session
           await clearSession('soft')
+          // Keep session state and authentication active for PIN unlock
+          setSessionState(session)
+          setIsAuthenticated(true)
         } else {
           // Hard lock: full logout
           await clearSession('hard')

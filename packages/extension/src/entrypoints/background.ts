@@ -58,6 +58,7 @@ async function updateIconForAuthState(isAuthenticated: boolean) {
 /**
  * Check current authentication state
  * Works with both Firefox (browser) and Chrome (chrome) APIs
+ * Returns true only if both session AND keystore exist (fully unlocked)
  */
 async function checkAuthState(): Promise<boolean> {
   try {
@@ -67,14 +68,20 @@ async function checkAuthState(): Promise<boolean> {
         ? browser.storage
         : chrome.storage
 
-    const result = await storageApi.local.get(STORAGE_KEYS.SESSION)
+    const result = await storageApi.local.get([
+      STORAGE_KEYS.SESSION,
+      STORAGE_KEYS.KEYSTORE
+    ])
     const authSession = result[STORAGE_KEYS.SESSION] as AuthSession | undefined
+    const keystore = result[STORAGE_KEYS.KEYSTORE]
 
+    // User is fully unlocked only if both session AND keystore exist
     return !!(
       authSession &&
       authSession.token &&
       authSession.expiresAt &&
-      authSession.expiresAt > Date.now()
+      authSession.expiresAt > Date.now() &&
+      keystore
     )
   } catch (error) {
     console.error('Failed to check auth state:', error)
@@ -94,19 +101,12 @@ export default defineBackground(() => {
 
   // Listen for storage changes to update icon when auth state changes
   storageApi.onChanged.addListener((changes, areaName) => {
-    if (areaName === 'local' && changes[STORAGE_KEYS.SESSION]) {
-      const newSession = changes[STORAGE_KEYS.SESSION].newValue as
-        | AuthSession
-        | undefined
-
-      const isAuthenticated = !!(
-        newSession &&
-        newSession.token &&
-        newSession.expiresAt &&
-        newSession.expiresAt > Date.now()
-      )
-
-      updateIconForAuthState(isAuthenticated)
+    if (
+      areaName === 'local' &&
+      (changes[STORAGE_KEYS.SESSION] || changes[STORAGE_KEYS.KEYSTORE])
+    ) {
+      // Re-check full auth state when either session or keystore changes
+      checkAuthState().then(updateIconForAuthState)
     }
   })
 
