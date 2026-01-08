@@ -58,7 +58,7 @@ const DEFAULT_FIELDS: SettingsFields = {
 
 export default function Settings() {
   const { settings, isLoading, updateSettings } = useSettings()
-  const { flash, setFlash } = useNavigation()
+  const { flash } = useNavigation()
   const { isAuthenticated, session } = useAuthSession()
 
   const [fields, setFields] = useState<SettingsFields>(DEFAULT_FIELDS)

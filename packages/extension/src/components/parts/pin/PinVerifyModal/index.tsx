@@ -1,7 +1,3 @@
-/**
- * Modal for verifying PIN to disable PIN unlock
- */
-
 import { Loader2 } from 'lucide-react'
 import { useState } from 'react'
 

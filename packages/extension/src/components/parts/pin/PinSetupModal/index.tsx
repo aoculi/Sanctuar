@@ -1,8 +1,3 @@
-/**
- * Modal for setting up a new PIN
- * 2-step process: PIN → Confirm PIN
- */
-
 import { Loader2 } from 'lucide-react'
 import { useState } from 'react'
 
