@@ -53,11 +53,11 @@ async function checkAuthState(): Promise<boolean> {
     const result = await storageApi.local.get([
       STORAGE_KEYS.SESSION,
       STORAGE_KEYS.KEYSTORE,
-      STORAGE_KEYS.IS_LOCKED
+      STORAGE_KEYS.IS_SOFT_LOCKED
     ])
     const authSession = result[STORAGE_KEYS.SESSION] as AuthSession | undefined
     const keystore = result[STORAGE_KEYS.KEYSTORE]
-    const isLocked = result[STORAGE_KEYS.IS_LOCKED] as boolean | undefined
+    const isLocked = result[STORAGE_KEYS.IS_SOFT_LOCKED] as boolean | undefined
 
     return !!(
       authSession &&
@@ -86,7 +86,7 @@ export default defineBackground(() => {
       areaName === 'local' &&
       (changes[STORAGE_KEYS.SESSION] ||
         changes[STORAGE_KEYS.KEYSTORE] ||
-        changes[STORAGE_KEYS.IS_LOCKED])
+        changes[STORAGE_KEYS.IS_SOFT_LOCKED])
     ) {
       checkAuthState().then(updateIconForAuthState)
     }

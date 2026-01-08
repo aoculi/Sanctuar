@@ -12,18 +12,21 @@ import {
 } from '@/lib/storage'
 
 /**
+ * Default lock state - unlocked with no failed attempts
+ */
+const DEFAULT_LOCK_STATE: LockState = {
+  failedPinAttempts: 0,
+  lastFailedAttempt: null,
+  isHardLocked: false,
+  hardLockedAt: null
+}
+
+/**
  * Get current lock state from storage
  */
 export async function getLockState(): Promise<LockState> {
   const state = await getStorageItem<LockState>(STORAGE_KEYS.LOCK_STATE)
-  return (
-    state || {
-      failedPinAttempts: 0,
-      lastFailedAttempt: null,
-      isHardLocked: false,
-      hardLockedAt: null
-    }
-  )
+  return state || DEFAULT_LOCK_STATE
 }
 
 /**
@@ -53,11 +56,4 @@ export async function incrementFailedPinAttempts(): Promise<LockState> {
  */
 export async function resetLockState(): Promise<void> {
   await clearStorageItem(STORAGE_KEYS.LOCK_STATE)
-}
-
-/**
- * Clear PIN store
- */
-export async function clearPinStore(): Promise<void> {
-  await clearStorageItem(STORAGE_KEYS.PIN_STORE)
 }

@@ -10,6 +10,7 @@ import { useBookmarks } from '@/components/hooks/useBookmarks'
 import { STORAGE_KEYS } from '@/lib/constants'
 import { setupPin, verifyPin } from '@/lib/pin'
 import {
+  clearStorageItem,
   getApiUrl,
   getStorageItem,
   setApiUrl,
@@ -46,15 +47,13 @@ interface SettingsFields {
   apiUrl: string
   autoLockTimeout: AutoLockTimeout
   useCodePin: boolean
-  pinEnabled: boolean
 }
 
 const DEFAULT_FIELDS: SettingsFields = {
   showHiddenTags: false,
   apiUrl: '',
   autoLockTimeout: '20min',
-  useCodePin: false,
-  pinEnabled: false
+  useCodePin: false
 }
 
 export default function Settings() {
@@ -110,8 +109,7 @@ export default function Settings() {
             apiUrl: apiUrl,
             autoLockTimeout:
               (settings.autoLockTimeout as AutoLockTimeout) || '20min',
-            useCodePin: settings.useCodePin || false,
-            pinEnabled: settings.pinEnabled || false
+            useCodePin: settings.useCodePin || false
           }
           setFields(loadedFields)
           setOriginalFields(loadedFields)
@@ -121,8 +119,7 @@ export default function Settings() {
             showHiddenTags: false,
             apiUrl: apiUrl,
             autoLockTimeout: '20min',
-            useCodePin: false,
-            pinEnabled: false
+            useCodePin: false
           }
           setFields(loadedFields)
           setOriginalFields(loadedFields)
@@ -154,8 +151,7 @@ export default function Settings() {
       await updateSettings({
         showHiddenTags: fields.showHiddenTags,
         autoLockTimeout: fields.autoLockTimeout,
-        useCodePin: fields.useCodePin,
-        pinEnabled: fields.pinEnabled
+        useCodePin: fields.useCodePin
       })
       setOriginalFields({ ...fields })
     } catch (error) {
@@ -199,7 +195,6 @@ export default function Settings() {
       const updatedFields = {
         ...fields,
         useCodePin: true,
-        pinEnabled: true,
         autoLockTimeout: newTimeout
       }
       setFields(updatedFields)
@@ -208,8 +203,7 @@ export default function Settings() {
       const settingsToSave = {
         showHiddenTags: settings.showHiddenTags,
         autoLockTimeout: newTimeout,
-        useCodePin: true,
-        pinEnabled: true
+        useCodePin: true
       }
 
       await updateSettings(settingsToSave)
@@ -242,12 +236,14 @@ export default function Settings() {
     }
     setFields(newFields)
 
+    // Remove PIN store from storage
+    await clearStorageItem(STORAGE_KEYS.PIN_STORE)
+
     // Save settings - only pass Settings properties, not fields (which includes apiUrl)
     await updateSettings({
       showHiddenTags: settings.showHiddenTags,
       autoLockTimeout: 'never',
-      useCodePin: false,
-      pinEnabled: false
+      useCodePin: false
     })
 
     setOriginalFields(newFields)
@@ -264,13 +260,13 @@ export default function Settings() {
   const handlePinSetupClose = () => {
     setShowPinSetupModal(false)
     // If setup was cancelled, ensure checkbox remains unchecked
-    if (!fields.pinEnabled) {
+    if (!fields.useCodePin) {
       setFields((prev) => ({ ...prev, useCodePin: false }))
     }
   }
 
   const handleUseCodePinChange = (checked: boolean) => {
-    if (!checked && fields.useCodePin && fields.pinEnabled) {
+    if (!checked && fields.useCodePin) {
       // Require PIN verification to disable PIN mode
       // Don't update checkbox state yet - wait for verification
       setShowPinVerifyModal(true)
@@ -293,8 +289,7 @@ export default function Settings() {
         showHiddenTags: settings.showHiddenTags,
         autoLockTimeout: autoLockTimeout || settings.autoLockTimeout || '20min',
         useCodePin:
-          useCodePin !== undefined ? useCodePin : settings.useCodePin || false,
-        pinEnabled: settings.pinEnabled || false
+          useCodePin !== undefined ? useCodePin : settings.useCodePin || false
       }
 
       await updateSettings(settingsToSave)
@@ -303,16 +298,14 @@ export default function Settings() {
       setFields((prev) => ({
         ...prev,
         autoLockTimeout: settingsToSave.autoLockTimeout as AutoLockTimeout,
-        useCodePin: settingsToSave.useCodePin,
-        pinEnabled: settingsToSave.pinEnabled
+        useCodePin: settingsToSave.useCodePin
       }))
 
       // Update originalFields after successful save
       setOriginalFields((prev) => ({
         ...prev,
         autoLockTimeout: settingsToSave.autoLockTimeout as AutoLockTimeout,
-        useCodePin: settingsToSave.useCodePin,
-        pinEnabled: settingsToSave.pinEnabled
+        useCodePin: settingsToSave.useCodePin
       }))
     } catch (error) {
       console.error('[Settings] Error saving settings:', error)

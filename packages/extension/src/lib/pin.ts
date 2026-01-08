@@ -155,45 +155,40 @@ export async function setupPin(
   userId: string,
   vaultId: string
 ): Promise<PinStoreData> {
-  try {
-    await whenCryptoReady()
+  await whenCryptoReady()
 
-    const sodium = getCryptoEnv()
+  const sodium = getCryptoEnv()
 
-    // Generate salts
-    const pinHashSalt = sodium.randombytes_buf(32)
+  // Generate salts
+  const pinHashSalt = sodium.randombytes_buf(32)
 
-    // Hash PIN for verification
-    const pinHash = await hashPin(pin, pinHashSalt)
+  // Hash PIN for verification
+  const pinHash = await hashPin(pin, pinHashSalt)
 
-    // Get MAK from keystore (it's already base64 encoded)
-    const mak = base64ToUint8Array(keystoreData.mak)
+  // Get MAK from keystore (it's already base64 encoded)
+  const mak = base64ToUint8Array(keystoreData.mak)
 
-    // Encrypt MAK with PIN
-    const { encryptedMak, pinKeySalt } = await encryptMakWithPin(
-      mak,
-      pin,
-      userId,
-      vaultId
-    )
+  // Encrypt MAK with PIN
+  const { encryptedMak, pinKeySalt } = await encryptMakWithPin(
+    mak,
+    pin,
+    userId,
+    vaultId
+  )
 
-    // Create PIN store
-    const pinStoreData: PinStoreData = {
-      pinHash: uint8ArrayToBase64(pinHash),
-      pinHashSalt: uint8ArrayToBase64(pinHashSalt),
-      pinKeySalt,
-      encryptedMak,
-      aadContext: keystoreData.aadContext,
-      userId,
-      vaultId,
-      version: 1
-    }
-
-    zeroize(pinHash, pinHashSalt, mak)
-
-    return pinStoreData
-  } catch (error) {
-    console.error('Error in setupPin:', error)
-    throw error
+  // Create PIN store
+  const pinStoreData: PinStoreData = {
+    pinHash: uint8ArrayToBase64(pinHash),
+    pinHashSalt: uint8ArrayToBase64(pinHashSalt),
+    pinKeySalt,
+    encryptedMak,
+    aadContext: keystoreData.aadContext,
+    userId,
+    vaultId,
+    version: 1
   }
+
+  zeroize(pinHash, pinHashSalt, mak)
+
+  return pinStoreData
 }

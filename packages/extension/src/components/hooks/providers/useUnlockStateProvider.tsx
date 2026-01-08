@@ -72,13 +72,13 @@ export async function checkAndApplyAutoLock(): Promise<void> {
     STORAGE_KEYS.SESSION,
     STORAGE_KEYS.KEYSTORE,
     STORAGE_KEYS.PIN_STORE,
-    STORAGE_KEYS.IS_LOCKED
+    STORAGE_KEYS.IS_SOFT_LOCKED
   ])
 
   const session = result[STORAGE_KEYS.SESSION] as AuthSession | undefined
   const keystore = result[STORAGE_KEYS.KEYSTORE]
   const pinStore = result[STORAGE_KEYS.PIN_STORE] as PinStoreData | undefined
-  const isLocked = result[STORAGE_KEYS.IS_LOCKED] as boolean | undefined
+  const isLocked = result[STORAGE_KEYS.IS_SOFT_LOCKED] as boolean | undefined
 
   if (!session || !session.token || !session.createdAt || isLocked) {
     return
@@ -104,7 +104,7 @@ export async function checkAndApplyAutoLock(): Promise<void> {
   if (timeSinceCreation > autoLockTimeoutMs) {
     // If PIN is configured, lock and require PIN (soft lock - keep session)
     if (pinStore) {
-      await storageApi.local.set({ [STORAGE_KEYS.IS_LOCKED]: true })
+      await storageApi.local.set({ [STORAGE_KEYS.IS_SOFT_LOCKED]: true })
       await storageApi.local.remove([
         STORAGE_KEYS.KEYSTORE,
         STORAGE_KEYS.MANIFEST
@@ -126,7 +126,7 @@ async function calculateUnlockState(
 
   const [keystore, isLocked, pinStore] = await Promise.all([
     getStorageItem(STORAGE_KEYS.KEYSTORE),
-    getStorageItem<boolean>(STORAGE_KEYS.IS_LOCKED),
+    getStorageItem<boolean>(STORAGE_KEYS.IS_SOFT_LOCKED),
     getStorageItem<PinStoreData>(STORAGE_KEYS.PIN_STORE)
   ])
 
@@ -158,7 +158,7 @@ async function calculateUnlockState(
   if (timeSinceCreation > autoLockTimeoutMs) {
     // If PIN is configured, lock and require PIN (soft lock - keep session)
     if (pinStore) {
-      await setStorageItem(STORAGE_KEYS.IS_LOCKED, true)
+      await setStorageItem(STORAGE_KEYS.IS_SOFT_LOCKED, true)
       await Promise.allSettled([
         clearStorageItem(STORAGE_KEYS.KEYSTORE).catch(() => {}),
         clearStorageItem(STORAGE_KEYS.MANIFEST).catch(() => {})
@@ -214,7 +214,7 @@ export function UnlockStateProvider({ children }: UnlockStateProviderProps) {
       const relevantKeys = [
         STORAGE_KEYS.SESSION,
         STORAGE_KEYS.KEYSTORE,
-        STORAGE_KEYS.IS_LOCKED,
+        STORAGE_KEYS.IS_SOFT_LOCKED,
         STORAGE_KEYS.SETTINGS,
         STORAGE_KEYS.PIN_STORE
       ]

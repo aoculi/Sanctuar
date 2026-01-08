@@ -12,7 +12,6 @@ export interface Settings {
   showHiddenTags: boolean
   autoLockTimeout: string
   useCodePin: boolean
-  pinEnabled: boolean
 }
 
 /**
@@ -207,8 +206,7 @@ export function getDefaultSettings(): Settings {
   return {
     showHiddenTags: false,
     autoLockTimeout: DEFAULT_AUTO_LOCK_TIMEOUT,
-    useCodePin: false,
-    pinEnabled: false
+    useCodePin: false
   }
 }
 

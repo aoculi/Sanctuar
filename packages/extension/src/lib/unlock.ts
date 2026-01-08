@@ -22,20 +22,18 @@ import {
 } from '@/lib/crypto'
 import { whenCryptoReady } from '@/lib/cryptoEnv'
 import {
+  getLockState,
+  incrementFailedPinAttempts,
+  resetLockState
+} from '@/lib/lockState'
+import { decryptMakWithPin, verifyPin } from '@/lib/pin'
+import {
   clearStorageItem,
+  getStorageItem,
   setStorageItem,
+  type AadContext,
   type PinStoreData
 } from '@/lib/storage'
-
-/**
- * AAD context for authenticated encryption
- */
-export type AadContext = {
-  userId: string
-  vaultId: string
-  wmkLabel: string
-  manifestLabel: string
-}
 
 /**
  * Keystore data stored in chrome.storage
@@ -170,7 +168,10 @@ export async function unlock(input: UnlockInput): Promise<UnlockResult> {
     await setStorageItem(STORAGE_KEYS.KEYSTORE, keystoreData)
 
     // Clear the explicit locked flag (in case user was locked and unlocking with password)
-    await clearStorageItem(STORAGE_KEYS.IS_LOCKED).catch(() => {})
+    await clearStorageItem(STORAGE_KEYS.IS_SOFT_LOCKED).catch(() => {})
+
+    // Reset lock state on successful unlock (clears failed PIN attempts)
+    await resetLockState()
 
     // Zeroize local temporaries (MK, KEK, MAK)
     cryptoZeroize(mk, kek, mak)
@@ -196,15 +197,6 @@ export async function unlock(input: UnlockInput): Promise<UnlockResult> {
 export async function unlockWithPin(pin: string): Promise<UnlockResult> {
   await whenCryptoReady()
 
-  // Import PIN utilities
-  const { decryptMakWithPin, verifyPin } = await import('@/lib/pin')
-  const {
-    getLockState,
-    incrementFailedPinAttempts,
-    resetLockState
-  } = await import('@/lib/lockState')
-  const { getStorageItem } = await import('@/lib/storage')
-
   // Get PIN store
   const pinStore = await getStorageItem<PinStoreData>(STORAGE_KEYS.PIN_STORE)
   if (!pinStore) {
@@ -217,46 +209,42 @@ export async function unlockWithPin(pin: string): Promise<UnlockResult> {
     throw new Error('Too many failed attempts. Please login with password.')
   }
 
-  try {
-    // Verify PIN and decrypt MAK
-    const isValid = await verifyPin(pin, pinStore)
-    if (!isValid) {
-      await incrementFailedPinAttempts()
-      throw new Error('Invalid PIN')
+  // Verify PIN and decrypt MAK
+  const isValid = await verifyPin(pin, pinStore)
+  if (!isValid) {
+    await incrementFailedPinAttempts()
+    throw new Error('Invalid PIN')
+  }
+
+  const mak = await decryptMakWithPin(pin, pinStore)
+
+  // Restore keystore
+  const keystoreData: KeystoreData = {
+    mak: uint8ArrayToBase64(mak),
+    aadContext: pinStore.aadContext
+  }
+  await setStorageItem(STORAGE_KEYS.KEYSTORE, keystoreData)
+
+  // Update session's createdAt timestamp to reset auto-lock timer
+  const session = await getStorageItem<AuthSession>(STORAGE_KEYS.SESSION)
+  if (session) {
+    const updatedSession = {
+      ...session,
+      createdAt: Date.now()
     }
+    await setStorageItem(STORAGE_KEYS.SESSION, updatedSession)
+  }
 
-    const mak = await decryptMakWithPin(pin, pinStore)
+  // Clear the explicit locked flag
+  await clearStorageItem(STORAGE_KEYS.IS_SOFT_LOCKED)
 
-    // Restore keystore
-    const keystoreData: KeystoreData = {
-      mak: uint8ArrayToBase64(mak),
-      aadContext: pinStore.aadContext
-    }
-    await setStorageItem(STORAGE_KEYS.KEYSTORE, keystoreData)
+  // Reset lock state on successful unlock
+  await resetLockState()
 
-    // Update session's createdAt timestamp to reset auto-lock timer
-    const session = await getStorageItem<AuthSession>(STORAGE_KEYS.SESSION)
-    if (session) {
-      const updatedSession = {
-        ...session,
-        createdAt: Date.now()
-      }
-      await setStorageItem(STORAGE_KEYS.SESSION, updatedSession)
-    }
+  cryptoZeroize(mak)
 
-    // Clear the explicit locked flag
-    await clearStorageItem(STORAGE_KEYS.IS_LOCKED)
-
-    // Reset lock state on successful unlock
-    await resetLockState()
-
-    cryptoZeroize(mak)
-
-    return {
-      success: true,
-      isFirstUnlock: false
-    }
-  } catch (error) {
-    throw error
+  return {
+    success: true,
+    isFirstUnlock: false
   }
 }
