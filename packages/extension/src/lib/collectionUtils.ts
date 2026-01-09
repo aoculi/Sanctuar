@@ -200,32 +200,6 @@ function buildBookmarksByCollectionMap(
 }
 
 /**
- * Check if a collection or any of its descendants have bookmarks
- * Uses recursion to check the entire subtree
- */
-function hasBookmarks(
-  collectionId: string,
-  bookmarksByCollection: Map<string, Bookmark[]>,
-  childrenMap: Map<string | undefined, Collection[]>
-): boolean {
-  // Check if this collection has bookmarks
-  const collectionBookmarks = bookmarksByCollection.get(collectionId) || []
-  if (collectionBookmarks.length > 0) {
-    return true
-  }
-
-  // Check if any descendant has bookmarks
-  const children = childrenMap.get(collectionId) || []
-  for (const child of children) {
-    if (hasBookmarks(child.id, bookmarksByCollection, childrenMap)) {
-      return true
-    }
-  }
-
-  return false
-}
-
-/**
  * Flatten collections with their bookmarks for bookmark list view
  * Bookmarks are directly associated with collections via collectionId
  * Shows all collections, including empty ones (collections without bookmarks)
@@ -269,6 +243,67 @@ export function getBookmarkIdsInCollections(
     for (const b of bookmarks) ids.add(b.id)
   }
   return ids
+}
+
+/**
+ * Filter out empty collections from the flattened list
+ * Keeps collections that have bookmarks OR have descendants with bookmarks
+ */
+export function filterEmptyCollections(
+  collectionsWithBookmarks: CollectionWithBookmarks[]
+): CollectionWithBookmarks[] {
+  // Build a map of collection id -> bookmarks count (including descendants)
+  const hasBookmarksMap = new Map<string, boolean>()
+
+  // Build parent-child relationships from the flattened list
+  const childrenMap = new Map<string, string[]>()
+  const collectionMap = new Map<string, CollectionWithBookmarks>()
+
+  for (const item of collectionsWithBookmarks) {
+    collectionMap.set(item.collection.id, item)
+    const parentId = item.collection.parentId
+    if (parentId) {
+      const children = childrenMap.get(parentId) || []
+      children.push(item.collection.id)
+      childrenMap.set(parentId, children)
+    }
+  }
+
+  // Check if a collection or any descendant has bookmarks (with memoization)
+  const checkHasBookmarks = (collectionId: string): boolean => {
+    if (hasBookmarksMap.has(collectionId)) {
+      return hasBookmarksMap.get(collectionId)!
+    }
+
+    const item = collectionMap.get(collectionId)
+    if (!item) {
+      hasBookmarksMap.set(collectionId, false)
+      return false
+    }
+
+    // Check direct bookmarks
+    if (item.bookmarks.length > 0) {
+      hasBookmarksMap.set(collectionId, true)
+      return true
+    }
+
+    // Check descendants
+    const children = childrenMap.get(collectionId) || []
+    for (const childId of children) {
+      if (checkHasBookmarks(childId)) {
+        hasBookmarksMap.set(collectionId, true)
+        return true
+      }
+    }
+
+    hasBookmarksMap.set(collectionId, false)
+    return false
+  }
+
+  // Filter collections
+  return collectionsWithBookmarks.filter((item) =>
+    checkHasBookmarks(item.collection.id)
+  )
 }
 
 /**

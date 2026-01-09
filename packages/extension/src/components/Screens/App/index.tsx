@@ -28,9 +28,12 @@ function AppContent() {
             onSearchChange={setSearchQuery}
             onSelectedTagsChange={setSelectedTags}
           />
-          <PinnedList />
+          <PinnedList searchQuery={searchQuery} selectedTags={selectedTags} />
           <CreateCollection />
-          <CollectionsList />
+          <CollectionsList
+            searchQuery={searchQuery}
+            selectedTags={selectedTags}
+          />
         </div>
       </div>
     </div>
