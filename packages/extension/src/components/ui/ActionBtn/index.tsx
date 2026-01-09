@@ -11,6 +11,7 @@ interface ActionBtnProps extends Omit<
   label?: string
   active?: boolean
   danger?: boolean
+  size?: 'sm' | 'md' | 'lg'
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void
 }
 
@@ -19,6 +20,7 @@ export default function ActionBtn({
   label,
   active = false,
   danger = false,
+  size = 'md',
   onClick,
   className,
   ...props
@@ -29,8 +31,15 @@ export default function ActionBtn({
     onClick?.(e)
   }
 
+  const iconSizes = {
+    sm: 14,
+    md: 16,
+    lg: 18
+  }
+
   const classNames = [
     styles.action,
+    styles[`action${size.charAt(0).toUpperCase() + size.slice(1)}`],
     !label && styles.actionIcon,
     active && styles.actionActive,
     danger && styles.actionDanger,
@@ -46,7 +55,7 @@ export default function ActionBtn({
       onClick={handleClick}
       {...props}
     >
-      <Icon size={14} strokeWidth={2} />
+      <Icon size={iconSizes[size]} strokeWidth={2} />
       {label && <span>{label}</span>}
     </button>
   )

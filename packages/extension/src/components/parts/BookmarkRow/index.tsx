@@ -86,17 +86,25 @@ export default function BookmarkRow({
           <ActionBtn
             icon={Plus}
             label='Tags'
+            size='sm'
             onClick={onAddTags}
             title='Add tags'
           />
           <ActionBtn
             icon={bookmark.pinned ? PinOff : Pin}
             active={bookmark.pinned}
+            size='sm'
             onClick={onTogglePin}
             title={bookmark.pinned ? 'Unpin' : 'Pin'}
           />
-          <ActionBtn icon={Edit} onClick={onEdit} title='Edit' />
-          <ActionBtn icon={Trash2} danger onClick={onDelete} title='Delete' />
+          <ActionBtn icon={Edit} size='sm' onClick={onEdit} title='Edit' />
+          <ActionBtn
+            icon={Trash2}
+            danger
+            size='sm'
+            onClick={onDelete}
+            title='Delete'
+          />
         </div>
       </div>
     </a>

@@ -3,13 +3,10 @@
   align-items: center;
   justify-content: center;
   gap: 4px;
-  height: 28px;
-  padding: 0 10px;
   background-color: var(--background-2);
   border: 1px solid transparent;
   border-radius: var(--border-radius);
   cursor: pointer;
-  font-size: 12px;
   font-family: inherit;
   color: var(--text-light);
   transition:
@@ -22,9 +19,38 @@
   color: var(--text);
 }
 
+.actionSm {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.actionMd {
+  height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+.actionLg {
+  height: 36px;
+  padding: 0 14px;
+  font-size: 14px;
+}
+
 .actionIcon {
-  width: 28px;
   padding: 0;
+}
+
+.actionIcon.actionSm {
+  width: 28px;
+}
+
+.actionIcon.actionMd {
+  width: 32px;
+}
+
+.actionIcon.actionLg {
+  width: 36px;
 }
 
 .actionActive {
