@@ -63,8 +63,6 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 8px 12px;
-  margin-bottom: 20px;
   font-size: 13px;
   color: var(--text-light);
 }
@@ -108,7 +106,7 @@
 }
 
 .menuItem:hover {
-  background-color: var(--primary);
+  background-color: var(--background-2);
   color: white;
 }
 
@@ -125,4 +123,14 @@
   height: 1px;
   background-color: var(--border);
   margin: 4px 0;
+}
+
+.version {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--text-light);
+  margin: 0 0 20px;
 }

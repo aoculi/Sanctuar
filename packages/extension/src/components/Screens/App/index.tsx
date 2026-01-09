@@ -16,6 +16,7 @@ import type { Bookmark } from '@/lib/types'
 import BookmarkEditModal from '@/components/parts/Bookmarks/BookmarkEditModal'
 import CollectionsList from '@/components/parts/CollectionsList'
 import CreateCollection from '@/components/parts/CreateCollection'
+import HiddenToggle from '@/components/parts/HiddenToggle'
 import PinnedList from '@/components/parts/PinnedList'
 import SmartHeader from '@/components/parts/SmartHeader'
 import SmartSearch from '@/components/parts/SmartSearch'
@@ -75,7 +76,10 @@ function AppContent() {
 
   return (
     <div className={styles.component}>
-      <SmartHeader />
+      <div className={styles.header}>
+        <SmartHeader />
+        <HiddenToggle />
+      </div>
       <div className={styles.content}>
         <div className={styles.container}>
           <SmartSearch

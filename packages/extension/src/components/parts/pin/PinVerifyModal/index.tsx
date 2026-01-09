@@ -11,12 +11,14 @@ interface PinVerifyModalProps {
   open: boolean
   onClose: () => void
   onSuccess: (pin: string) => Promise<void>
+  description?: string
 }
 
 export function PinVerifyModal({
   open,
   onClose,
-  onSuccess
+  onSuccess,
+  description = 'Enter your PIN to continue'
 }: PinVerifyModalProps) {
   const [pin, setPin] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -55,7 +57,7 @@ export function PinVerifyModal({
     <Dialog
       open={open}
       title='Verify PIN'
-      description='Enter your PIN to disable PIN unlock'
+      description={description}
       width={400}
       onClose={handleClose}
       showCloseButton={false}

@@ -1,4 +1,11 @@
-import { ChevronDown, FolderOpen, Library, LogOut, Tags } from 'lucide-react'
+import {
+  ChevronDown,
+  FolderOpen,
+  Library,
+  LogOut,
+  Settings,
+  Tags
+} from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useQueryAuth } from '@/components/hooks/queries/useQueryAuth'
@@ -58,6 +65,27 @@ export default function SmartHeader() {
     action()
   }
 
+  const openSettings = () => {
+    const runtime =
+      (typeof chrome !== 'undefined' && chrome.runtime) ||
+      (typeof browser !== 'undefined' && browser.runtime)
+
+    if (!runtime) {
+      console.error('Browser runtime not available')
+      return
+    }
+
+    const settingsUrl = runtime.getURL('/settings.html')
+
+    if (typeof chrome !== 'undefined' && chrome.tabs?.create) {
+      chrome.tabs.create({ url: settingsUrl })
+    } else if (typeof browser !== 'undefined' && browser.tabs?.create) {
+      browser.tabs.create({ url: settingsUrl })
+    } else {
+      window.open(settingsUrl, '_blank')
+    }
+  }
+
   return (
     <div className={styles.component}>
       <button
@@ -91,6 +119,9 @@ export default function SmartHeader() {
           <span>+</span>
           <kbd className={styles.shortcutKey}>Space</kbd>
         </div>
+        <div className={styles.version}>
+          <span>Version {chrome.runtime.getManifest().version}</span>
+        </div>
         <button
           className={styles.menuItem}
           role='menuitem'
@@ -106,6 +137,14 @@ export default function SmartHeader() {
         >
           <Tags strokeWidth={1.5} size={18} />
           <span>Tags</span>
+        </button>
+        <button
+          className={styles.menuItem}
+          role='menuitem'
+          onClick={() => handleMenuItemClick(openSettings)}
+        >
+          <Settings strokeWidth={1.5} size={18} />
+          <span>Settings</span>
         </button>
         <div className={styles.separator} />
         <button

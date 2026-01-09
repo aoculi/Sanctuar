@@ -1,0 +1,36 @@
+.toggle {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background-color: var(--background-4);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  color: var(--text-light);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.toggle:hover {
+  background-color: var(--background-2);
+  color: var(--text);
+}
+
+.toggle.active {
+  background-color: var(--background-2);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.toggle.active:hover {
+  background-color: var(--background-3);
+}

@@ -5,6 +5,13 @@
   overflow: hidden;
 }
 
+.header {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .content {
   display: flex;
   flex-direction: column;
