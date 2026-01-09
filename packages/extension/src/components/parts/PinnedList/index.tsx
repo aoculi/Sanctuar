@@ -1,8 +1,10 @@
 import { Pin } from 'lucide-react'
 import { useMemo } from 'react'
 
+import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
 import { useBookmarks } from '@/components/hooks/useBookmarks'
 import { useTags } from '@/components/hooks/useTags'
+import { filterBookmarks } from '@/lib/bookmarkUtils'
 import type { Bookmark } from '@/lib/types'
 
 import BookmarkRow from '@/components/parts/BookmarkRow'
@@ -10,15 +12,59 @@ import Collapsible from '@/components/ui/Collapsible'
 
 import styles from './styles.module.css'
 
-export default function PinnedList() {
-  const { bookmarks } = useBookmarks()
+interface PinnedListProps {
+  searchQuery: string
+  selectedTags: string[]
+}
+
+export default function PinnedList({
+  searchQuery,
+  selectedTags
+}: PinnedListProps) {
+  const { bookmarks, updateBookmark, deleteBookmark } = useBookmarks()
   const { tags } = useTags()
+  const { setFlash } = useNavigation()
 
   const pinnedBookmarks = useMemo(() => {
-    return bookmarks
-      .filter((bookmark: Bookmark) => bookmark.pinned)
-      .sort((a: Bookmark, b: Bookmark) => b.updated_at - a.updated_at)
-  }, [bookmarks])
+    // Get pinned bookmarks
+    const pinned = bookmarks.filter((bookmark: Bookmark) => bookmark.pinned)
+
+    // Apply search filter
+    let filtered = filterBookmarks(pinned, tags, searchQuery)
+
+    // Apply tag filter
+    if (selectedTags.length > 0) {
+      if (selectedTags.includes('unsorted')) {
+        filtered = filtered.filter((bookmark) => bookmark.tags.length === 0)
+      } else {
+        filtered = filtered.filter((bookmark) =>
+          selectedTags.some((tagId) => bookmark.tags.includes(tagId))
+        )
+      }
+    }
+
+    return filtered.sort((a: Bookmark, b: Bookmark) => b.updated_at - a.updated_at)
+  }, [bookmarks, tags, searchQuery, selectedTags])
+
+  const handleTogglePin = async (bookmark: Bookmark) => {
+    try {
+      await updateBookmark(bookmark.id, { pinned: !bookmark.pinned })
+    } catch (error) {
+      setFlash(`Failed to update bookmark: ${(error as Error).message}`)
+      setTimeout(() => setFlash(null), 5000)
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Are you sure you want to delete this bookmark?')) {
+      try {
+        await deleteBookmark(id)
+      } catch (error) {
+        setFlash(`Failed to delete bookmark: ${(error as Error).message}`)
+        setTimeout(() => setFlash(null), 5000)
+      }
+    }
+  }
 
   if (pinnedBookmarks.length === 0) {
     return null
@@ -34,7 +80,13 @@ export default function PinnedList() {
       >
         <div className={styles.list}>
           {pinnedBookmarks.map((bookmark: Bookmark) => (
-            <BookmarkRow key={bookmark.id} bookmark={bookmark} tags={tags} />
+            <BookmarkRow
+              key={bookmark.id}
+              bookmark={bookmark}
+              tags={tags}
+              onTogglePin={() => handleTogglePin(bookmark)}
+              onDelete={() => handleDelete(bookmark.id)}
+            />
           ))}
         </div>
       </Collapsible>

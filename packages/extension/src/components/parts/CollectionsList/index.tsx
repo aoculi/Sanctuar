@@ -1,11 +1,16 @@
 import { Folder, Inbox } from 'lucide-react'
 import { useMemo } from 'react'
 
+import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
 import { useBookmarks } from '@/components/hooks/useBookmarks'
 import { useCollections } from '@/components/hooks/useCollections'
 import { useTags } from '@/components/hooks/useTags'
+import { filterBookmarks } from '@/lib/bookmarkUtils'
 import { getIconByName } from '@/components/ui/IconPicker'
-import { flattenCollectionsWithBookmarks } from '@/lib/collectionUtils'
+import {
+  filterEmptyCollections,
+  flattenCollectionsWithBookmarks
+} from '@/lib/collectionUtils'
 import type { Bookmark } from '@/lib/types'
 
 import BookmarkRow from '@/components/parts/BookmarkRow'
@@ -13,32 +18,81 @@ import Collapsible from '@/components/ui/Collapsible'
 
 import styles from './styles.module.css'
 
-export default function CollectionsList() {
-  const { bookmarks } = useBookmarks()
+interface CollectionsListProps {
+  searchQuery: string
+  selectedTags: string[]
+}
+
+export default function CollectionsList({
+  searchQuery,
+  selectedTags
+}: CollectionsListProps) {
+  const { bookmarks, updateBookmark, deleteBookmark } = useBookmarks()
   const { collections } = useCollections()
   const { tags } = useTags()
+  const { setFlash } = useNavigation()
 
-  // Get non-pinned bookmarks
+  // Get non-pinned bookmarks with search and tag filtering
   const nonPinnedBookmarks = useMemo(() => {
-    return bookmarks.filter((b: Bookmark) => !b.pinned)
-  }, [bookmarks])
+    // Get non-pinned bookmarks
+    const nonPinned = bookmarks.filter((b: Bookmark) => !b.pinned)
+
+    // Apply search filter
+    let filtered = filterBookmarks(nonPinned, tags, searchQuery)
+
+    // Apply tag filter
+    if (selectedTags.length > 0) {
+      if (selectedTags.includes('unsorted')) {
+        filtered = filtered.filter((bookmark) => bookmark.tags.length === 0)
+      } else {
+        filtered = filtered.filter((bookmark) =>
+          selectedTags.some((tagId) => bookmark.tags.includes(tagId))
+        )
+      }
+    }
+
+    return filtered
+  }, [bookmarks, tags, searchQuery, selectedTags])
+
+  // Check if filtering is active
+  const isFiltering = searchQuery.length > 0 || selectedTags.length > 0
 
   // Get collections with their bookmarks
-  const collectionsWithBookmarks = useMemo(
-    () =>
-      flattenCollectionsWithBookmarks(
-        collections,
-        nonPinnedBookmarks,
-        'updated_at'
-      ),
-    [collections, nonPinnedBookmarks]
-  )
+  const collectionsWithBookmarks = useMemo(() => {
+    const flattened = flattenCollectionsWithBookmarks(
+      collections,
+      nonPinnedBookmarks,
+      'updated_at'
+    )
+    // Filter out empty collections when searching/filtering
+    return isFiltering ? filterEmptyCollections(flattened) : flattened
+  }, [collections, nonPinnedBookmarks, isFiltering])
 
   // Get uncategorized bookmarks (not pinned, not in any collection)
   const uncategorizedBookmarks = useMemo(
     () => nonPinnedBookmarks.filter((b: Bookmark) => !b.collectionId),
     [nonPinnedBookmarks]
   )
+
+  const handleTogglePin = async (bookmark: Bookmark) => {
+    try {
+      await updateBookmark(bookmark.id, { pinned: !bookmark.pinned })
+    } catch (error) {
+      setFlash(`Failed to update bookmark: ${(error as Error).message}`)
+      setTimeout(() => setFlash(null), 5000)
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Are you sure you want to delete this bookmark?')) {
+      try {
+        await deleteBookmark(id)
+      } catch (error) {
+        setFlash(`Failed to delete bookmark: ${(error as Error).message}`)
+        setTimeout(() => setFlash(null), 5000)
+      }
+    }
+  }
 
   if (
     collectionsWithBookmarks.length === 0 &&
@@ -69,6 +123,8 @@ export default function CollectionsList() {
                       key={bookmark.id}
                       bookmark={bookmark}
                       tags={tags}
+                      onTogglePin={() => handleTogglePin(bookmark)}
+                      onDelete={() => handleDelete(bookmark.id)}
                     />
                   ))}
                 </div>
@@ -87,7 +143,13 @@ export default function CollectionsList() {
         >
           <div className={styles.bookmarksList}>
             {uncategorizedBookmarks.map((bookmark: Bookmark) => (
-              <BookmarkRow key={bookmark.id} bookmark={bookmark} tags={tags} />
+              <BookmarkRow
+                key={bookmark.id}
+                bookmark={bookmark}
+                tags={tags}
+                onTogglePin={() => handleTogglePin(bookmark)}
+                onDelete={() => handleDelete(bookmark.id)}
+              />
             ))}
           </div>
         </Collapsible>
