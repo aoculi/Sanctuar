@@ -1,12 +1,11 @@
-import { Folder, Inbox } from 'lucide-react'
-import { useMemo } from 'react'
+import { Inbox } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
 import { useBookmarks } from '@/components/hooks/useBookmarks'
 import { useCollections } from '@/components/hooks/useCollections'
 import { useTags } from '@/components/hooks/useTags'
 import { filterBookmarks } from '@/lib/bookmarkUtils'
-import { getIconByName } from '@/components/ui/IconPicker'
 import {
   filterEmptyCollections,
   flattenCollectionsWithBookmarks
@@ -15,6 +14,7 @@ import type { Bookmark } from '@/lib/types'
 
 import BookmarkRow from '@/components/parts/BookmarkRow'
 import Collapsible from '@/components/ui/Collapsible'
+import CollectionItem from './CollectionItem'
 
 import styles from './styles.module.css'
 
@@ -30,9 +30,21 @@ export default function CollectionsList({
   onEdit
 }: CollectionsListProps) {
   const { bookmarks, updateBookmark, deleteBookmark } = useBookmarks()
-  const { collections } = useCollections()
+  const { collections, updateCollection } = useCollections()
   const { tags } = useTags()
   const { setFlash } = useNavigation()
+
+  const [editingCollectionId, setEditingCollectionId] = useState<string | null>(
+    null
+  )
+  const [editingName, setEditingName] = useState('')
+  const containerRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  const inputRefs = useRef<Record<string, HTMLInputElement | null>>({})
+  const editingNameRef = useRef(editingName)
+
+  useEffect(() => {
+    editingNameRef.current = editingName
+  }, [editingName])
 
   // Get non-pinned bookmarks with search and tag filtering
   const nonPinnedBookmarks = useMemo(() => {
@@ -96,6 +108,63 @@ export default function CollectionsList({
     }
   }
 
+  const startEditing = (collectionId: string, currentName: string) => {
+    setEditingCollectionId(collectionId)
+    setEditingName(currentName)
+  }
+
+  const saveCollection = async (collectionId: string) => {
+    const trimmedName = editingNameRef.current.trim()
+    if (!trimmedName) {
+      cancelEditing()
+      return
+    }
+
+    try {
+      await updateCollection(collectionId, { name: trimmedName })
+      cancelEditing()
+    } catch (error) {
+      setFlash(`Failed to update collection: ${(error as Error).message}`)
+      setTimeout(() => setFlash(null), 5000)
+      cancelEditing()
+    }
+  }
+
+  const cancelEditing = () => {
+    setEditingCollectionId(null)
+    setEditingName('')
+  }
+
+  useEffect(() => {
+    if (!editingCollectionId) return
+
+    const input = inputRefs.current[editingCollectionId]
+    if (input) {
+      input.focus()
+      input.select()
+    }
+
+    const handleClickOutside = async (event: MouseEvent) => {
+      const container = containerRefs.current[editingCollectionId]
+      if (container && !container.contains(event.target as Node)) {
+        const trimmedName = editingNameRef.current.trim()
+        if (trimmedName) {
+          try {
+            await updateCollection(editingCollectionId, { name: trimmedName })
+          } catch (error) {
+            setFlash(`Failed to update collection: ${(error as Error).message}`)
+            setTimeout(() => setFlash(null), 5000)
+          }
+        }
+        setEditingCollectionId(null)
+        setEditingName('')
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [editingCollectionId, updateCollection, setFlash])
+
   if (
     collectionsWithBookmarks.length === 0 &&
     uncategorizedBookmarks.length === 0
@@ -106,35 +175,30 @@ export default function CollectionsList({
   return (
     <div className={styles.component}>
       {collectionsWithBookmarks.map(
-        ({ collection, bookmarks: collectionBookmarks, depth }) => {
-          const Icon = collection.icon ? getIconByName(collection.icon) : Folder
-
-          return (
-            <Collapsible
-              key={collection.id}
-              icon={Icon}
-              label={collection.name}
-              count={collectionBookmarks.length}
-              depth={depth}
-              defaultOpen={false}
-            >
-              {collectionBookmarks.length > 0 && (
-                <div className={styles.bookmarksList}>
-                  {collectionBookmarks.map((bookmark: Bookmark) => (
-                    <BookmarkRow
-                      key={bookmark.id}
-                      bookmark={bookmark}
-                      tags={tags}
-                      onTogglePin={() => handleTogglePin(bookmark)}
-                      onEdit={onEdit ? () => onEdit(bookmark) : undefined}
-                      onDelete={() => handleDelete(bookmark.id)}
-                    />
-                  ))}
-                </div>
-              )}
-            </Collapsible>
-          )
-        }
+        ({ collection, bookmarks: collectionBookmarks, depth }) => (
+          <CollectionItem
+            key={collection.id}
+            collection={collection}
+            bookmarks={collectionBookmarks}
+            depth={depth}
+            tags={tags}
+            isEditing={editingCollectionId === collection.id}
+            editingName={editingName}
+            onStartEdit={startEditing}
+            onSave={saveCollection}
+            onCancel={cancelEditing}
+            onNameChange={setEditingName}
+            onTogglePin={handleTogglePin}
+            onDelete={handleDelete}
+            onEdit={onEdit}
+            containerRef={(el) => {
+              containerRefs.current[collection.id] = el
+            }}
+            inputRef={(el) => {
+              inputRefs.current[collection.id] = el
+            }}
+          />
+        )
       )}
 
       {uncategorizedBookmarks.length > 0 && (
