@@ -1,4 +1,5 @@
 import { Folder, X } from 'lucide-react'
+import { useState } from 'react'
 
 import { getIconByName } from '@/components/ui/IconPicker'
 import type { Bookmark, Collection } from '@/lib/types'
@@ -6,6 +7,7 @@ import type { Bookmark, Collection } from '@/lib/types'
 import BookmarkRow from '@/components/parts/BookmarkRow'
 import ActionBtn from '@/components/ui/ActionBtn'
 import Collapsible from '@/components/ui/Collapsible'
+import IconPickerModal from '@/components/ui/IconPickerModal'
 import Text from '@/components/ui/Text'
 
 import styles from './styles.module.css'
@@ -24,6 +26,7 @@ interface CollectionItemProps {
   onTogglePin: (bookmark: Bookmark) => void
   onDelete: (id: string) => void
   onEdit?: (bookmark: Bookmark) => void
+  onIconChange?: (id: string, icon: string | undefined) => void
   containerRef: (el: HTMLDivElement | null) => void
   inputRef: (el: HTMLInputElement | null) => void
 }
@@ -42,9 +45,11 @@ export default function CollectionItem({
   onTogglePin,
   onDelete,
   onEdit,
+  onIconChange,
   containerRef,
   inputRef
 }: CollectionItemProps) {
+  const [isIconModalOpen, setIsIconModalOpen] = useState(false)
   const Icon = collection.icon ? getIconByName(collection.icon) : Folder
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -57,11 +62,25 @@ export default function CollectionItem({
     }
   }
 
+  const handleIconClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (onIconChange) {
+      setIsIconModalOpen(true)
+    }
+  }
+
+  const handleIconChange = (icon: string | undefined) => {
+    if (onIconChange) {
+      onIconChange(collection.id, icon)
+    }
+  }
+
   return (
     <div ref={containerRef}>
       <Collapsible
         key={collection.id}
         icon={Icon}
+        onIconClick={onIconChange ? handleIconClick : undefined}
         label={
           isEditing ? (
             <div className={styles.labelContent}>
@@ -123,6 +142,14 @@ export default function CollectionItem({
           </div>
         )}
       </Collapsible>
+      {onIconChange && (
+        <IconPickerModal
+          open={isIconModalOpen}
+          onClose={() => setIsIconModalOpen(false)}
+          value={collection.icon}
+          onChange={handleIconChange}
+        />
+      )}
     </div>
   )
 }

@@ -13,6 +13,7 @@ interface CollapsibleProps {
   depth?: number
   children: React.ReactNode
   editable?: boolean
+  onIconClick?: (e: React.MouseEvent) => void
 }
 
 export default function Collapsible({
@@ -22,7 +23,8 @@ export default function Collapsible({
   defaultOpen = true,
   depth = 0,
   children,
-  editable = false
+  editable = false,
+  onIconClick
 }: CollapsibleProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen)
 
@@ -54,7 +56,18 @@ export default function Collapsible({
             strokeWidth={2}
             className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ''}`}
           />
-          <Icon size={16} strokeWidth={2} className={styles.icon} />
+          {onIconClick ? (
+            <button
+              type='button'
+              className={styles.iconButton}
+              onClick={onIconClick}
+              title='Change icon'
+            >
+              <Icon size={16} strokeWidth={2} className={styles.icon} />
+            </button>
+          ) : (
+            <Icon size={16} strokeWidth={2} className={styles.icon} />
+          )}
           {typeof label === 'string' ? (
             <Text as='span' size='2' weight='medium'>
               {label}

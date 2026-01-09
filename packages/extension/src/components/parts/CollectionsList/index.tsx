@@ -130,6 +130,18 @@ export default function CollectionsList({
     }
   }
 
+  const handleIconChange = async (
+    collectionId: string,
+    icon: string | undefined
+  ) => {
+    try {
+      await updateCollection(collectionId, { icon })
+    } catch (error) {
+      setFlash(`Failed to update icon: ${(error as Error).message}`)
+      setTimeout(() => setFlash(null), 5000)
+    }
+  }
+
   const cancelEditing = () => {
     setEditingCollectionId(null)
     setEditingName('')
@@ -191,6 +203,7 @@ export default function CollectionsList({
             onTogglePin={handleTogglePin}
             onDelete={handleDelete}
             onEdit={onEdit}
+            onIconChange={handleIconChange}
             containerRef={(el) => {
               containerRefs.current[collection.id] = el
             }}
