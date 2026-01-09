@@ -3,7 +3,7 @@
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: var(--border-radius);
   text-decoration: none;
   color: var(--text);
   transition: background-color 0.15s ease;
@@ -83,7 +83,7 @@
   display: inline-flex;
   align-items: center;
   padding: 2px 8px;
-  border-radius: 4px;
+  border-radius: var(--border-radius);
   font-size: 11px;
   font-weight: 500;
   white-space: nowrap;
@@ -93,7 +93,7 @@
   display: inline-flex;
   align-items: center;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--border-radius);
   font-size: 11px;
   font-weight: 500;
   background-color: rgba(255, 255, 255, 0.1);
@@ -103,7 +103,7 @@
 .actions {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 5px;
   opacity: 0;
   visibility: hidden;
   width: 0;
@@ -118,40 +118,42 @@
 .action {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
-  padding: 6px 8px;
-  background: none;
-  border: none;
-  border-radius: 6px;
+  height: 28px;
+  padding: 0 10px;
+  background-color: var(--background-2);
+  border: 1px solid transparent;
+  border-radius: var(--border-radius);
   cursor: pointer;
   font-size: 12px;
   font-family: inherit;
   color: var(--text-light);
   transition:
-    background-color 0.15s ease,
+    border-color 0.15s ease,
     color 0.15s ease;
 }
 
 .action:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  border-color: var(--border);
   color: var(--text);
 }
 
-.action span {
-  display: none;
-}
-
-.action:first-child span {
-  display: inline;
+.actionIcon {
+  width: 28px;
+  padding: 0;
 }
 
 .actionActive {
-  color: var(--primary);
+  background-color: var(--primary);
+  border-color: var(--primary);
+  color: white;
 }
 
 .actionActive:hover {
-  color: var(--primary);
-  background-color: rgba(var(--primary-rgb), 0.15);
+  background-color: var(--primary);
+  border-color: var(--primary);
+  color: white;
 }
 
 .actionDanger:hover {

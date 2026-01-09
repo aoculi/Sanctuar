@@ -94,12 +94,12 @@ export default function BookmarkRow({
             }}
             title="Add tags"
           >
-            <Plus size={14} />
+            <Plus size={14} strokeWidth={2} />
             <span>Tags</span>
           </button>
           <button
             type="button"
-            className={`${styles.action} ${bookmark.pinned ? styles.actionActive : ''}`}
+            className={`${styles.action} ${styles.actionIcon} ${bookmark.pinned ? styles.actionActive : ''}`}
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
@@ -107,11 +107,11 @@ export default function BookmarkRow({
             }}
             title={bookmark.pinned ? 'Unpin' : 'Pin'}
           >
-            {bookmark.pinned ? <PinOff size={14} /> : <Pin size={14} />}
+            {bookmark.pinned ? <PinOff size={14} strokeWidth={2} /> : <Pin size={14} strokeWidth={2} />}
           </button>
           <button
             type="button"
-            className={styles.action}
+            className={`${styles.action} ${styles.actionIcon}`}
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
@@ -119,11 +119,11 @@ export default function BookmarkRow({
             }}
             title="Edit"
           >
-            <Edit size={14} />
+            <Edit size={14} strokeWidth={2} />
           </button>
           <button
             type="button"
-            className={`${styles.action} ${styles.actionDanger}`}
+            className={`${styles.action} ${styles.actionIcon} ${styles.actionDanger}`}
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
@@ -131,7 +131,7 @@ export default function BookmarkRow({
             }}
             title="Delete"
           >
-            <Trash2 size={14} />
+            <Trash2 size={14} strokeWidth={2} />
           </button>
         </div>
       </div>

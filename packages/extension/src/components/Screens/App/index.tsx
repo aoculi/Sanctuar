@@ -5,6 +5,7 @@ import { ManifestProvider } from '@/components/hooks/providers/useManifestProvid
 import { SettingsProvider } from '@/components/hooks/providers/useSettingsProvider'
 import { UnlockStateProvider } from '@/components/hooks/providers/useUnlockStateProvider'
 
+import CollectionsList from '@/components/parts/CollectionsList'
 import PinnedList from '@/components/parts/PinnedList'
 import SmartHeader from '@/components/parts/SmartHeader'
 import SmartSearch from '@/components/parts/SmartSearch'
@@ -27,6 +28,7 @@ function AppContent() {
             onSelectedTagsChange={setSelectedTags}
           />
           <PinnedList />
+          <CollectionsList />
         </div>
       </div>
     </div>

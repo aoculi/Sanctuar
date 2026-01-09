@@ -10,6 +10,7 @@ interface CollapsibleProps {
   label: string
   count: number
   defaultOpen?: boolean
+  depth?: number
   children: React.ReactNode
 }
 
@@ -18,6 +19,7 @@ export default function Collapsible({
   label,
   count,
   defaultOpen = true,
+  depth = 0,
   children
 }: CollapsibleProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen)
@@ -25,23 +27,25 @@ export default function Collapsible({
   return (
     <div className={styles.component}>
       <button
-        type="button"
+        type='button'
         className={styles.header}
+        style={{ paddingLeft: `${depth * 20 + 12}px` }}
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
       >
         <div className={styles.left}>
           <ChevronRight
-            size={16}
+            size={14}
+            strokeWidth={2}
             className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ''}`}
           />
-          <Icon size={16} className={styles.icon} />
-          <Text as="span" size="2" weight="medium">
+          <Icon size={16} strokeWidth={2} className={styles.icon} />
+          <Text as='span' size='2' weight='medium'>
             {label}
           </Text>
         </div>
         <div className={styles.badge}>
-          <Text as="span" size="1" weight="medium">
+          <Text as='span' size='2' weight='medium'>
             {count}
           </Text>
         </div>
