@@ -21,11 +21,13 @@ import styles from './styles.module.css'
 interface CollectionsListProps {
   searchQuery: string
   selectedTags: string[]
+  onEdit?: (bookmark: Bookmark) => void
 }
 
 export default function CollectionsList({
   searchQuery,
-  selectedTags
+  selectedTags,
+  onEdit
 }: CollectionsListProps) {
   const { bookmarks, updateBookmark, deleteBookmark } = useBookmarks()
   const { collections } = useCollections()
@@ -124,6 +126,7 @@ export default function CollectionsList({
                       bookmark={bookmark}
                       tags={tags}
                       onTogglePin={() => handleTogglePin(bookmark)}
+                      onEdit={onEdit ? () => onEdit(bookmark) : undefined}
                       onDelete={() => handleDelete(bookmark.id)}
                     />
                   ))}
@@ -148,6 +151,7 @@ export default function CollectionsList({
                 bookmark={bookmark}
                 tags={tags}
                 onTogglePin={() => handleTogglePin(bookmark)}
+                onEdit={onEdit ? () => onEdit(bookmark) : undefined}
                 onDelete={() => handleDelete(bookmark.id)}
               />
             ))}

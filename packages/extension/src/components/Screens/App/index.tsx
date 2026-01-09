@@ -4,7 +4,9 @@ import { AuthSessionProvider } from '@/components/hooks/providers/useAuthSession
 import { ManifestProvider } from '@/components/hooks/providers/useManifestProvider'
 import { SettingsProvider } from '@/components/hooks/providers/useSettingsProvider'
 import { UnlockStateProvider } from '@/components/hooks/providers/useUnlockStateProvider'
+import type { Bookmark } from '@/lib/types'
 
+import BookmarkEditModal from '@/components/parts/Bookmarks/BookmarkEditModal'
 import CollectionsList from '@/components/parts/CollectionsList'
 import CreateCollection from '@/components/parts/CreateCollection'
 import PinnedList from '@/components/parts/PinnedList'
@@ -16,6 +18,7 @@ import styles from './styles.module.css'
 function AppContent() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null)
 
   return (
     <div className={styles.component}>
@@ -28,14 +31,23 @@ function AppContent() {
             onSearchChange={setSearchQuery}
             onSelectedTagsChange={setSelectedTags}
           />
-          <PinnedList searchQuery={searchQuery} selectedTags={selectedTags} />
+          <PinnedList
+            searchQuery={searchQuery}
+            selectedTags={selectedTags}
+            onEdit={setEditingBookmark}
+          />
           <CreateCollection />
           <CollectionsList
             searchQuery={searchQuery}
             selectedTags={selectedTags}
+            onEdit={setEditingBookmark}
           />
         </div>
       </div>
+      <BookmarkEditModal
+        bookmark={editingBookmark}
+        onClose={() => setEditingBookmark(null)}
+      />
     </div>
   )
 }
