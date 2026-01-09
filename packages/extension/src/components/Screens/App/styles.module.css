@@ -21,3 +21,19 @@
   width: 100%;
   max-width: 800px;
 }
+
+/* Lock screen */
+.lockScreen {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lockContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}

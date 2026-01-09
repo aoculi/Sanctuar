@@ -165,10 +165,6 @@ export default function Bookmark() {
     }
   }
 
-  const handleCancel = () => {
-    navigate('/vault')
-  }
-
   const submitLabel = bookmark ? 'Save' : 'Create'
 
   return (
@@ -180,7 +176,9 @@ export default function Bookmark() {
           bookmark && bookmark.id ? (
             <Button
               onClick={handleRefreshMetadata}
-              disabled={!initialFormData.url?.trim() || isRefreshing || isLoading}
+              disabled={
+                !initialFormData.url?.trim() || isRefreshing || isLoading
+              }
               asIcon
               variant='ghost'
               className={styles.refreshButton}
@@ -211,11 +209,6 @@ export default function Bookmark() {
           isSubmitting={isLoading || isSaving}
           submitLabel={submitLabel}
         />
-        <div className={styles.cancelAction}>
-          <Button onClick={handleCancel} color='black'>
-            Cancel
-          </Button>
-        </div>
       </div>
     </div>
   )

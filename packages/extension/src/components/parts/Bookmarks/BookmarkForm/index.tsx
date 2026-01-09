@@ -1,4 +1,4 @@
-import { Loader2 } from 'lucide-react'
+import { Globe, Loader2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { useSettings } from '@/components/hooks/providers/useSettingsProvider'
@@ -6,10 +6,10 @@ import { useCollections } from '@/components/hooks/useCollections'
 import { useTags } from '@/components/hooks/useTags'
 import { flattenCollectionsWithDepth } from '@/lib/collectionUtils'
 import type { Bookmark } from '@/lib/types'
+import { getHostname } from '@/lib/utils'
 import { MAX_TAGS_PER_ITEM } from '@/lib/validation'
 
 import Button from '@/components/ui/Button'
-import Input from '@/components/ui/Input'
 import Select from '@/components/ui/Select'
 import { TagSelectorField } from '@/components/ui/TagSelectorField'
 import Text from '@/components/ui/Text'
@@ -61,6 +61,7 @@ export default function BookmarkForm({
     ...initialData
   }))
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [faviconError, setFaviconError] = useState(false)
 
   // Update form when initialData changes
   useEffect(() => {
@@ -69,8 +70,18 @@ export default function BookmarkForm({
         ...prev,
         ...initialData
       }))
+      setFaviconError(false)
     }
   }, [initialData])
+
+  // Get favicon URL from the bookmark URL
+  const faviconUrl = useMemo(() => {
+    if (form.picture) return form.picture
+    if (!form.url?.trim()) return null
+    const hostname = getHostname(form.url)
+    if (!hostname) return null
+    return `https://www.google.com/s2/favicons?domain=${hostname}&sz=32`
+  }, [form.url, form.picture])
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
@@ -164,46 +175,54 @@ export default function BookmarkForm({
   return (
     <form onSubmit={handleSubmit} className={styles.form}>
       <div className={styles.content}>
-        {form.picture && (
-          <div className={styles.picture}>
-            <img src={form.picture} alt={form.title} />
+        {/* Header section: favicon + title/url */}
+        <div className={styles.header}>
+          <div className={styles.favicon}>
+            {faviconUrl && !faviconError ? (
+              <img
+                src={faviconUrl}
+                alt=""
+                width={20}
+                height={20}
+                onError={() => setFaviconError(true)}
+              />
+            ) : (
+              <Globe size={20} className={styles.faviconPlaceholder} />
+            )}
+          </div>
+          <div className={styles.headerInfo}>
+            <input
+              type="text"
+              className={`${styles.titleInput} ${errors.title ? styles.inputError : ''}`}
+              value={form.title}
+              onChange={(e) => {
+                const next = e.target.value
+                setForm((prev) => ({ ...prev, title: next }))
+                if (errors.title) setErrors({ ...errors, title: '' })
+              }}
+              placeholder="Bookmark title"
+            />
+            <input
+              type="url"
+              className={`${styles.urlInput} ${errors.url ? styles.inputError : ''}`}
+              value={form.url}
+              onChange={(e) => {
+                const next = e.target.value
+                setForm((prev) => ({ ...prev, url: next }))
+                setFaviconError(false)
+                if (errors.url) setErrors({ ...errors, url: '' })
+              }}
+              placeholder="https://example.com"
+            />
+          </div>
+        </div>
+
+        {(errors.title || errors.url) && (
+          <div className={styles.headerErrors}>
+            {errors.title && <span className={styles.fieldError}>{errors.title}</span>}
+            {errors.url && <span className={styles.fieldError}>{errors.url}</span>}
           </div>
         )}
-
-        <Input
-          type='hidden'
-          value={form.picture}
-          onChange={(e) => {
-            const next = e.target.value
-            setForm((prev) => ({ ...prev, picture: next }))
-          }}
-        />
-
-        <Input
-          error={errors.url}
-          size='lg'
-          type='url'
-          placeholder='https://example.com'
-          value={form.url}
-          onChange={(e) => {
-            const next = e.target.value
-            setForm((prev) => ({ ...prev, url: next }))
-            if (errors.url) setErrors({ ...errors, url: '' })
-          }}
-        />
-
-        <Input
-          error={errors.title}
-          size='lg'
-          type='text'
-          value={form.title}
-          onChange={(e) => {
-            const next = e.target.value
-            setForm((prev) => ({ ...prev, title: next }))
-            if (errors.title) setErrors({ ...errors, title: '' })
-          }}
-          placeholder='Bookmark title'
-        />
 
         <Textarea
           size='lg'
@@ -213,7 +232,7 @@ export default function BookmarkForm({
             setForm((prev) => ({ ...prev, note: next }))
           }}
           placeholder='Add a note...'
-          rows={4}
+          rows={3}
         />
 
         <div className={styles.section}>
