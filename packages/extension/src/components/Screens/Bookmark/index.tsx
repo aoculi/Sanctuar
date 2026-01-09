@@ -1,24 +1,17 @@
 import { Loader2, RefreshCw } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { useManifest } from '@/components/hooks/providers/useManifestProvider'
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
-import { useSettings } from '@/components/hooks/providers/useSettingsProvider'
 import { useBookmarks } from '@/components/hooks/useBookmarks'
-import { useCollections } from '@/components/hooks/useCollections'
 import usePopupSize from '@/components/hooks/usePopupSize'
-import { useTags } from '@/components/hooks/useTags'
-import { flattenCollectionsWithDepth } from '@/lib/collectionUtils'
 import { captureCurrentPage, refreshBookmarkMetadata } from '@/lib/pageCapture'
-import { MAX_TAGS_PER_ITEM } from '@/lib/validation'
 
+import BookmarkForm, {
+  type BookmarkFormData
+} from '@/components/parts/Bookmarks/BookmarkForm'
 import Header from '@/components/parts/Header'
 import Button from '@/components/ui/Button'
-import Input from '@/components/ui/Input'
-import Select from '@/components/ui/Select'
-import { TagSelectorField } from '@/components/ui/TagSelectorField'
-import Text from '@/components/ui/Text'
-import Textarea from '@/components/ui/Textarea'
 
 import styles from './styles.module.css'
 
@@ -39,26 +32,22 @@ export default function Bookmark() {
   const { navigate, selectedBookmark, setFlash } = useNavigation()
   const { isSaving } = useManifest()
   const { addBookmark, updateBookmark, bookmarks } = useBookmarks()
-  const { collections } = useCollections()
-  const { tags } = useTags()
-  const { settings } = useSettings()
+
   let bookmark = bookmarks.find((item) => item.id === selectedBookmark) || null
   if (selectedBookmark === 'blank') {
     bookmark = emptyBookmark
   }
 
-  const [form, setForm] =
-    useState<Omit<typeof emptyBookmark, 'id' | 'created_at' | 'updated_at'>>(
-      emptyBookmark
-    )
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [initialFormData, setInitialFormData] = useState<
+    Partial<BookmarkFormData>
+  >({})
   const [isLoading, setIsLoading] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
 
-  // Initialize form when editing an existing bookmark
+  // Initialize form data when editing an existing bookmark
   useEffect(() => {
     if (bookmark) {
-      setForm({
+      setInitialFormData({
         url: bookmark.url,
         title: bookmark.title,
         note: bookmark.note,
@@ -71,22 +60,19 @@ export default function Bookmark() {
 
   // Check for duplicate URL when creating a new bookmark
   useEffect(() => {
-    if (!bookmark && form.url?.trim()) {
-      const trimmedUrl = form.url.trim()
+    if (!bookmark && initialFormData.url?.trim()) {
+      const trimmedUrl = initialFormData.url.trim()
       const duplicate = bookmarks.find(
         (b) => b.url.trim().toLowerCase() === trimmedUrl.toLowerCase()
       )
       if (duplicate) {
         setFlash('This page is already bookmarked')
-      } else {
       }
-    } else {
     }
-  }, [form.url, bookmarks, bookmark])
+  }, [initialFormData.url, bookmarks, bookmark, setFlash])
 
   // Capture current page when creating a new bookmark
   useEffect(() => {
-    // if we update a page, do not capture it again
     if (bookmark || selectedBookmark) {
       return
     }
@@ -97,7 +83,7 @@ export default function Bookmark() {
 
       const result = await captureCurrentPage()
       if (result.ok) {
-        setForm({
+        setInitialFormData({
           url: result.bookmark.url,
           title: result.bookmark.title,
           note: result.bookmark.note,
@@ -113,14 +99,10 @@ export default function Bookmark() {
     }
 
     loadCurrentPage()
-  }, [bookmark, selectedBookmark])
+  }, [bookmark, selectedBookmark, setFlash])
 
   const handleRefreshMetadata = async () => {
-    if (!form.url?.trim()) {
-      setErrors((prev) => ({
-        ...prev,
-        url: 'URL is required to refresh metadata'
-      }))
+    if (!initialFormData.url?.trim()) {
       return
     }
 
@@ -128,9 +110,9 @@ export default function Bookmark() {
     setFlash(null)
 
     try {
-      const result = await refreshBookmarkMetadata(form.url.trim())
+      const result = await refreshBookmarkMetadata(initialFormData.url.trim())
       if (result.ok) {
-        setForm((prev) => ({
+        setInitialFormData((prev) => ({
           ...prev,
           title: result.title,
           picture: result.favicon
@@ -147,74 +129,28 @@ export default function Bookmark() {
     }
   }
 
-  const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {}
-
-    // URL validation
-    if (!form.url?.trim()) {
-      newErrors.url = 'URL is required'
-    } else {
-      try {
-        const parsed = new URL(form.url?.trim())
-        // Allow common bookmark protocols (http, https, javascript, file, data, about)
-        const allowedProtocols = [
-          'http:',
-          'https:',
-          'javascript:',
-          'file:',
-          'data:',
-          'about:'
-        ]
-        if (!allowedProtocols.includes(parsed.protocol)) {
-          newErrors.url =
-            'URL must use a valid protocol (http://, https://, javascript:, etc.)'
-        }
-      } catch {
-        newErrors.url = 'Please enter a valid URL'
-      }
-    }
-
-    // Title validation
-    if (!form.title?.trim()) {
-      newErrors.title = 'Title is required'
-    }
-
-    // Tags validation
-    if (form.tags.length > MAX_TAGS_PER_ITEM) {
-      newErrors.tags = `Maximum ${MAX_TAGS_PER_ITEM} tags per bookmark`
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (!validateForm() || isLoading || isSaving) {
-      return
-    }
-
+  const handleSubmit = async (data: BookmarkFormData) => {
     setIsLoading(true)
 
     try {
       if (bookmark) {
         await updateBookmark(bookmark.id, {
-          url: form.url?.trim(),
-          title: form.title?.trim(),
-          note: form.note?.trim(),
-          picture: form.picture?.trim(),
-          tags: form.tags,
-          collectionId: form.collectionId
+          url: data.url,
+          title: data.title,
+          note: data.note,
+          picture: data.picture,
+          tags: data.tags,
+          collectionId: data.collectionId
         })
       } else {
         await addBookmark({
-          url: form.url?.trim(),
-          title: form.title?.trim(),
-          note: form.note?.trim(),
-          picture: form.picture?.trim(),
-          tags: form.tags,
-          collectionId: form.collectionId
+          url: data.url,
+          title: data.title,
+          note: data.note,
+          picture: data.picture,
+          tags: data.tags,
+          collectionId: data.collectionId,
+          pinned: false
         })
       }
 
@@ -229,75 +165,11 @@ export default function Bookmark() {
     }
   }
 
-  // Check if there are changes and URL is set
-  const hasChanges = useMemo(() => {
-    if (!form.url?.trim()) {
-      return false
-    }
+  const handleCancel = () => {
+    navigate('/vault')
+  }
 
-    if (!bookmark) {
-      // For new bookmarks, there's a change if URL is set
-      return true
-    }
-
-    // For existing bookmarks, check if any field changed
-    const urlChanged = form.url?.trim() !== bookmark?.url
-    const titleChanged = form.title?.trim() !== bookmark?.title
-    const noteChanged = form.note?.trim() !== bookmark?.note
-    const pictureChanged = form.picture?.trim() !== bookmark?.picture
-
-    // Check if tags changed (compare arrays)
-    const tagsChanged =
-      form.tags.length !== bookmark.tags.length ||
-      form.tags.some((tag) => !bookmark.tags.includes(tag)) ||
-      bookmark.tags.some((tag) => !form.tags.includes(tag))
-
-    // Check if collectionId changed
-    const collectionIdChanged = form.collectionId !== bookmark.collectionId
-
-    return (
-      urlChanged ||
-      titleChanged ||
-      noteChanged ||
-      pictureChanged ||
-      tagsChanged ||
-      collectionIdChanged
-    )
-  }, [form, bookmark])
-
-  const selectableTags = useMemo(() => {
-    if (settings.showHiddenTags) {
-      return tags
-    }
-
-    // Create a Set for O(1) lookup instead of O(n) array includes
-    const selectedTagIds = new Set(form.tags)
-
-    // Keep already-selected hidden tags visible while hiding them from suggestions
-    const selectedHiddenTags: typeof tags = []
-    const visibleTags: typeof tags = []
-
-    // Single pass through tags array for better performance
-    for (const tag of tags) {
-      if (tag.hidden) {
-        if (selectedTagIds.has(tag.id)) {
-          selectedHiddenTags.push(tag)
-        }
-      } else {
-        visibleTags.push(tag)
-      }
-    }
-
-    return [...visibleTags, ...selectedHiddenTags]
-  }, [tags, settings.showHiddenTags, form.tags])
-
-  // Get collections with depth for hierarchical display
-  const collectionsWithDepth = useMemo(
-    () => flattenCollectionsWithDepth(collections),
-    [collections]
-  )
-
-  const buttonLabel = bookmark ? 'Save' : 'Create'
+  const submitLabel = bookmark ? 'Save' : 'Create'
 
   return (
     <div className={styles.component}>
@@ -308,7 +180,7 @@ export default function Bookmark() {
           bookmark && bookmark.id ? (
             <Button
               onClick={handleRefreshMetadata}
-              disabled={!form.url?.trim() || isRefreshing || isLoading}
+              disabled={!initialFormData.url?.trim() || isRefreshing || isLoading}
               asIcon
               variant='ghost'
               className={styles.refreshButton}
@@ -333,110 +205,15 @@ export default function Bookmark() {
       />
 
       <div className={styles.page}>
-        <div className={styles.content}>
-          {form.picture && (
-            <div className={styles.picture}>
-              <img src={form.picture} alt={form.title} />
-            </div>
-          )}
-
-          <Input
-            type='hidden'
-            value={form.picture}
-            onChange={(e) => {
-              const next = e.target.value
-              setForm((prev) => ({ ...prev, picture: next }))
-            }}
-          />
-
-          <Input
-            error={errors.url}
-            size='lg'
-            type='url'
-            placeholder='https://example.com'
-            value={form.url}
-            onChange={(e) => {
-              const next = e.target.value
-              setForm((prev) => ({ ...prev, url: next }))
-              if (errors.url) setErrors({ ...errors, url: '' })
-            }}
-          />
-
-          <Input
-            error={errors.title}
-            size='lg'
-            type='text'
-            value={form.title}
-            onChange={(e) => {
-              const next = e.target.value
-              setForm((prev) => ({ ...prev, title: next }))
-              if (errors.title) setErrors({ ...errors, title: '' })
-            }}
-            placeholder='Bookmark title'
-          />
-
-          <Textarea
-            size='lg'
-            value={form.note}
-            onChange={(e) => {
-              const next = e.target.value
-              setForm((prev) => ({ ...prev, note: next }))
-            }}
-            placeholder='Add a note...'
-            rows={4}
-          />
-
-          <div className={styles.section}>
-            <Text as='label' size='2' className={styles.sectionLabel}>
-              Collection
-            </Text>
-            <Select
-              size='lg'
-              value={form.collectionId || ''}
-              onChange={(e) =>
-                setForm((prev) => ({
-                  ...prev,
-                  collectionId: e.target.value || undefined
-                }))
-              }
-            >
-              <option value=''>None</option>
-              {collectionsWithDepth.map(({ collection, depth }) => (
-                <option key={collection.id} value={collection.id}>
-                  {'  '.repeat(depth)}
-                  {collection.name}
-                </option>
-              ))}
-            </Select>
-          </div>
-
-          <TagSelectorField
-            tags={selectableTags}
-            selectedTags={form.tags}
-            onChange={(tags) => setForm((prev) => ({ ...prev, tags }))}
-          />
-
-          {errors.tags && (
-            <span className={styles.fieldError}>{errors.tags}</span>
-          )}
-        </div>
-
-        <div className={styles.actions}>
-          <Button
-            onClick={() => {
-              navigate('/vault')
-            }}
-            color='black'
-          >
+        <BookmarkForm
+          initialData={initialFormData}
+          onSubmit={handleSubmit}
+          isSubmitting={isLoading || isSaving}
+          submitLabel={submitLabel}
+        />
+        <div className={styles.cancelAction}>
+          <Button onClick={handleCancel} color='black'>
             Cancel
-          </Button>
-
-          <Button
-            onClick={handleSubmit}
-            disabled={!hasChanges || isLoading || isSaving}
-          >
-            {(isLoading || isSaving) && <Loader2 className={styles.spinner} />}
-            {buttonLabel}
           </Button>
         </div>
       </div>
