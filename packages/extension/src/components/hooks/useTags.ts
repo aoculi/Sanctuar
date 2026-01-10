@@ -11,7 +11,7 @@ export function useTags() {
   const { settings } = useSettings()
 
   const createTag = useCallback(
-    async (tag: Omit<Tag, 'id'>) => {
+    async (tag: Omit<Tag, 'id'>): Promise<Tag> => {
       if (!manifest) {
         throw new Error('Cannot create tag: manifest not loaded')
       }
@@ -43,6 +43,8 @@ export function useTags() {
         ...manifest,
         tags: [...(manifest.tags || []), newTag]
       })
+
+      return newTag
     },
     [manifest, save]
   )

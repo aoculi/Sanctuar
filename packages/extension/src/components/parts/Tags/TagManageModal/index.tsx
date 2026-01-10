@@ -1,5 +1,5 @@
 import { Edit, Search, Trash2 } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
 import { useBookmarks } from '@/components/hooks/useBookmarks'
@@ -11,6 +11,7 @@ import ActionBtn from '@/components/ui/ActionBtn'
 import { Dialog } from '@/components/ui/Dialog'
 import Input from '@/components/ui/Input'
 import Text from '@/components/ui/Text'
+import TagEditForm from './TagEditForm'
 
 import styles from './styles.module.css'
 
@@ -28,38 +29,23 @@ export default function TagManageModal({
   const { tags, showHiddenTags, createTag, deleteTag } = useTags()
   const { updateBookmark, bookmarks } = useBookmarks()
   const { setFlash } = useNavigation()
-  const [searchQuery, setSearchQuery] = useState('')
-  const creatingTagNameRef = useRef<string | null>(null)
 
-  // Get the latest bookmark data from the bookmarks array to ensure it's up-to-date
+  const [searchQuery, setSearchQuery] = useState('')
+  const [editingTag, setEditingTag] = useState<Tag | null>(null)
+
+  // Get latest bookmark data
   const currentBookmark = useMemo(() => {
     if (!bookmark) return null
     return bookmarks.find((b: Bookmark) => b.id === bookmark.id) || bookmark
   }, [bookmark, bookmarks])
 
-  // Calculate bookmark counts per tag reactively
-  const tagBookmarkCounts = useMemo(() => {
-    const counts = new Map<string, number>()
-    tags.forEach((tag: Tag) => {
-      counts.set(tag.id, 0)
-    })
-    bookmarks.forEach((bookmark: Bookmark) => {
-      bookmark.tags.forEach((tagId: string) => {
-        const current = counts.get(tagId) || 0
-        counts.set(tagId, current + 1)
-      })
-    })
-    return counts
-  }, [tags, bookmarks])
-
+  // Filter tags by search and visibility
   const filteredTags = useMemo(() => {
     const visibleTags = showHiddenTags
       ? tags
       : tags.filter((tag: Tag) => !tag.hidden)
 
-    if (!searchQuery.trim()) {
-      return visibleTags
-    }
+    if (!searchQuery.trim()) return visibleTags
 
     const query = searchQuery.toLowerCase().trim()
     return visibleTags.filter((tag: Tag) =>
@@ -68,208 +54,169 @@ export default function TagManageModal({
   }, [tags, searchQuery, showHiddenTags])
 
   const isTagSelected = (tagId: string): boolean => {
-    return currentBookmark ? currentBookmark.tags.includes(tagId) : false
+    return currentBookmark?.tags.includes(tagId) ?? false
   }
 
-  // Watch for newly created tags and add them to bookmark if needed
-  useEffect(() => {
-    if (!creatingTagNameRef.current || !currentBookmark) return
-
-    const tagName = creatingTagNameRef.current.toLowerCase()
-    const newTag = tags.find((tag: Tag) => tag.name.toLowerCase() === tagName)
-
-    if (newTag && !currentBookmark.tags.includes(newTag.id)) {
-      updateBookmark(currentBookmark.id, {
-        tags: [...currentBookmark.tags, newTag.id]
-      }).catch((error) => {
-        setFlash(
-          'Tag created but failed to add to bookmark: ' +
-            ((error as Error).message ?? 'Unknown error')
-        )
-        console.error('Failed to add tag to bookmark:', error)
-      })
-      creatingTagNameRef.current = null
-    }
-  }, [tags, currentBookmark, setFlash, updateBookmark])
-
-  // Toggle tag on/off for the bookmark (add if not selected, remove if selected)
   const handleTagClick = async (tag: Tag) => {
     if (!currentBookmark) return
 
     const isSelected = isTagSelected(tag.id)
     const newTags = isSelected
-      ? currentBookmark.tags.filter((id) => id !== tag.id) // Remove tag
-      : [...currentBookmark.tags, tag.id] // Add tag
+      ? currentBookmark.tags.filter((id) => id !== tag.id)
+      : [...currentBookmark.tags, tag.id]
 
     try {
       await updateBookmark(currentBookmark.id, { tags: newTags })
     } catch (error) {
-      setFlash(
-        'Failed to update bookmark tags: ' +
-          ((error as Error).message ?? 'Unknown error')
-      )
-      console.error('Failed to update bookmark tags:', error)
+      setFlash(`Failed to update tags: ${(error as Error).message}`)
     }
   }
 
-  const handleUpdate = (tag: Tag) => {
-    // TODO: Wire up update action
-    console.log('Update tag:', tag)
-  }
-
   const handleDelete = async (tag: Tag) => {
-    // Get the count from the memoized map (always up-to-date)
-    const bookmarkCount = tagBookmarkCounts.get(tag.id) || 0
+    const count = bookmarks.filter((b: Bookmark) =>
+      b.tags.includes(tag.id)
+    ).length
 
-    // Create confirmation message
     const message =
-      bookmarkCount === 0
-        ? `Are you sure you want to delete the tag "${tag.name}"?`
-        : `Are you sure you want to delete the tag "${tag.name}"? This will remove it from ${bookmarkCount} bookmark${bookmarkCount === 1 ? '' : 's'}.`
+      count === 0
+        ? `Delete tag "${tag.name}"?`
+        : `Delete tag "${tag.name}"? It will be removed from ${count} bookmark${count === 1 ? '' : 's'}.`
 
     if (confirm(message)) {
       try {
         await deleteTag(tag.id)
       } catch (error) {
-        setFlash(
-          'Failed to delete tag: ' +
-            ((error as Error).message ?? 'Unknown error')
-        )
-        console.error('Failed to delete tag:', error)
+        setFlash(`Failed to delete tag: ${(error as Error).message}`)
       }
     }
   }
 
   const handleCreateTag = async () => {
-    const trimmedQuery = searchQuery.trim()
-    if (!trimmedQuery) return
+    const name = searchQuery.trim()
+    if (!name) return
 
-    // Check if tag already exists (case-insensitive)
-    const existingTag = tags.find(
-      (tag: Tag) => tag.name.toLowerCase() === trimmedQuery.toLowerCase()
+    const existing = tags.find(
+      (t: Tag) => t.name.toLowerCase() === name.toLowerCase()
     )
 
-    if (existingTag) {
-      // If tag exists and bookmark is provided, add it to bookmark
-      if (currentBookmark && !isTagSelected(existingTag.id)) {
+    if (existing) {
+      if (currentBookmark && !isTagSelected(existing.id)) {
         try {
           await updateBookmark(currentBookmark.id, {
-            tags: [...currentBookmark.tags, existingTag.id]
+            tags: [...currentBookmark.tags, existing.id]
           })
         } catch (error) {
-          setFlash(
-            'Failed to add tag to bookmark: ' +
-              ((error as Error).message ?? 'Unknown error')
-          )
-          console.error('Failed to add tag to bookmark:', error)
+          setFlash(`Failed to add tag: ${(error as Error).message}`)
         }
       }
+      setSearchQuery('')
       return
     }
 
-    // Create new tag
     try {
-      await createTag({
-        name: trimmedQuery,
-        hidden: false
-      })
-
-      // If bookmark is provided, set ref so useEffect can add it to bookmark
-      if (currentBookmark) {
-        creatingTagNameRef.current = trimmedQuery
+      const newTag = await createTag({ name, hidden: false })
+      if (currentBookmark && newTag) {
+        await updateBookmark(currentBookmark.id, {
+          tags: [...currentBookmark.tags, newTag.id]
+        })
       }
+      setSearchQuery('')
     } catch (error) {
-      creatingTagNameRef.current = null
-      setFlash(
-        'Failed to create tag: ' + ((error as Error).message ?? 'Unknown error')
-      )
-      console.error('Failed to create tag:', error)
+      setFlash(`Failed to create tag: ${(error as Error).message}`)
     }
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      handleCreateTag()
-    }
+  const handleClose = () => {
+    setEditingTag(null)
+    setSearchQuery('')
+    onClose()
   }
 
   return (
     <Dialog
-      title={bookmark ? 'Add Tags to Bookmark' : 'Manage Tags'}
+      title={
+        editingTag
+          ? 'Edit Tag'
+          : bookmark
+            ? 'Add Tags to Bookmark'
+            : 'Manage Tags'
+      }
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       width={420}
       showCloseButton={false}
     >
       <div className={styles.content}>
-        <div className={styles.searchContainer}>
-          <Input
-            type='text'
-            placeholder='Search tags or press Enter to create...'
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={handleKeyDown}
-            size='md'
-          >
-            <Search size={16} />
-          </Input>
-        </div>
-
-        <div className={styles.tagsList}>
-          {filteredTags.length === 0 ? (
-            <div className={styles.emptyState}>
-              <Text size='2' color='light'>
-                {searchQuery.trim()
-                  ? 'No tags found matching your search'
-                  : 'No tags available'}
-              </Text>
+        {editingTag ? (
+          <TagEditForm tag={editingTag} onClose={() => setEditingTag(null)} />
+        ) : (
+          <>
+            <div className={styles.searchContainer}>
+              <Input
+                type='text'
+                placeholder='Search or create tag...'
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleCreateTag()}
+                size='md'
+              >
+                <Search size={16} />
+              </Input>
             </div>
-          ) : (
-            filteredTags.map((tag: Tag) => {
-              const selected = isTagSelected(tag.id)
-              return (
-                <div
-                  key={tag.id}
-                  className={`${styles.tagRow} ${selected ? styles.tagRowSelected : ''} ${currentBookmark ? styles.tagRowClickable : ''}`}
-                  onClick={
-                    currentBookmark ? () => handleTagClick(tag) : undefined
-                  }
-                >
-                  <div className={styles.tagContent}>
-                    <TagItem
-                      tagId={tag.id}
-                      tagName={tag.name}
-                      tags={tags}
-                      size='default'
-                    />
-                    {selected && currentBookmark && (
-                      <span className={styles.selectedIndicator}>✓</span>
-                    )}
-                  </div>
-                  <div
-                    className={styles.tagActions}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <ActionBtn
-                      icon={Edit}
-                      size='sm'
-                      onClick={() => handleUpdate(tag)}
-                      title='Update tag'
-                    />
-                    <ActionBtn
-                      icon={Trash2}
-                      size='sm'
-                      danger
-                      onClick={() => handleDelete(tag)}
-                      title='Delete tag'
-                    />
-                  </div>
+
+            <div className={styles.tagsList}>
+              {filteredTags.length === 0 ? (
+                <div className={styles.emptyState}>
+                  <Text size='2' color='light'>
+                    {searchQuery.trim()
+                      ? 'Press Enter to create tag'
+                      : 'No tags yet'}
+                  </Text>
                 </div>
-              )
-            })
-          )}
-        </div>
+              ) : (
+                filteredTags.map((tag: Tag) => {
+                  const selected = isTagSelected(tag.id)
+                  return (
+                    <div
+                      key={tag.id}
+                      className={`${styles.tagRow} ${selected ? styles.tagRowSelected : ''} ${currentBookmark ? styles.tagRowClickable : ''}`}
+                      onClick={
+                        currentBookmark ? () => handleTagClick(tag) : undefined
+                      }
+                    >
+                      <div className={styles.tagContent}>
+                        <TagItem
+                          tagId={tag.id}
+                          tagName={tag.name}
+                          tags={tags}
+                          size='default'
+                        />
+                      </div>
+                      <div
+                        className={styles.tagActions}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <ActionBtn
+                          icon={Edit}
+                          size='sm'
+                          onClick={() => setEditingTag(tag)}
+                          title='Edit tag'
+                        />
+                        <ActionBtn
+                          icon={Trash2}
+                          size='sm'
+                          danger
+                          onClick={() => handleDelete(tag)}
+                          title='Delete tag'
+                        />
+                      </div>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          </>
+        )}
       </div>
     </Dialog>
   )
