@@ -133,44 +133,20 @@ async function calculateUnlockState(
   // Can unlock with PIN if PIN store exists
   const canUnlockWithPin = !!pinStore
 
+  // Explicit soft lock flag takes precedence
   if (isLocked) {
     return { state: 'locked', canUnlockWithPin }
   }
 
+  // No keystore means locked (need to unlock with password or PIN)
   if (!keystore) {
     return { state: 'locked', canUnlockWithPin }
   }
 
-  const autoLockTimeoutMs = await getAutoLockTimeout(session.userId)
-
-  // If timeout is Infinity (never), stay unlocked
-  if (autoLockTimeoutMs === Infinity) {
-    return { state: 'unlocked', canUnlockWithPin: false }
-  }
-
-  if (!session.createdAt) {
-    return { state: 'locked', canUnlockWithPin }
-  }
-
-  const now = Date.now()
-  const timeSinceCreation = now - session.createdAt
-
-  if (timeSinceCreation > autoLockTimeoutMs) {
-    // If PIN is configured, lock and require PIN (soft lock - keep session)
-    if (pinStore) {
-      await setStorageItem(STORAGE_KEYS.IS_SOFT_LOCKED, true)
-      await Promise.allSettled([
-        clearStorageItem(STORAGE_KEYS.KEYSTORE).catch(() => {}),
-        clearStorageItem(STORAGE_KEYS.MANIFEST).catch(() => {})
-      ])
-      return { state: 'locked', canUnlockWithPin: true }
-    }
-    // If no PIN configured but timeout expired, this shouldn't happen
-    // (timeout should be Infinity), but if it does, keep unlocked
-    // Don't return 'not-authenticated' - user should stay logged in
-    return { state: 'unlocked', canUnlockWithPin: false }
-  }
-
+  // If keystore exists and not explicitly locked, user is unlocked
+  // Auto-lock is handled separately by checkAndApplyAutoLock on popup open
+  // This prevents race conditions where calculateUnlockState would re-lock
+  // during an active unlock operation
   return { state: 'unlocked', canUnlockWithPin: false }
 }
 

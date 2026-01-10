@@ -93,8 +93,14 @@ export default function PinUnlock() {
             {unlockWithPin.isError && (
               <div className={styles.error}>
                 <Text size='2'>
-                  Invalid PIN. {remainingAttempts} attempt
-                  {remainingAttempts !== 1 ? 's' : ''} remaining.
+                  {unlockWithPin.error?.message === 'Invalid PIN' ? (
+                    <>
+                      Invalid PIN. {remainingAttempts} attempt
+                      {remainingAttempts !== 1 ? 's' : ''} remaining.
+                    </>
+                  ) : (
+                    'Unable to unlock. Please try again.'
+                  )}
                 </Text>
               </div>
             )}
