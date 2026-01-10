@@ -181,7 +181,17 @@ export default function Header({
                       (typeof chrome !== 'undefined' && chrome.tabs) ||
                       (typeof browser !== 'undefined' && browser.tabs)
                     if (tabs && typeof tabs.create === 'function') {
-                      tabs.create({ url: appUrl })
+                      // Get current window to open tab in same window (important for incognito)
+                      tabs.query(
+                        { active: true, currentWindow: true },
+                        (currentTabs) => {
+                          const windowId = currentTabs?.[0]?.windowId
+                          tabs.create({
+                            url: appUrl,
+                            ...(windowId ? { windowId } : {})
+                          })
+                        }
+                      )
                     } else {
                       window.open(appUrl, '_blank')
                     }
@@ -280,7 +290,17 @@ export default function Header({
                             (typeof chrome !== 'undefined' && chrome.tabs) ||
                             (typeof browser !== 'undefined' && browser.tabs)
                           if (tabs && typeof tabs.create === 'function') {
-                            tabs.create({ url: optionsUrl })
+                            // Get current window to open tab in same window (important for incognito)
+                            tabs.query(
+                              { active: true, currentWindow: true },
+                              (currentTabs) => {
+                                const windowId = currentTabs?.[0]?.windowId
+                                tabs.create({
+                                  url: optionsUrl,
+                                  ...(windowId ? { windowId } : {})
+                                })
+                              }
+                            )
                           } else {
                             window.open(optionsUrl, '_blank')
                           }

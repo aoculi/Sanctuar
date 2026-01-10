@@ -1,12 +1,4 @@
-import {
-  Bookmark,
-  ChevronDown,
-  FolderOpen,
-  Library,
-  LogOut,
-  Settings,
-  Tags
-} from 'lucide-react'
+import { Bookmark, ChevronDown, Library, LogOut, Settings } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useQueryAuth } from '@/components/hooks/queries/useQueryAuth'
@@ -82,10 +74,17 @@ export default function SmartHeader() {
     }
 
     const pageUrl = runtime.getURL(url as any)
+    // Get current window to open tab in same window (important for incognito)
     if (typeof chrome !== 'undefined' && chrome.tabs?.create) {
-      chrome.tabs.create({ url: pageUrl })
+      chrome.tabs.query({ active: true, currentWindow: true }, (currentTabs) => {
+        const windowId = currentTabs?.[0]?.windowId
+        chrome.tabs.create({ url: pageUrl, ...(windowId ? { windowId } : {}) })
+      })
     } else if (typeof browser !== 'undefined' && browser.tabs?.create) {
-      browser.tabs.create({ url: pageUrl })
+      browser.tabs.query({ active: true, currentWindow: true }, (currentTabs) => {
+        const windowId = currentTabs?.[0]?.windowId
+        browser.tabs.create({ url: pageUrl, ...(windowId ? { windowId } : {}) })
+      })
     } else {
       window.open(pageUrl, '_blank')
     }
@@ -135,22 +134,22 @@ export default function SmartHeader() {
           <Bookmark strokeWidth={1.5} size={18} />
           <span>Bookmarks</span>
         </button>
-        <button
+        {/* <button
           className={styles.menuItem}
           role='menuitem'
           onClick={() => handleMenuItemClick(() => {})}
         >
           <FolderOpen strokeWidth={1.5} size={18} />
           <span>Collections</span>
-        </button>
-        <button
+        </button> */}
+        {/* <button
           className={styles.menuItem}
           role='menuitem'
           onClick={() => handleMenuItemClick(() => {})}
         >
           <Tags strokeWidth={1.5} size={18} />
           <span>Tags</span>
-        </button>
+        </button> */}
         <button
           className={styles.menuItem}
           role='menuitem'
