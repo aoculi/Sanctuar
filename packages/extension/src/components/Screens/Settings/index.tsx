@@ -374,13 +374,22 @@ function SettingsContent() {
           <Tabs.Root value={activeTab} onValueChange={setActiveTab}>
             <Tabs.List>
               <Tabs.Trigger value='api'>API</Tabs.Trigger>
-              <Tabs.Trigger value='security' disabled={!isAuthenticated}>
+              <Tabs.Trigger
+                value='security'
+                disabled={!isAuthenticated || isLocked}
+              >
                 Security
               </Tabs.Trigger>
-              <Tabs.Trigger value='import' disabled={!isAuthenticated}>
+              <Tabs.Trigger
+                value='import'
+                disabled={!isAuthenticated || isLocked}
+              >
                 Import
               </Tabs.Trigger>
-              <Tabs.Trigger value='export' disabled={!isAuthenticated}>
+              <Tabs.Trigger
+                value='export'
+                disabled={!isAuthenticated || isLocked}
+              >
                 Export
               </Tabs.Trigger>
             </Tabs.List>
