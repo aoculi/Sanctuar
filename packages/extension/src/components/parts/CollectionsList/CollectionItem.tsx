@@ -1,4 +1,4 @@
-import { Folder, GripVertical, X } from 'lucide-react'
+import { ExternalLink, Folder, GripVertical, X } from 'lucide-react'
 import { useState } from 'react'
 
 import { getIconByName } from '@/components/ui/IconPicker'
@@ -131,6 +131,30 @@ export default function CollectionItem({
     }
   }
 
+  const handleOpenAllBookmarks = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    // Get current window to open tabs in same window (important for incognito)
+    if (typeof chrome !== 'undefined' && chrome.tabs?.create) {
+      chrome.tabs.query({ active: true, currentWindow: true }, (currentTabs) => {
+        const windowId = currentTabs?.[0]?.windowId
+        bookmarks.forEach((bookmark) => {
+          chrome.tabs.create({ url: bookmark.url, ...(windowId ? { windowId } : {}) })
+        })
+      })
+    } else if (typeof browser !== 'undefined' && browser.tabs?.create) {
+      browser.tabs.query({ active: true, currentWindow: true }, (currentTabs) => {
+        const windowId = currentTabs?.[0]?.windowId
+        bookmarks.forEach((bookmark) => {
+          browser.tabs.create({ url: bookmark.url, ...(windowId ? { windowId } : {}) })
+        })
+      })
+    } else {
+      bookmarks.forEach((bookmark) => {
+        window.open(bookmark.url, '_blank')
+      })
+    }
+  }
+
   return (
     <div
       ref={containerRef}
@@ -195,17 +219,27 @@ export default function CollectionItem({
                 />
               </div>
             ) : (
-              <span
-                className={styles.collectionName}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onStartEdit(collection.id, collection.name)
-                }}
-              >
-                <Text as='span' size='2' weight='medium'>
-                  {collection.name}
-                </Text>
-              </span>
+              <div className={styles.labelContent}>
+                <span
+                  className={styles.collectionName}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onStartEdit(collection.id, collection.name)
+                  }}
+                >
+                  <Text as='span' size='2' weight='medium'>
+                    {collection.name}
+                  </Text>
+                </span>
+                {bookmarks.length > 0 && (
+                  <ActionBtn
+                    icon={ExternalLink}
+                    size='sm'
+                    onClick={handleOpenAllBookmarks}
+                    title='Open all bookmarks in new tabs'
+                  />
+                )}
+              </div>
             )
           }
           count={bookmarks.length}
