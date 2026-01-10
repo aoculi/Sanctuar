@@ -117,12 +117,32 @@ function SettingsContent() {
         const apiUrl = await getApiUrl()
 
         if (isAuthenticated) {
+          // Check if PIN_STORE actually exists - this is the source of truth
+          const pinStore = await getStorageItem<PinStoreData>(
+            STORAGE_KEYS.PIN_STORE
+          )
+          const hasPinStore = !!pinStore
+
+          // If settings say useCodePin but PIN_STORE doesn't exist, sync them
+          // This prevents the checkbox from being checked when there's no actual PIN
+          const actualUseCodePin = settings.useCodePin && hasPinStore
+
+          // If settings are out of sync, update them
+          if (settings.useCodePin && !hasPinStore) {
+            await updateSettings({
+              ...settings,
+              useCodePin: false,
+              autoLockTimeout: 'never'
+            })
+          }
+
           // Load user-specific settings when authenticated
           const loadedFields: SettingsFields = {
             apiUrl: apiUrl,
-            autoLockTimeout:
-              (settings.autoLockTimeout as AutoLockTimeout) || '20min',
-            useCodePin: settings.useCodePin || false
+            autoLockTimeout: actualUseCodePin
+              ? ((settings.autoLockTimeout as AutoLockTimeout) || '20min')
+              : 'never',
+            useCodePin: actualUseCodePin
           }
           setFields(loadedFields)
           setOriginalFields(loadedFields)
