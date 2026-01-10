@@ -29,7 +29,7 @@ interface CollectionItemProps {
   onTogglePin: (bookmark: Bookmark) => void
   onDelete: (id: string) => void
   onEdit?: (bookmark: Bookmark) => void
-  onAddTags?: () => void
+  onAddTags?: (bookmark: Bookmark) => void
   onIconChange?: (id: string, icon: string | undefined) => void
   containerRef: (el: HTMLDivElement | null) => void
   inputRef: (el: HTMLInputElement | null) => void
@@ -102,7 +102,8 @@ export default function CollectionItem({
   }
 
   // Only show drop zone class if it's a valid drop target
-  const showDropZone = dropZone && (dropType === 'collection' || dropZone === 'center')
+  const showDropZone =
+    dropZone && (dropType === 'collection' || dropZone === 'center')
   const zoneClass = showDropZone
     ? styles[`drop${dropZone.charAt(0).toUpperCase() + dropZone.slice(1)}`]
     : ''
@@ -150,7 +151,8 @@ export default function CollectionItem({
         e.preventDefault()
         const dragType = getDragType(e)
         const zone = getZone(e, dragType)
-        const bookmarkId = e.dataTransfer.getData(BOOKMARK_DRAG_TYPE) || undefined
+        const bookmarkId =
+          e.dataTransfer.getData(BOOKMARK_DRAG_TYPE) || undefined
         onDrop?.(zone, dragType, bookmarkId)
       }}
       onDragEnd={onDragEnd}
@@ -162,74 +164,74 @@ export default function CollectionItem({
       )}
       <div className={styles.collapsibleWrapper}>
         <Collapsible
-        key={collection.id}
-        icon={Icon}
-        onIconClick={onIconChange ? handleIconClick : undefined}
-        label={
-          isEditing ? (
-            <div className={styles.labelContent}>
-              <div
-                className={styles.inputWrapper}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <input
-                  ref={inputRef}
-                  type='text'
-                  className={styles.input}
-                  value={editingName}
-                  onChange={(e) => onNameChange(e.target.value)}
-                  onKeyDown={handleKeyDown}
+          key={collection.id}
+          icon={Icon}
+          onIconClick={onIconChange ? handleIconClick : undefined}
+          label={
+            isEditing ? (
+              <div className={styles.labelContent}>
+                <div
+                  className={styles.inputWrapper}
                   onClick={(e) => e.stopPropagation()}
-                  placeholder='Collection name'
+                >
+                  <input
+                    ref={inputRef}
+                    type='text'
+                    className={styles.input}
+                    value={editingName}
+                    onChange={(e) => onNameChange(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    onClick={(e) => e.stopPropagation()}
+                    placeholder='Collection name'
+                  />
+                </div>
+                <ActionBtn
+                  icon={X}
+                  size='sm'
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onCancel()
+                  }}
                 />
               </div>
-              <ActionBtn
-                icon={X}
-                size='sm'
+            ) : (
+              <span
+                className={styles.collectionName}
                 onClick={(e) => {
                   e.stopPropagation()
-                  onCancel()
+                  onStartEdit(collection.id, collection.name)
                 }}
-              />
+              >
+                <Text as='span' size='2' weight='medium'>
+                  {collection.name}
+                </Text>
+              </span>
+            )
+          }
+          count={bookmarks.length}
+          depth={depth}
+          defaultOpen={false}
+          editable={isEditing}
+        >
+          {bookmarks.length > 0 && (
+            <div className={styles.bookmarksList}>
+              {bookmarks.map((bookmark: Bookmark) => (
+                <BookmarkRow
+                  key={bookmark.id}
+                  bookmark={bookmark}
+                  tags={tags}
+                  onTogglePin={() => onTogglePin(bookmark)}
+                  onEdit={onEdit ? () => onEdit(bookmark) : undefined}
+                  onDelete={() => onDelete(bookmark.id)}
+                  onAddTags={onAddTags ? () => onAddTags(bookmark) : undefined}
+                  draggable
+                  isDragging={draggedBookmarkId === bookmark.id}
+                  onDragStart={() => onBookmarkDragStart?.(bookmark.id)}
+                  onDragEnd={onBookmarkDragEnd}
+                />
+              ))}
             </div>
-          ) : (
-            <span
-              className={styles.collectionName}
-              onClick={(e) => {
-                e.stopPropagation()
-                onStartEdit(collection.id, collection.name)
-              }}
-            >
-              <Text as='span' size='2' weight='medium'>
-                {collection.name}
-              </Text>
-            </span>
-          )
-        }
-        count={bookmarks.length}
-        depth={depth}
-        defaultOpen={false}
-        editable={isEditing}
-      >
-        {bookmarks.length > 0 && (
-          <div className={styles.bookmarksList}>
-            {bookmarks.map((bookmark: Bookmark) => (
-              <BookmarkRow
-                key={bookmark.id}
-                bookmark={bookmark}
-                tags={tags}
-                onTogglePin={() => onTogglePin(bookmark)}
-                onEdit={onEdit ? () => onEdit(bookmark) : undefined}
-                onDelete={() => onDelete(bookmark.id)}
-                onAddTags={onAddTags}
-                draggable
-                isDragging={draggedBookmarkId === bookmark.id}
-                onDragStart={() => onBookmarkDragStart?.(bookmark.id)}
-                onDragEnd={onBookmarkDragEnd}
-              />
-            ))}
-          </div>
-        )}
+          )}
         </Collapsible>
       </div>
       {onIconChange && (

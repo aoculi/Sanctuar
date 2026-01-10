@@ -37,6 +37,7 @@ function AppContent() {
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null)
   const [showTagManageModal, setShowTagManageModal] = useState(false)
+  const [bookmarkForTags, setBookmarkForTags] = useState<Bookmark | null>(null)
 
   if (isLoading || unlockLoading) {
     return (
@@ -77,14 +78,20 @@ function AppContent() {
             searchQuery={searchQuery}
             selectedTags={selectedTags}
             onEdit={setEditingBookmark}
-            onAddTags={() => setShowTagManageModal(true)}
+            onAddTags={(bookmark) => {
+              setBookmarkForTags(bookmark)
+              setShowTagManageModal(true)
+            }}
           />
           <CreateCollection />
           <CollectionsList
             searchQuery={searchQuery}
             selectedTags={selectedTags}
             onEdit={setEditingBookmark}
-            onAddTags={() => setShowTagManageModal(true)}
+            onAddTags={(bookmark) => {
+              setBookmarkForTags(bookmark)
+              setShowTagManageModal(true)
+            }}
           />
         </div>
       </div>
@@ -94,7 +101,11 @@ function AppContent() {
       />
       <TagManageModal
         open={showTagManageModal}
-        onClose={() => setShowTagManageModal(false)}
+        onClose={() => {
+          setShowTagManageModal(false)
+          setBookmarkForTags(null)
+        }}
+        bookmark={bookmarkForTags}
       />
     </div>
   )

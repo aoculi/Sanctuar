@@ -10,6 +10,13 @@
   flex-shrink: 0;
 }
 
+.bookmarkInfo {
+  padding: 8px 12px;
+  background-color: var(--background-2);
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
 .tagsList {
   display: flex;
   flex-direction: column;
@@ -19,6 +26,9 @@
   overflow-x: hidden;
   flex: 1;
   min-height: 0;
+  background-color: var(--background-3);
+  padding: 8px 12px;
+  border: 1px solid var(--border);
 }
 
 .tagRow {
@@ -26,20 +36,40 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 8px 12px;
-  background-color: var(--background-4);
-  border: 1px solid var(--border);
-  border-radius: var(--border-radius);
   transition: background-color 0.15s ease;
+  padding: 4px 8px;
+  border-radius: 4px;
 }
 
 .tagRow:hover {
   background-color: var(--background-2);
 }
 
+.tagRowClickable {
+  cursor: pointer;
+}
+
+.tagRowClickable:hover {
+  background-color: var(--background-2);
+}
+
+.tagRowSelected {
+  background-color: var(--background-2);
+  border: 1px solid var(--primary);
+}
+
 .tagContent {
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.selectedIndicator {
+  color: var(--primary);
+  font-weight: 600;
+  font-size: 14px;
 }
 
 .tagActions {

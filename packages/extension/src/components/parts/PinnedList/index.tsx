@@ -16,7 +16,7 @@ interface PinnedListProps {
   searchQuery: string
   selectedTags: string[]
   onEdit?: (bookmark: Bookmark) => void
-  onAddTags?: () => void
+  onAddTags?: (bookmark: Bookmark) => void
 }
 
 export default function PinnedList({
@@ -93,7 +93,7 @@ export default function PinnedList({
               onTogglePin={() => handleTogglePin(bookmark)}
               onEdit={onEdit ? () => onEdit(bookmark) : undefined}
               onDelete={() => handleDelete(bookmark.id)}
-              onAddTags={onAddTags}
+              onAddTags={onAddTags ? () => onAddTags(bookmark) : undefined}
             />
           ))}
         </div>

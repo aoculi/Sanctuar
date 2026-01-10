@@ -15,7 +15,7 @@ import type { Bookmark } from '@/lib/types'
 
 import BookmarkRow from '@/components/parts/BookmarkRow'
 import Collapsible from '@/components/ui/Collapsible'
-import CollectionItem, { type DropZone, type DragType } from './CollectionItem'
+import CollectionItem, { type DragType, type DropZone } from './CollectionItem'
 
 import styles from './styles.module.css'
 
@@ -23,7 +23,7 @@ interface CollectionsListProps {
   searchQuery: string
   selectedTags: string[]
   onEdit?: (bookmark: Bookmark) => void
-  onAddTags?: () => void
+  onAddTags?: (bookmark: Bookmark) => void
 }
 
 export default function CollectionsList({
@@ -46,7 +46,9 @@ export default function CollectionsList({
   const editingNameRef = useRef(editingName)
 
   // Drag and drop state for collections
-  const [draggedCollectionId, setDraggedCollectionId] = useState<string | null>(null)
+  const [draggedCollectionId, setDraggedCollectionId] = useState<string | null>(
+    null
+  )
   const [dragOver, setDragOver] = useState<{
     id: string
     zone: DropZone
@@ -54,7 +56,9 @@ export default function CollectionsList({
   } | null>(null)
 
   // Drag state for bookmarks
-  const [draggedBookmarkId, setDraggedBookmarkId] = useState<string | null>(null)
+  const [draggedBookmarkId, setDraggedBookmarkId] = useState<string | null>(
+    null
+  )
 
   useEffect(() => {
     editingNameRef.current = editingName
@@ -204,7 +208,10 @@ export default function CollectionsList({
     }
   }
 
-  const handleBookmarkDrop = async (bookmarkId: string, collectionId: string) => {
+  const handleBookmarkDrop = async (
+    bookmarkId: string,
+    collectionId: string
+  ) => {
     try {
       await updateBookmark(bookmarkId, { collectionId })
       clearDragState()
@@ -329,7 +336,7 @@ export default function CollectionsList({
                 onTogglePin={() => handleTogglePin(bookmark)}
                 onEdit={onEdit ? () => onEdit(bookmark) : undefined}
                 onDelete={() => handleDelete(bookmark.id)}
-                onAddTags={onAddTags}
+                onAddTags={onAddTags ? () => onAddTags(bookmark) : undefined}
                 draggable
                 isDragging={draggedBookmarkId === bookmark.id}
                 onDragStart={() => setDraggedBookmarkId(bookmark.id)}
