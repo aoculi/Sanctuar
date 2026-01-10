@@ -173,17 +173,6 @@ export function getDescendantCollectionIds(
 }
 
 /**
- * Convenience function to get all descendant IDs from a collections array
- */
-export function getAllDescendantIds(
-  collectionId: string,
-  collections: Collection[]
-): Set<string> {
-  const { childrenMap } = buildHierarchy(collections)
-  return getDescendantCollectionIds(collectionId, childrenMap)
-}
-
-/**
  * Build a map of bookmarks grouped by collection ID
  */
 function buildBookmarksByCollectionMap(

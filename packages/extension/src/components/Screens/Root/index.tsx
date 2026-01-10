@@ -12,8 +12,6 @@ import { UnlockStateProvider } from '@/components/hooks/providers/useUnlockState
 import { useRouteGuard } from '@/components/hooks/useRouteGuard'
 
 import Bookmark from '@/components/Screens/Bookmark'
-import Collection from '@/components/Screens/Collection'
-import Collections from '@/components/Screens/Collections'
 import Login from '@/components/Screens/Login'
 import PinUnlock from '@/components/Screens/PinUnlock'
 import Register from '@/components/Screens/Register'
@@ -44,10 +42,6 @@ function RootContent() {
         return <Tag />
       case '/tags':
         return <Tags />
-      case '/collection':
-        return <Collection />
-      case '/collections':
-        return <Collections />
       default:
         return <Bookmark />
     }
