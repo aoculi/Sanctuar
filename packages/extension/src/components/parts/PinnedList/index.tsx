@@ -26,7 +26,7 @@ export default function PinnedList({
   onAddTags
 }: PinnedListProps) {
   const { bookmarks, updateBookmark, deleteBookmark } = useBookmarks()
-  const { tags } = useTags()
+  const { tags, showHiddenTags } = useTags()
   const { setFlash } = useNavigation()
 
   const pinnedBookmarks = useMemo(() => {
@@ -35,6 +35,14 @@ export default function PinnedList({
 
     // Apply search filter
     let filtered = filterBookmarks(pinned, tags, searchQuery)
+
+    // Filter out bookmarks with hidden tags when showHiddenTags is false
+    if (!showHiddenTags) {
+      const hiddenTagIds = new Set(tags.filter((t) => t.hidden).map((t) => t.id))
+      filtered = filtered.filter(
+        (bookmark) => !bookmark.tags.some((tagId) => hiddenTagIds.has(tagId))
+      )
+    }
 
     // Apply tag filter
     if (selectedTags.length > 0) {
@@ -50,7 +58,7 @@ export default function PinnedList({
     return filtered.sort(
       (a: Bookmark, b: Bookmark) => b.updated_at - a.updated_at
     )
-  }, [bookmarks, tags, searchQuery, selectedTags])
+  }, [bookmarks, tags, searchQuery, selectedTags, showHiddenTags])
 
   const handleTogglePin = async (bookmark: Bookmark) => {
     try {

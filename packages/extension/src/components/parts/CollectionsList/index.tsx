@@ -34,7 +34,7 @@ export default function CollectionsList({
 }: CollectionsListProps) {
   const { bookmarks, updateBookmark, deleteBookmark } = useBookmarks()
   const { collections, updateCollection, reorderCollections } = useCollections()
-  const { tags } = useTags()
+  const { tags, showHiddenTags } = useTags()
   const { setFlash } = useNavigation()
 
   const [editingCollectionId, setEditingCollectionId] = useState<string | null>(
@@ -72,6 +72,14 @@ export default function CollectionsList({
     // Apply search filter
     let filtered = filterBookmarks(nonPinned, tags, searchQuery)
 
+    // Filter out bookmarks with hidden tags when showHiddenTags is false
+    if (!showHiddenTags) {
+      const hiddenTagIds = new Set(tags.filter((t) => t.hidden).map((t) => t.id))
+      filtered = filtered.filter(
+        (bookmark) => !bookmark.tags.some((tagId) => hiddenTagIds.has(tagId))
+      )
+    }
+
     // Apply tag filter
     if (selectedTags.length > 0) {
       if (selectedTags.includes('unsorted')) {
@@ -84,7 +92,7 @@ export default function CollectionsList({
     }
 
     return filtered
-  }, [bookmarks, tags, searchQuery, selectedTags])
+  }, [bookmarks, tags, searchQuery, selectedTags, showHiddenTags])
 
   // Check if filtering is active
   const isFiltering = searchQuery.length > 0 || selectedTags.length > 0
