@@ -2,6 +2,7 @@ import { Bookmark, ChevronDown, Library, LogOut, Settings } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useQueryAuth } from '@/components/hooks/queries/useQueryAuth'
+import { openExtensionPage } from '@/lib/tabs'
 
 import Text from '@/components/ui/Text'
 
@@ -58,38 +59,6 @@ export default function SmartHeader() {
     action()
   }
 
-  const openPage = (page: 'settings' | 'bookmarks') => {
-    let url: string = '/settings.html'
-    if (page === 'bookmarks') {
-      url = '/app.html'
-    }
-
-    const runtime =
-      (typeof chrome !== 'undefined' && chrome.runtime) ||
-      (typeof browser !== 'undefined' && browser.runtime)
-
-    if (!runtime) {
-      console.error('Browser runtime not available')
-      return
-    }
-
-    const pageUrl = runtime.getURL(url as any)
-    // Get current window to open tab in same window (important for incognito)
-    if (typeof chrome !== 'undefined' && chrome.tabs?.create) {
-      chrome.tabs.query({ active: true, currentWindow: true }, (currentTabs) => {
-        const windowId = currentTabs?.[0]?.windowId
-        chrome.tabs.create({ url: pageUrl, ...(windowId ? { windowId } : {}) })
-      })
-    } else if (typeof browser !== 'undefined' && browser.tabs?.create) {
-      browser.tabs.query({ active: true, currentWindow: true }, (currentTabs) => {
-        const windowId = currentTabs?.[0]?.windowId
-        browser.tabs.create({ url: pageUrl, ...(windowId ? { windowId } : {}) })
-      })
-    } else {
-      window.open(pageUrl, '_blank')
-    }
-  }
-
   return (
     <div className={styles.component}>
       <button
@@ -129,31 +98,15 @@ export default function SmartHeader() {
         <button
           className={styles.menuItem}
           role='menuitem'
-          onClick={() => handleMenuItemClick(() => openPage('bookmarks'))}
+          onClick={() => handleMenuItemClick(() => openExtensionPage('app'))}
         >
           <Bookmark strokeWidth={1.5} size={18} />
           <span>Bookmarks</span>
         </button>
-        {/* <button
-          className={styles.menuItem}
-          role='menuitem'
-          onClick={() => handleMenuItemClick(() => {})}
-        >
-          <FolderOpen strokeWidth={1.5} size={18} />
-          <span>Collections</span>
-        </button> */}
-        {/* <button
-          className={styles.menuItem}
-          role='menuitem'
-          onClick={() => handleMenuItemClick(() => {})}
-        >
-          <Tags strokeWidth={1.5} size={18} />
-          <span>Tags</span>
-        </button> */}
         <button
           className={styles.menuItem}
           role='menuitem'
-          onClick={() => handleMenuItemClick(() => openPage('settings'))}
+          onClick={() => handleMenuItemClick(() => openExtensionPage('settings'))}
         >
           <Settings strokeWidth={1.5} size={18} />
           <span>Settings</span>

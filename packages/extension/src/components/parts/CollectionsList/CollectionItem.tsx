@@ -2,6 +2,7 @@ import { ExternalLink, Folder, GripVertical, X } from 'lucide-react'
 import { useState } from 'react'
 
 import { getIconByName } from '@/components/ui/IconPicker'
+import { openUrlsInTabs } from '@/lib/tabs'
 import type { Bookmark, Collection } from '@/lib/types'
 
 import BookmarkRow, { BOOKMARK_DRAG_TYPE } from '@/components/parts/BookmarkRow'
@@ -133,26 +134,7 @@ export default function CollectionItem({
 
   const handleOpenAllBookmarks = (e: React.MouseEvent) => {
     e.stopPropagation()
-    // Get current window to open tabs in same window (important for incognito)
-    if (typeof chrome !== 'undefined' && chrome.tabs?.create) {
-      chrome.tabs.query({ active: true, currentWindow: true }, (currentTabs) => {
-        const windowId = currentTabs?.[0]?.windowId
-        bookmarks.forEach((bookmark) => {
-          chrome.tabs.create({ url: bookmark.url, ...(windowId ? { windowId } : {}) })
-        })
-      })
-    } else if (typeof browser !== 'undefined' && browser.tabs?.create) {
-      browser.tabs.query({ active: true, currentWindow: true }, (currentTabs) => {
-        const windowId = currentTabs?.[0]?.windowId
-        bookmarks.forEach((bookmark) => {
-          browser.tabs.create({ url: bookmark.url, ...(windowId ? { windowId } : {}) })
-        })
-      })
-    } else {
-      bookmarks.forEach((bookmark) => {
-        window.open(bookmark.url, '_blank')
-      })
-    }
+    openUrlsInTabs(bookmarks.map((bookmark) => bookmark.url))
   }
 
   return (
