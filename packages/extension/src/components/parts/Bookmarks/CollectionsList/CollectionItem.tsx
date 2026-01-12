@@ -36,7 +36,6 @@ interface CollectionItemProps {
   onIconChange?: (id: string, icon: string | undefined) => void
   containerRef: (el: HTMLDivElement | null) => void
   inputRef: (el: HTMLInputElement | null) => void
-  // Drag and drop props for collections
   draggable?: boolean
   isDragging?: boolean
   dropZone?: DropZone | null
@@ -46,10 +45,11 @@ interface CollectionItemProps {
   onDragLeave?: () => void
   onDrop?: (zone: DropZone, type: DragType, bookmarkId?: string) => void
   onDragEnd?: () => void
-  // Bookmark drag state
   draggedBookmarkId?: string | null
   onBookmarkDragStart?: (bookmarkId: string) => void
   onBookmarkDragEnd?: () => void
+  selectedIds?: Set<string>
+  onToggleSelect?: (id: string) => void
 }
 
 export default function CollectionItem({
@@ -81,7 +81,9 @@ export default function CollectionItem({
   onDragEnd,
   draggedBookmarkId,
   onBookmarkDragStart,
-  onBookmarkDragEnd
+  onBookmarkDragEnd,
+  selectedIds = new Set(),
+  onToggleSelect
 }: CollectionItemProps) {
   const [isIconModalOpen, setIsIconModalOpen] = useState(false)
   const Icon = collection.icon ? getIconByName(collection.icon) : Folder
@@ -246,6 +248,12 @@ export default function CollectionItem({
                   isDragging={draggedBookmarkId === bookmark.id}
                   onDragStart={() => onBookmarkDragStart?.(bookmark.id)}
                   onDragEnd={onBookmarkDragEnd}
+                  selected={selectedIds.has(bookmark.id)}
+                  onToggleSelect={
+                    onToggleSelect
+                      ? () => onToggleSelect(bookmark.id)
+                      : undefined
+                  }
                 />
               ))}
             </div>

@@ -17,13 +17,17 @@ interface PinnedListProps {
   selectedTags: string[]
   onEdit?: (bookmark: Bookmark) => void
   onAddTags?: (bookmark: Bookmark) => void
+  selectedIds?: Set<string>
+  onToggleSelect?: (id: string) => void
 }
 
 export default function PinnedList({
   searchQuery,
   selectedTags,
   onEdit,
-  onAddTags
+  onAddTags,
+  selectedIds = new Set(),
+  onToggleSelect
 }: PinnedListProps) {
   const { bookmarks, updateBookmark, deleteBookmark } = useBookmarks()
   const { tags, showHiddenTags } = useTags()
@@ -104,6 +108,10 @@ export default function PinnedList({
               onEdit={onEdit ? () => onEdit(bookmark) : undefined}
               onDelete={() => handleDelete(bookmark.id)}
               onAddTags={onAddTags ? () => onAddTags(bookmark) : undefined}
+              selected={selectedIds.has(bookmark.id)}
+              onToggleSelect={
+                onToggleSelect ? () => onToggleSelect(bookmark.id) : undefined
+              }
             />
           ))}
         </div>

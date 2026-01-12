@@ -4,8 +4,22 @@
   transition: opacity 0.15s ease;
 }
 
+.wrapper.selected {
+  background-color: rgba(59, 130, 246, 0.08);
+}
+
 .wrapper.dragging {
   opacity: 0.5;
+}
+
+.leftSection {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.checkboxWrapper {
+  padding: 0 8px;
 }
 
 .dragHandle {
@@ -17,7 +31,6 @@
   cursor: grab;
   opacity: 0.4;
   transition: opacity 0.15s ease;
-  flex-shrink: 0;
 }
 
 .dragHandle:hover {

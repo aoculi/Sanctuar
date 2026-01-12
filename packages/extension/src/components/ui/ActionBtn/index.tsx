@@ -11,6 +11,7 @@ interface ActionBtnProps extends Omit<
   label?: string
   active?: boolean
   danger?: boolean
+  variant?: 'default' | 'bordered'
   size?: 'sm' | 'md' | 'lg'
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void
 }
@@ -20,6 +21,7 @@ export default function ActionBtn({
   label,
   active = false,
   danger = false,
+  variant = 'default',
   size = 'md',
   onClick,
   className,
@@ -43,6 +45,7 @@ export default function ActionBtn({
     !label && styles.actionIcon,
     active && styles.actionActive,
     danger && styles.actionDanger,
+    variant === 'bordered' && styles.actionBordered,
     className
   ]
     .filter(Boolean)

@@ -7,10 +7,10 @@ import { getHostname } from '@/lib/utils'
 
 import TagItem from '@/components/parts/Tags/TagItem'
 import ActionBtn from '@/components/ui/ActionBtn'
+import { Checkbox } from '@/components/ui/Checkbox'
 
 import styles from './styles.module.css'
 
-// Data transfer type for bookmark drags
 export const BOOKMARK_DRAG_TYPE = 'application/x-lockmark-bookmark'
 
 interface BookmarkRowProps {
@@ -24,6 +24,8 @@ interface BookmarkRowProps {
   isDragging?: boolean
   onDragStart?: () => void
   onDragEnd?: () => void
+  selected?: boolean
+  onToggleSelect?: () => void
 }
 
 export default function BookmarkRow({
@@ -36,7 +38,9 @@ export default function BookmarkRow({
   draggable = false,
   isDragging = false,
   onDragStart,
-  onDragEnd
+  onDragEnd,
+  selected = false,
+  onToggleSelect
 }: BookmarkRowProps) {
   const tagMap = useMemo(() => createTagMap(tags), [tags])
   const hostname = getHostname(bookmark.url)
@@ -48,7 +52,7 @@ export default function BookmarkRow({
         const tagName = getTagNameFromMap(tagId, tagMap)
         return { id: tagId, name: tagName }
       })
-      .slice(0, 3) // Limit displayed tags
+      .slice(0, 3)
   }, [bookmark.tags, tagMap])
 
   const remainingTags = bookmark.tags.length - 3
@@ -61,16 +65,22 @@ export default function BookmarkRow({
 
   return (
     <div
-      className={`${styles.wrapper} ${isDragging ? styles.dragging : ''}`}
+      className={`${styles.wrapper} ${isDragging ? styles.dragging : ''} ${selected ? styles.selected : ''}`}
       draggable={draggable}
       onDragStart={handleDragStart}
       onDragEnd={onDragEnd}
     >
-      {draggable && (
-        <div className={styles.dragHandle}>
-          <GripVertical size={14} />
+      <div className={styles.leftSection}>
+        <div className={styles.checkboxWrapper}>
+          <Checkbox checked={selected} onChange={onToggleSelect} />
         </div>
-      )}
+        {draggable && (
+          <div className={styles.dragHandle}>
+            <GripVertical size={14} />
+          </div>
+        )}
+      </div>
+
       <a
         href={bookmark.url}
         target='_blank'

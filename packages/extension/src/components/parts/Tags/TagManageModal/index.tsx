@@ -19,25 +19,35 @@ interface TagManageModalProps {
   open: boolean
   onClose: () => void
   bookmark?: Bookmark | null
+  bookmarkIds?: string[]
 }
 
 export default function TagManageModal({
   open,
   onClose,
-  bookmark
+  bookmark,
+  bookmarkIds
 }: TagManageModalProps) {
   const { tags, showHiddenTags, createTag, deleteTag, togglePinTag } = useTags()
-  const { updateBookmark, bookmarks } = useBookmarks()
+  const { updateBookmark, updateBookmarks, bookmarks } = useBookmarks()
   const { setFlash } = useNavigation()
 
   const [searchQuery, setSearchQuery] = useState('')
   const [editingTag, setEditingTag] = useState<Tag | null>(null)
 
-  // Get latest bookmark data
+  const isBulkMode = bookmarkIds && bookmarkIds.length > 0
+
+  // Get latest bookmark data for single bookmark mode
   const currentBookmark = useMemo(() => {
     if (!bookmark) return null
     return bookmarks.find((b: Bookmark) => b.id === bookmark.id) || bookmark
   }, [bookmark, bookmarks])
+
+  // Get all bookmarks for bulk mode
+  const bulkBookmarks = useMemo(() => {
+    if (!isBulkMode) return []
+    return bookmarks.filter((b: Bookmark) => bookmarkIds.includes(b.id))
+  }, [isBulkMode, bookmarkIds, bookmarks])
 
   // Filter tags by search and visibility
   const filteredTags = useMemo(() => {
@@ -54,10 +64,29 @@ export default function TagManageModal({
   }, [tags, searchQuery, showHiddenTags])
 
   const isTagSelected = (tagId: string): boolean => {
+    if (isBulkMode) {
+      // In bulk mode, tag is selected if ALL bookmarks have it
+      return bulkBookmarks.length > 0 && bulkBookmarks.every((b: Bookmark) => b.tags.includes(tagId))
+    }
     return currentBookmark?.tags.includes(tagId) ?? false
   }
 
   const handleTagClick = async (tag: Tag) => {
+    if (isBulkMode) {
+      const isSelected = isTagSelected(tag.id)
+      try {
+        for (const b of bulkBookmarks) {
+          const newTags = isSelected
+            ? b.tags.filter((id: string) => id !== tag.id)
+            : [...b.tags, tag.id]
+          await updateBookmark(b.id, { tags: newTags })
+        }
+      } catch (error) {
+        setFlash(`Failed to update tags: ${(error as Error).message}`)
+      }
+      return
+    }
+
     if (!currentBookmark) return
 
     const isSelected = isTagSelected(tag.id)
@@ -108,7 +137,17 @@ export default function TagManageModal({
     )
 
     if (existing) {
-      if (currentBookmark && !isTagSelected(existing.id)) {
+      if (isBulkMode && bulkBookmarks.length > 0) {
+        try {
+          for (const b of bulkBookmarks) {
+            if (!b.tags.includes(existing.id)) {
+              await updateBookmark(b.id, { tags: [...b.tags, existing.id] })
+            }
+          }
+        } catch (error) {
+          setFlash(`Failed to add tag: ${(error as Error).message}`)
+        }
+      } else if (currentBookmark && !isTagSelected(existing.id)) {
         try {
           await updateBookmark(currentBookmark.id, {
             tags: [...currentBookmark.tags, existing.id]
@@ -123,7 +162,11 @@ export default function TagManageModal({
 
     try {
       const newTag = await createTag({ name, hidden: false })
-      if (currentBookmark && newTag) {
+      if (isBulkMode && newTag) {
+        for (const b of bulkBookmarks) {
+          await updateBookmark(b.id, { tags: [...b.tags, newTag.id] })
+        }
+      } else if (currentBookmark && newTag) {
         await updateBookmark(currentBookmark.id, {
           tags: [...currentBookmark.tags, newTag.id]
         })
@@ -145,9 +188,11 @@ export default function TagManageModal({
       title={
         editingTag
           ? 'Edit Tag'
-          : bookmark
-            ? 'Add Tags to Bookmark'
-            : 'Manage Tags'
+          : isBulkMode
+            ? `Add Tags to ${bookmarkIds.length} Bookmarks`
+            : bookmark
+              ? 'Add Tags to Bookmark'
+              : 'Manage Tags'
       }
       open={open}
       onClose={handleClose}
@@ -187,9 +232,9 @@ export default function TagManageModal({
                   return (
                     <div
                       key={tag.id}
-                      className={`${styles.tagRow} ${selected ? styles.tagRowSelected : ''} ${currentBookmark ? styles.tagRowClickable : ''}`}
+                      className={`${styles.tagRow} ${selected ? styles.tagRowSelected : ''} ${isBulkMode || currentBookmark ? styles.tagRowClickable : ''}`}
                       onClick={
-                        currentBookmark ? () => handleTagClick(tag) : undefined
+                        isBulkMode || currentBookmark ? () => handleTagClick(tag) : undefined
                       }
                     >
                       <div className={styles.tagContent}>

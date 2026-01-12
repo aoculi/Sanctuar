@@ -150,6 +150,38 @@ export function useBookmarks() {
     [manifest, save]
   )
 
+  const deleteBookmarks = useCallback(
+    async (ids: string[]) => {
+      if (!manifest) return
+
+      const idSet = new Set(ids)
+      await save({
+        ...manifest,
+        items: (manifest.items || []).filter((item: Bookmark) => !idSet.has(item.id))
+      })
+    },
+    [manifest, save]
+  )
+
+  const updateBookmarks = useCallback(
+    async (
+      ids: string[],
+      updates: Partial<Omit<Bookmark, 'id' | 'created_at'>>
+    ) => {
+      if (!manifest) return
+
+      await save({
+        ...manifest,
+        items: (manifest.items || []).map((item: Bookmark) =>
+          ids.includes(item.id)
+            ? { ...item, ...updates, updated_at: Date.now() }
+            : item
+        )
+      })
+    },
+    [manifest, save]
+  )
+
   const getBookmark = useCallback(
     (id: string): Bookmark | undefined => {
       return manifest?.items?.find((item: Bookmark) => item.id === id)
@@ -162,7 +194,9 @@ export function useBookmarks() {
     addBookmark,
     addBookmarks,
     updateBookmark,
+    updateBookmarks,
     deleteBookmark,
+    deleteBookmarks,
     getBookmark
   }
 }

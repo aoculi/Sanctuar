@@ -69,3 +69,13 @@
   background-color: rgba(239, 68, 68, 0.15);
   color: #ef4444;
 }
+
+.actionBordered {
+  background-color: transparent;
+  border: 1px solid var(--border);
+}
+
+.actionBordered:hover {
+  background-color: var(--background-1);
+  border-color: var(--border-hover);
+}

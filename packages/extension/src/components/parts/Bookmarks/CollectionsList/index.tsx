@@ -24,13 +24,17 @@ interface CollectionsListProps {
   selectedTags: string[]
   onEdit?: (bookmark: Bookmark) => void
   onAddTags?: (bookmark: Bookmark) => void
+  selectedIds?: Set<string>
+  onToggleSelect?: (id: string) => void
 }
 
 export default function CollectionsList({
   searchQuery,
   selectedTags,
   onEdit,
-  onAddTags
+  onAddTags,
+  selectedIds = new Set(),
+  onToggleSelect
 }: CollectionsListProps) {
   const { bookmarks, updateBookmark, deleteBookmark } = useBookmarks()
   const { collections, updateCollection, reorderCollections } = useCollections()
@@ -309,7 +313,6 @@ export default function CollectionsList({
             dropType={dragOver?.id === collection.id ? dragOver.type : null}
             onDragStart={() => setDraggedCollectionId(collection.id)}
             onDragOver={(_, zone, type) => {
-              // Allow drop if it's a bookmark drag or a different collection drag
               const canDrop =
                 type === 'bookmark' ||
                 (draggedCollectionId && draggedCollectionId !== collection.id)
@@ -322,10 +325,11 @@ export default function CollectionsList({
               handleDrop(collection.id, zone, type, bookmarkId)
             }
             onDragEnd={clearDragState}
-            // Bookmark drag props
             draggedBookmarkId={draggedBookmarkId}
             onBookmarkDragStart={(id) => setDraggedBookmarkId(id)}
             onBookmarkDragEnd={clearDragState}
+            selectedIds={selectedIds}
+            onToggleSelect={onToggleSelect}
           />
         )
       )}
@@ -351,6 +355,10 @@ export default function CollectionsList({
                 isDragging={draggedBookmarkId === bookmark.id}
                 onDragStart={() => setDraggedBookmarkId(bookmark.id)}
                 onDragEnd={clearDragState}
+                selected={selectedIds.has(bookmark.id)}
+                onToggleSelect={
+                  onToggleSelect ? () => onToggleSelect(bookmark.id) : undefined
+                }
               />
             ))}
           </div>
