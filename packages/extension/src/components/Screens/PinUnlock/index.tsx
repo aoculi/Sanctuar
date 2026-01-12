@@ -71,7 +71,7 @@ export default function PinUnlock() {
 
       <div className={styles.content}>
         <div className={styles.pageTitle}>
-          <Text as='h1' size='4' weight='medium'>
+          <Text as='h1' size='3'>
             Enter PIN
           </Text>
         </div>

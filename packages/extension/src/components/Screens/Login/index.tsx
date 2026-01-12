@@ -53,7 +53,7 @@ export default function Login() {
 
       <div className={styles.content}>
         <div className={styles.pageTitle}>
-          <Text as='h1' size='4' weight='medium'>
+          <Text as='h1' size='3'>
             Sign In
           </Text>
         </div>
