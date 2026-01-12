@@ -1,11 +1,13 @@
-import { Lock } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 import {
   AuthSessionProvider,
   useAuthSession
 } from '@/components/hooks/providers/useAuthSessionProvider'
-import { ManifestProvider } from '@/components/hooks/providers/useManifestProvider'
+import {
+  ManifestProvider,
+  useManifest
+} from '@/components/hooks/providers/useManifestProvider'
 import {
   NavigationProvider,
   Route,
@@ -16,7 +18,6 @@ import {
   UnlockStateProvider,
   useUnlockState
 } from '@/components/hooks/providers/useUnlockStateProvider'
-import { useAppLoading } from '@/components/hooks/useAppLoading'
 
 import Bookmarks from '@/components/parts/Bookmarks'
 import HiddenToggle from '@/components/parts/HiddenToggle'
@@ -29,10 +30,17 @@ import Text from '@/components/ui/Text'
 import styles from './styles.module.css'
 
 function AppContent() {
-  const { isAuthenticated } = useAuthSession()
-  const { isLocked, canUnlockWithPin } = useUnlockState()
+  const { isLoading: authLoading, isAuthenticated } = useAuthSession()
+  const {
+    isLocked,
+    canUnlockWithPin,
+    isLoading: unlockLoading
+  } = useUnlockState()
+  const { isLoading: manifestLoading } = useManifest()
   const { route, selectedTag } = useNavigation()
-  const isLoading = useAppLoading()
+
+  const [isAppLoading, setIsAppLoading] = useState(true)
+  const initialLoadComplete = useRef(false)
 
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>(() => {
@@ -48,36 +56,46 @@ function AppContent() {
   })
 
   useEffect(() => {
+    if (initialLoadComplete.current) {
+      return
+    }
+
+    const allLoaded = !authLoading && !unlockLoading && !manifestLoading
+
+    if (allLoaded) {
+      initialLoadComplete.current = true
+      setIsAppLoading(false)
+    }
+  }, [authLoading, unlockLoading, manifestLoading])
+
+  useEffect(() => {
     if (selectedTag) {
       setSelectedTags([selectedTag])
     }
   }, [selectedTag])
 
-  if (isLoading) {
+  if (isAppLoading) {
     return (
       <div className={styles.component}>
-        <div className={styles.lockScreen}>
-          <div className={styles.lockContent}>
-            <div className={styles.lockIconWrapper}>
-              <Lock size={32} strokeWidth={1.5} />
-            </div>
-            <Text size='3' color='light'>
-              Loading...
-            </Text>
-          </div>
+        <div className={styles.loading}>
+          <Text size='3' color='light'>
+            Loading...
+          </Text>
         </div>
       </div>
     )
   }
 
-  if (!isAuthenticated || isLocked) {
+  if ((!isAuthenticated || isLocked) && route !== '/settings') {
     return <LockMessage canUnlockWithPin={canUnlockWithPin} />
   }
 
   const renderContent = () => {
     switch (route) {
       case '/tags':
-        return <Tags searchQuery={searchQuery} onSearchChange={setSearchQuery} />
+        return (
+          <Tags searchQuery={searchQuery} onSearchChange={setSearchQuery} />
+        )
       case '/settings':
         return <Settings />
       case '/app':

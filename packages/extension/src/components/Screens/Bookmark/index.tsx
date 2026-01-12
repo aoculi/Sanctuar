@@ -169,7 +169,6 @@ export default function Bookmark() {
     <div className={styles.component}>
       <Header
         title={bookmark ? 'Edit' : 'New'}
-        canSwitchToVault={true}
         rightContent={
           bookmark && bookmark.id ? (
             <Button

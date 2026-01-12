@@ -1,6 +1,5 @@
 import {
   Bookmark,
-  BookOpenText,
   ChevronDown,
   Library,
   LogOut,
@@ -10,7 +9,7 @@ import {
   Settings2,
   Star,
   StarIcon,
-  Tag
+  Tag as TagIcon
 } from 'lucide-react'
 import React, { useCallback } from 'react'
 
@@ -20,7 +19,9 @@ import { useNavigation } from '@/components/hooks/providers/useNavigationProvide
 import { useQueryAuth } from '@/components/hooks/queries/useQueryAuth'
 import { useBookmarks } from '@/components/hooks/useBookmarks'
 import { captureAllTabs } from '@/lib/pageCapture'
+import { openExtensionPage } from '@/lib/tabs'
 import { generateId } from '@/lib/utils'
+import type { Tag } from '@/lib/types'
 
 import Button from '@/components/ui/Button'
 import { DropdownMenu } from '@/components/ui/DropdownMenu'
@@ -30,7 +31,6 @@ import styles from './styles.module.css'
 
 export default function Header({
   title,
-  canSwitchToVault = false,
   canSwitchToBookmark = false,
   canShowMenu = true,
   rightContent,
@@ -38,7 +38,6 @@ export default function Header({
   onSearchChange
 }: {
   title?: string
-  canSwitchToVault?: boolean
   canSwitchToBookmark?: boolean
   canShowMenu?: boolean
   rightContent?: React.ReactNode
@@ -160,15 +159,6 @@ export default function Header({
 
         <div className={styles.right}>
           {rightContent}
-          {canSwitchToVault && isAuthenticated && (
-            <Button
-              onClick={() => navigate('/app')}
-              variant='ghost'
-              title='Bookmarks'
-            >
-              <BookOpenText strokeWidth={2} size={18} color='white' />
-            </Button>
-          )}
 
           {canSwitchToBookmark && isAuthenticated && (
             <>
@@ -215,30 +205,30 @@ export default function Header({
                   <Menu strokeWidth={2} size={18} color='white' />
                 </Button>
               </DropdownMenu.Trigger>
-                <DropdownMenu.Content>
-                  {isAuthenticated && (
-                    <DropdownMenu.Item onClick={() => navigate('/app')}>
-                      <Bookmark strokeWidth={1} size={18} color='white' />{' '}
-                      Bookmarks
-                    </DropdownMenu.Item>
-                  )}
-                  {isAuthenticated && (
-                    <DropdownMenu.Item onClick={() => navigate('/tags')}>
-                      <Tag strokeWidth={1} size={18} color='white' /> Tags
-                    </DropdownMenu.Item>
-                  )}
-                  <DropdownMenu.Item
-                    onClick={() => navigate('/settings')}
-                  >
-                    <Settings2 strokeWidth={1} size={18} color='white' /> Settings
+              <DropdownMenu.Content>
+                {isAuthenticated && (
+                  <DropdownMenu.Item onClick={() => openExtensionPage('app')}>
+                    <Bookmark strokeWidth={1} size={18} color='white' />{' '}
+                    Bookmarks
                   </DropdownMenu.Item>
-                  {isAuthenticated && <DropdownMenu.Separator />}
-                  {isAuthenticated && (
-                    <DropdownMenu.Item onClick={() => logout.mutate()}>
-                      <LogOut strokeWidth={1} size={18} color='white' /> Logout
-                    </DropdownMenu.Item>
-                  )}
-                </DropdownMenu.Content>
+                )}
+                {isAuthenticated && (
+                  <DropdownMenu.Item onClick={() => openExtensionPage('tags')}>
+                    <TagIcon strokeWidth={1} size={18} color='white' /> Tags
+                  </DropdownMenu.Item>
+                )}
+                <DropdownMenu.Item
+                  onClick={() => openExtensionPage('settings')}
+                >
+                  <Settings2 strokeWidth={1} size={18} color='white' /> Settings
+                </DropdownMenu.Item>
+                {isAuthenticated && <DropdownMenu.Separator />}
+                {isAuthenticated && (
+                  <DropdownMenu.Item onClick={() => logout.mutate()}>
+                    <LogOut strokeWidth={1} size={18} color='white' /> Logout
+                  </DropdownMenu.Item>
+                )}
+              </DropdownMenu.Content>
             </DropdownMenu.Root>
           )}
         </div>

@@ -6,8 +6,8 @@ type ExtensionPage = 'app' | 'settings' | 'tags'
 
 const pageUrls: Record<ExtensionPage, string> = {
   app: '/app.html',
-  settings: '/settings.html',
-  tags: '/tags.html'
+  settings: '/app.html?route=settings',
+  tags: '/app.html?route=tags'
 }
 
 /**
