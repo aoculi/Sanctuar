@@ -5,7 +5,7 @@ import { useTags } from '@/components/hooks/useTags'
 import { getTagColor } from '@/lib/bookmarkUtils'
 import type { Tag } from '@/lib/types'
 
-import TagItem from '@/components/parts/TagItem'
+import TagItem from '@/components/parts/Tags/TagItem'
 
 import styles from './styles.module.css'
 

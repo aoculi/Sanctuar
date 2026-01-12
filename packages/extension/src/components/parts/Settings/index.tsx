@@ -1,20 +1,10 @@
 import { Loader2, TriangleAlert } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
-import {
-  AuthSessionProvider,
-  useAuthSession
-} from '@/components/hooks/providers/useAuthSessionProvider'
-import { ManifestProvider } from '@/components/hooks/providers/useManifestProvider'
+import { useAuthSession } from '@/components/hooks/providers/useAuthSessionProvider'
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
-import {
-  SettingsProvider,
-  useSettings
-} from '@/components/hooks/providers/useSettingsProvider'
-import {
-  UnlockStateProvider,
-  useUnlockState
-} from '@/components/hooks/providers/useUnlockStateProvider'
+import { useSettings } from '@/components/hooks/providers/useSettingsProvider'
+import { useUnlockState } from '@/components/hooks/providers/useUnlockStateProvider'
 import { useBookmarkExport } from '@/components/hooks/useBookmarkExport'
 import { useBookmarkImport } from '@/components/hooks/useBookmarkImport'
 import { useBookmarks } from '@/components/hooks/useBookmarks'
@@ -32,7 +22,6 @@ import type { KeystoreData } from '@/lib/unlock'
 
 import { PinSetupModal } from '@/components/parts/pin/PinSetupModal'
 import { PinVerifyModal } from '@/components/parts/pin/PinVerifyModal'
-import SmartHeader from '@/components/parts/SmartHeader'
 import Button from '@/components/ui/Button'
 import { Checkbox } from '@/components/ui/Checkbox'
 import FileInput from '@/components/ui/FileInput'
@@ -65,15 +54,11 @@ const DEFAULT_FIELDS: SettingsFields = {
   useCodePin: false
 }
 
-function SettingsContent() {
-  const { settings, isLoading, updateSettings } = useSettings()
+export default function Settings() {
+  const { settings, isLoading: settingsLoading, updateSettings } = useSettings()
   const { flash } = useNavigation()
   const { isAuthenticated, session } = useAuthSession()
-  const {
-    isLocked,
-    isLoading: unlockLoading,
-    canUnlockWithPin
-  } = useUnlockState()
+  const { isLocked } = useUnlockState()
 
   const [fields, setFields] = useState<SettingsFields>(DEFAULT_FIELDS)
   const [originalFields, setOriginalFields] =
@@ -112,7 +97,7 @@ function SettingsContent() {
         return
       }
 
-      if (!isLoading) {
+      if (!settingsLoading) {
         // Load API URL separately (global setting - always available)
         const apiUrl = await getApiUrl()
 
@@ -140,7 +125,7 @@ function SettingsContent() {
           const loadedFields: SettingsFields = {
             apiUrl: apiUrl,
             autoLockTimeout: actualUseCodePin
-              ? ((settings.autoLockTimeout as AutoLockTimeout) || '20min')
+              ? (settings.autoLockTimeout as AutoLockTimeout) || '20min'
               : 'never',
             useCodePin: actualUseCodePin
           }
@@ -159,7 +144,7 @@ function SettingsContent() {
       }
     }
     loadSettings()
-  }, [isLoading, settings, isAuthenticated])
+  }, [settingsLoading, settings, isAuthenticated])
 
   useEffect(() => {
     if (
@@ -366,21 +351,8 @@ function SettingsContent() {
 
   const hasChanged = JSON.stringify(fields) !== JSON.stringify(originalFields)
 
-  if (isLoading || unlockLoading) {
-    return (
-      <div className={styles.component}>
-        <div className={styles.content}>
-          <div className={styles.container}>
-            <Text>Loading settings...</Text>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className={styles.component}>
-      <SmartHeader />
       {flash && (
         <div className={styles.flash}>
           <TriangleAlert size={16} color='white' />
@@ -634,19 +606,5 @@ function SettingsContent() {
         description='Enter your PIN to disable PIN unlock'
       />
     </div>
-  )
-}
-
-export default function Settings() {
-  return (
-    <AuthSessionProvider>
-      <SettingsProvider>
-        <UnlockStateProvider>
-          <ManifestProvider>
-            <SettingsContent />
-          </ManifestProvider>
-        </UnlockStateProvider>
-      </SettingsProvider>
-    </AuthSessionProvider>
   )
 }

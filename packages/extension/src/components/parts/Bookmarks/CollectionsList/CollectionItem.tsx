@@ -5,7 +5,9 @@ import { getIconByName } from '@/components/ui/IconPicker'
 import { openUrlsInTabs } from '@/lib/tabs'
 import type { Bookmark, Collection } from '@/lib/types'
 
-import BookmarkRow, { BOOKMARK_DRAG_TYPE } from '@/components/parts/BookmarkRow'
+import BookmarkRow, {
+  BOOKMARK_DRAG_TYPE
+} from '@/components/parts/Bookmarks/BookmarkRow'
 import ActionBtn from '@/components/ui/ActionBtn'
 import Collapsible from '@/components/ui/Collapsible'
 import IconPickerModal from '@/components/ui/IconPickerModal'

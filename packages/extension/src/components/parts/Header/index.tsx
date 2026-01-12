@@ -20,7 +20,6 @@ import { useNavigation } from '@/components/hooks/providers/useNavigationProvide
 import { useQueryAuth } from '@/components/hooks/queries/useQueryAuth'
 import { useBookmarks } from '@/components/hooks/useBookmarks'
 import { captureAllTabs } from '@/lib/pageCapture'
-import { openExtensionPage } from '@/lib/tabs'
 import { generateId } from '@/lib/utils'
 
 import Button from '@/components/ui/Button'
@@ -163,9 +162,9 @@ export default function Header({
           {rightContent}
           {canSwitchToVault && isAuthenticated && (
             <Button
-              onClick={() => openExtensionPage('app')}
+              onClick={() => navigate('/app')}
               variant='ghost'
-              title='Vault'
+              title='Bookmarks'
             >
               <BookOpenText strokeWidth={2} size={18} color='white' />
             </Button>
@@ -216,30 +215,30 @@ export default function Header({
                   <Menu strokeWidth={2} size={18} color='white' />
                 </Button>
               </DropdownMenu.Trigger>
-              <DropdownMenu.Content>
-                {isAuthenticated && (
-                  <DropdownMenu.Item onClick={() => openExtensionPage('app')}>
-                    <Bookmark strokeWidth={1} size={18} color='white' />{' '}
-                    Bookmarks
+                <DropdownMenu.Content>
+                  {isAuthenticated && (
+                    <DropdownMenu.Item onClick={() => navigate('/app')}>
+                      <Bookmark strokeWidth={1} size={18} color='white' />{' '}
+                      Bookmarks
+                    </DropdownMenu.Item>
+                  )}
+                  {isAuthenticated && (
+                    <DropdownMenu.Item onClick={() => navigate('/tags')}>
+                      <Tag strokeWidth={1} size={18} color='white' /> Tags
+                    </DropdownMenu.Item>
+                  )}
+                  <DropdownMenu.Item
+                    onClick={() => navigate('/settings')}
+                  >
+                    <Settings2 strokeWidth={1} size={18} color='white' /> Settings
                   </DropdownMenu.Item>
-                )}
-                {isAuthenticated && (
-                  <DropdownMenu.Item onClick={() => openExtensionPage('tags')}>
-                    <Tag strokeWidth={1} size={18} color='white' /> Tags
-                  </DropdownMenu.Item>
-                )}
-                <DropdownMenu.Item
-                  onClick={() => openExtensionPage('settings')}
-                >
-                  <Settings2 strokeWidth={1} size={18} color='white' /> Settings
-                </DropdownMenu.Item>
-                {isAuthenticated && <DropdownMenu.Separator />}
-                {isAuthenticated && (
-                  <DropdownMenu.Item onClick={() => logout.mutate()}>
-                    <LogOut strokeWidth={1} size={18} color='white' /> Logout
-                  </DropdownMenu.Item>
-                )}
-              </DropdownMenu.Content>
+                  {isAuthenticated && <DropdownMenu.Separator />}
+                  {isAuthenticated && (
+                    <DropdownMenu.Item onClick={() => logout.mutate()}>
+                      <LogOut strokeWidth={1} size={18} color='white' /> Logout
+                    </DropdownMenu.Item>
+                  )}
+                </DropdownMenu.Content>
             </DropdownMenu.Root>
           )}
         </div>

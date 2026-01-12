@@ -9,7 +9,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useQueryAuth } from '@/components/hooks/queries/useQueryAuth'
-import { openExtensionPage } from '@/lib/tabs'
+import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
 
 import Text from '@/components/ui/Text'
 
@@ -20,6 +20,7 @@ export default function SmartHeader() {
   const menuRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const { logout } = useQueryAuth()
+  const { navigate } = useNavigation()
 
   const handleClickOutside = useCallback((event: MouseEvent) => {
     if (
@@ -105,7 +106,7 @@ export default function SmartHeader() {
         <button
           className={styles.menuItem}
           role='menuitem'
-          onClick={() => handleMenuItemClick(() => openExtensionPage('app'))}
+          onClick={() => handleMenuItemClick(() => navigate('/app'))}
         >
           <Bookmark strokeWidth={1.5} size={18} />
           <span>Bookmarks</span>
@@ -113,7 +114,7 @@ export default function SmartHeader() {
         <button
           className={styles.menuItem}
           role='menuitem'
-          onClick={() => handleMenuItemClick(() => openExtensionPage('tags'))}
+          onClick={() => handleMenuItemClick(() => navigate('/tags'))}
         >
           <Tag strokeWidth={1.5} size={18} />
           <span>Tags</span>
@@ -121,9 +122,7 @@ export default function SmartHeader() {
         <button
           className={styles.menuItem}
           role='menuitem'
-          onClick={() =>
-            handleMenuItemClick(() => openExtensionPage('settings'))
-          }
+          onClick={() => handleMenuItemClick(() => navigate('/settings'))}
         >
           <Settings strokeWidth={1.5} size={18} />
           <span>Settings</span>

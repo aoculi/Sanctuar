@@ -1,27 +1,14 @@
-import { Edit, Lock, Plus, Search, Trash2 } from 'lucide-react'
+import { Edit, Plus, Search, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
-import {
-  AuthSessionProvider,
-  useAuthSession
-} from '@/components/hooks/providers/useAuthSessionProvider'
-import { ManifestProvider } from '@/components/hooks/providers/useManifestProvider'
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
-import { SettingsProvider } from '@/components/hooks/providers/useSettingsProvider'
-import {
-  UnlockStateProvider,
-  useUnlockState
-} from '@/components/hooks/providers/useUnlockStateProvider'
+import { useSettings } from '@/components/hooks/providers/useSettingsProvider'
 import { useBookmarks } from '@/components/hooks/useBookmarks'
 import { useTags } from '@/components/hooks/useTags'
-import { openExtensionPage } from '@/lib/tabs'
-import type { Bookmark, Tag } from '@/lib/types'
+import type { Tag } from '@/lib/types'
 
-import HiddenToggle from '@/components/parts/HiddenToggle'
-import LockMessage from '@/components/parts/LockMessage'
-import SmartHeader from '@/components/parts/SmartHeader'
+import TagItem from '@/components/parts/Tags/TagItem'
 import TagEditForm from '@/components/parts/Tags/TagManageModal/TagEditForm'
-import TagItem from '@/components/parts/TagItem'
 import ActionBtn from '@/components/ui/ActionBtn'
 import { Dialog } from '@/components/ui/Dialog'
 import Input from '@/components/ui/Input'
@@ -29,21 +16,23 @@ import Text from '@/components/ui/Text'
 
 import styles from './styles.module.css'
 
-function TagsContent() {
-  const { isAuthenticated, isLoading } = useAuthSession()
-  const {
-    isLocked,
-    isLoading: unlockLoading,
-    canUnlockWithPin
-  } = useUnlockState()
+export interface TagsProps {
+  searchQuery?: string
+  onSearchChange?: (query: string) => void
+}
+
+export default function Tags({
+  searchQuery: initialSearchQuery = '',
+  onSearchChange
+}: TagsProps) {
   const { tags, showHiddenTags, createTag, deleteTag } = useTags()
   const { bookmarks } = useBookmarks()
-  const { setFlash } = useNavigation()
+  const { setFlash, navigate } = useNavigation()
+  const { settings } = useSettings()
 
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState(initialSearchQuery)
   const [editingTag, setEditingTag] = useState<Tag | null>(null)
 
-  // Filter tags by search and visibility
   const filteredTags = useMemo(() => {
     const visibleTags = showHiddenTags
       ? tags
@@ -58,32 +47,11 @@ function TagsContent() {
   }, [tags, searchQuery, showHiddenTags])
 
   const getBookmarkCount = (tagId: string): number => {
-    return bookmarks.filter((b: Bookmark) => b.tags.includes(tagId)).length
+    return bookmarks.filter((b) => b.tags.includes(tagId)).length
   }
 
   const handleTagClick = (tagId: string) => {
-    // Open app page with tag filter
-    // We'll encode the tag ID in the URL hash
-    const runtime =
-      (typeof chrome !== 'undefined' && chrome.runtime) ||
-      (typeof browser !== 'undefined' && browser.runtime)
-
-    if (runtime) {
-      const appUrl = runtime.getURL(`/app.html#tag=${tagId}` as any)
-      if (typeof chrome !== 'undefined' && chrome.tabs?.create) {
-        chrome.tabs.query({ active: true, currentWindow: true }, (currentTabs) => {
-          const windowId = currentTabs?.[0]?.windowId
-          chrome.tabs.create({ url: appUrl, ...(windowId ? { windowId } : {}) })
-        })
-      } else if (typeof browser !== 'undefined' && browser.tabs?.create) {
-        browser.tabs.query({ active: true, currentWindow: true }, (currentTabs) => {
-          const windowId = currentTabs?.[0]?.windowId
-          browser.tabs.create({ url: appUrl, ...(windowId ? { windowId } : {}) })
-        })
-      } else {
-        window.open(appUrl, '_blank')
-      }
-    }
+    navigate('/app', { tag: tagId })
   }
 
   const handleDelete = async (tag: Tag) => {
@@ -124,37 +92,12 @@ function TagsContent() {
     }
   }
 
-  if (isLoading || unlockLoading) {
-    return (
-      <div className={styles.component}>
-        <div className={styles.lockScreen}>
-          <div className={styles.lockContent}>
-            <div className={styles.lockIconWrapper}>
-              <Lock size={32} strokeWidth={1.5} />
-            </div>
-            <Text size='3' color='light'>
-              Loading...
-            </Text>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  if (!isAuthenticated || isLocked) {
-    return <LockMessage canUnlockWithPin={canUnlockWithPin} />
-  }
-
   return (
     <div className={styles.component}>
-      <div className={styles.header}>
-        <SmartHeader />
-        <HiddenToggle />
-      </div>
       <div className={styles.content}>
         <div className={styles.container}>
           <div className={styles.pageHeader}>
-            <Text as='h1' size='5' weight='semibold'>
+            <Text as='h1' size='5' weight='medium'>
               Tags
             </Text>
             <Text size='2' color='light'>
@@ -167,24 +110,29 @@ function TagsContent() {
               type='text'
               placeholder='Search or create tag...'
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value)
+                onSearchChange?.(e.target.value)
+              }}
               onKeyDown={(e) => e.key === 'Enter' && handleCreateTag()}
               size='md'
             >
               <Search size={16} />
             </Input>
-            {searchQuery.trim() && !tags.find(
-              (t: Tag) => t.name.toLowerCase() === searchQuery.toLowerCase().trim()
-            ) && (
-              <button
-                type='button'
-                className={styles.createButton}
-                onClick={handleCreateTag}
-              >
-                <Plus size={16} />
-                <span>Create "{searchQuery.trim()}"</span>
-              </button>
-            )}
+            {searchQuery.trim() &&
+              !tags.find(
+                (t: Tag) =>
+                  t.name.toLowerCase() === searchQuery.toLowerCase().trim()
+              ) && (
+                <button
+                  type='button'
+                  className={styles.createButton}
+                  onClick={handleCreateTag}
+                >
+                  <Plus size={16} />
+                  <span>Create "{searchQuery.trim()}"</span>
+                </button>
+              )}
           </div>
 
           <div className={styles.tagsList}>
@@ -251,19 +199,5 @@ function TagsContent() {
         )}
       </Dialog>
     </div>
-  )
-}
-
-export default function Tags() {
-  return (
-    <AuthSessionProvider>
-      <SettingsProvider>
-        <UnlockStateProvider>
-          <ManifestProvider>
-            <TagsContent />
-          </ManifestProvider>
-        </UnlockStateProvider>
-      </SettingsProvider>
-    </AuthSessionProvider>
   )
 }

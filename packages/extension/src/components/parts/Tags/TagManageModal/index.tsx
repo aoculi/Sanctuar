@@ -6,7 +6,7 @@ import { useBookmarks } from '@/components/hooks/useBookmarks'
 import { useTags } from '@/components/hooks/useTags'
 import type { Bookmark, Tag } from '@/lib/types'
 
-import TagItem from '@/components/parts/TagItem'
+import TagItem from '@/components/parts/Tags/TagItem'
 import ActionBtn from '@/components/ui/ActionBtn'
 import { Dialog } from '@/components/ui/Dialog'
 import Input from '@/components/ui/Input'

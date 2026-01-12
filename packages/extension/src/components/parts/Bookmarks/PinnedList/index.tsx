@@ -7,7 +7,7 @@ import { useTags } from '@/components/hooks/useTags'
 import { filterBookmarks } from '@/lib/bookmarkUtils'
 import type { Bookmark } from '@/lib/types'
 
-import BookmarkRow from '@/components/parts/BookmarkRow'
+import BookmarkRow from '@/components/parts/Bookmarks/BookmarkRow'
 import Collapsible from '@/components/ui/Collapsible'
 
 import styles from './styles.module.css'
@@ -38,7 +38,9 @@ export default function PinnedList({
 
     // Filter out bookmarks with hidden tags when showHiddenTags is false
     if (!showHiddenTags) {
-      const hiddenTagIds = new Set(tags.filter((t) => t.hidden).map((t) => t.id))
+      const hiddenTagIds = new Set(
+        tags.filter((t) => t.hidden).map((t) => t.id)
+      )
       filtered = filtered.filter(
         (bookmark) => !bookmark.tags.some((tagId) => hiddenTagIds.has(tagId))
       )

@@ -12,15 +12,19 @@ export type Route =
   | '/bookmark'
   | '/settings'
   | '/pin-unlock'
+  | '/app'
+  | '/tags'
 
 type NavigationOptions = {
   bookmark?: string | null
+  tag?: string | null
 }
 
 type NavigationContextType = {
   route: Route
   flash: string | null
   selectedBookmark: string | null
+  selectedTag: string | null
   navigate: (route: Route, options?: NavigationOptions) => void
   setFlash: (message: string | null) => void
 }
@@ -29,6 +33,7 @@ export const NavigationContext = createContext<NavigationContextType>({
   route: '/login',
   flash: null,
   selectedBookmark: null,
+  selectedTag: null,
   navigate: () => {},
   setFlash: () => {}
 })
@@ -58,6 +63,7 @@ export function NavigationProvider({
   const [route, setRoute] = useState<Route>(initialRoute)
   const [flash, setFlashState] = useState<string | null>(null)
   const [selectedBookmark, setSelectedBookmark] = useState<string | null>(null)
+  const [selectedTag, setSelectedTagState] = useState<string | null>(null)
 
   const navigate = useCallback(
     (newRoute: Route, options?: NavigationOptions) => {
@@ -67,9 +73,16 @@ export function NavigationProvider({
       if (options?.bookmark) {
         setSelectedBookmark(options.bookmark)
       } else {
-        // When no options provided, reset selection based on route to match current behavior
         if (newRoute === '/bookmark') {
           setSelectedBookmark(null)
+        }
+      }
+
+      if (options?.tag) {
+        setSelectedTagState(options.tag)
+      } else {
+        if (newRoute !== '/app') {
+          setSelectedTagState(null)
         }
       }
     },
@@ -84,6 +97,7 @@ export function NavigationProvider({
     route,
     flash,
     selectedBookmark,
+    selectedTag,
     navigate,
     setFlash
   }

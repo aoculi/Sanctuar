@@ -11,7 +11,7 @@ const pageUrls: Record<ExtensionPage, string> = {
 }
 
 /**
- * Opens an extension page in a new tab in the current window.
+ * Opens an extension page by navigating the current tab.
  * Handles both Chrome and Firefox, and works correctly in incognito mode.
  */
 export function openExtensionPage(page: ExtensionPage): void {
@@ -30,19 +30,25 @@ export function openExtensionPage(page: ExtensionPage): void {
     return
   }
 
-  // Get current window to open tab in same window (important for incognito)
-  if (typeof chrome !== 'undefined' && chrome.tabs?.create) {
+  // Navigate the current tab instead of opening a new one
+  if (typeof chrome !== 'undefined' && chrome.tabs?.update) {
     chrome.tabs.query({ active: true, currentWindow: true }, (currentTabs) => {
-      const windowId = currentTabs?.[0]?.windowId
-      chrome.tabs.create({ url: pageUrl, ...(windowId ? { windowId } : {}) })
+      if (currentTabs && currentTabs.length > 0 && currentTabs[0].id !== undefined) {
+        chrome.tabs.update(currentTabs[0].id, { url: pageUrl })
+      } else {
+        chrome.tabs.create({ url: pageUrl })
+      }
     })
-  } else if (typeof browser !== 'undefined' && browser.tabs?.create) {
+  } else if (typeof browser !== 'undefined' && browser.tabs?.update) {
     browser.tabs.query({ active: true, currentWindow: true }, (currentTabs) => {
-      const windowId = currentTabs?.[0]?.windowId
-      browser.tabs.create({ url: pageUrl, ...(windowId ? { windowId } : {}) })
+      if (currentTabs && currentTabs.length > 0 && currentTabs[0].id !== undefined) {
+        browser.tabs.update(currentTabs[0].id, { url: pageUrl })
+      } else {
+        browser.tabs.create({ url: pageUrl })
+      }
     })
   } else {
-    window.open(pageUrl, '_blank')
+    window.location.href = pageUrl
   }
 }
 

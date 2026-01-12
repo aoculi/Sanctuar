@@ -22,11 +22,15 @@ const queryClient = new QueryClient({
   }
 })
 
+const params = new URLSearchParams(window.location.search)
+const routeParam = params.get('route')
+const initialRoute = routeParam === 'tags' || routeParam === 'settings' ? `/${routeParam}` : '/app'
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
-        <App />
+        <App initialRoute={initialRoute as any} />
       </ErrorBoundary>
     </QueryClientProvider>
   </React.StrictMode>

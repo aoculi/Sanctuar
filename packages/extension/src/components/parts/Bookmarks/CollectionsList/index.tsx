@@ -13,7 +13,7 @@ import {
 } from '@/lib/collectionUtils'
 import type { Bookmark } from '@/lib/types'
 
-import BookmarkRow from '@/components/parts/BookmarkRow'
+import BookmarkRow from '@/components/parts/Bookmarks/BookmarkRow'
 import Collapsible from '@/components/ui/Collapsible'
 import CollectionItem, { type DragType, type DropZone } from './CollectionItem'
 
@@ -74,7 +74,9 @@ export default function CollectionsList({
 
     // Filter out bookmarks with hidden tags when showHiddenTags is false
     if (!showHiddenTags) {
-      const hiddenTagIds = new Set(tags.filter((t) => t.hidden).map((t) => t.id))
+      const hiddenTagIds = new Set(
+        tags.filter((t) => t.hidden).map((t) => t.id)
+      )
       filtered = filtered.filter(
         (bookmark) => !bookmark.tags.some((tagId) => hiddenTagIds.has(tagId))
       )

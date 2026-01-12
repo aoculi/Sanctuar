@@ -5,7 +5,7 @@ import { createTagMap, getTagNameFromMap } from '@/lib/bookmarkUtils'
 import type { Bookmark, Tag } from '@/lib/types'
 import { getHostname } from '@/lib/utils'
 
-import TagItem from '@/components/parts/TagItem'
+import TagItem from '@/components/parts/Tags/TagItem'
 import ActionBtn from '@/components/ui/ActionBtn'
 
 import styles from './styles.module.css'
@@ -77,65 +77,65 @@ export default function BookmarkRow({
         rel='noopener noreferrer'
         className={styles.component}
       >
-      <div className={styles.favicon}>
-        <img
-          src={faviconUrl}
-          alt=''
-          width={16}
-          height={16}
-          onError={(e) => {
-            e.currentTarget.style.display = 'none'
-          }}
-        />
-      </div>
+        <div className={styles.favicon}>
+          <img
+            src={faviconUrl}
+            alt=''
+            width={16}
+            height={16}
+            onError={(e) => {
+              e.currentTarget.style.display = 'none'
+            }}
+          />
+        </div>
 
-      <div className={styles.info}>
-        <span className={styles.title}>{bookmark.title || '(Untitled)'}</span>
-        <span className={styles.domain}>{hostname}</span>
-      </div>
+        <div className={styles.info}>
+          <span className={styles.title}>{bookmark.title || '(Untitled)'}</span>
+          <span className={styles.domain}>{hostname}</span>
+        </div>
 
-      <div className={styles.rightSection}>
-        <div className={styles.tags}>
-          {bookmarkTags.map((tag) => (
-            <TagItem
-              key={tag.id}
-              tagId={tag.id}
-              tagName={tag.name}
-              tags={tags}
-              size='small'
+        <div className={styles.rightSection}>
+          <div className={styles.tags}>
+            {bookmarkTags.map((tag) => (
+              <TagItem
+                key={tag.id}
+                tagId={tag.id}
+                tagName={tag.name}
+                tags={tags}
+                size='small'
+              />
+            ))}
+            {remainingTags > 0 && (
+              <span className={styles.tagMore}>+{remainingTags}</span>
+            )}
+          </div>
+
+          <div className={styles.actions}>
+            <ActionBtn
+              icon={Plus}
+              label='Tags'
+              size='sm'
+              onClick={onAddTags}
+              title='Add tags'
             />
-          ))}
-          {remainingTags > 0 && (
-            <span className={styles.tagMore}>+{remainingTags}</span>
-          )}
+            <ActionBtn
+              icon={bookmark.pinned ? PinOff : Pin}
+              active={bookmark.pinned}
+              size='sm'
+              onClick={onTogglePin}
+              title={bookmark.pinned ? 'Unpin' : 'Pin'}
+            />
+            <ActionBtn icon={Edit} size='sm' onClick={onEdit} title='Edit' />
+            <ActionBtn
+              icon={Trash2}
+              danger
+              size='sm'
+              onClick={onDelete}
+              title='Delete'
+            />
+          </div>
         </div>
-
-        <div className={styles.actions}>
-          <ActionBtn
-            icon={Plus}
-            label='Tags'
-            size='sm'
-            onClick={onAddTags}
-            title='Add tags'
-          />
-          <ActionBtn
-            icon={bookmark.pinned ? PinOff : Pin}
-            active={bookmark.pinned}
-            size='sm'
-            onClick={onTogglePin}
-            title={bookmark.pinned ? 'Unpin' : 'Pin'}
-          />
-          <ActionBtn icon={Edit} size='sm' onClick={onEdit} title='Edit' />
-          <ActionBtn
-            icon={Trash2}
-            danger
-            size='sm'
-            onClick={onDelete}
-            title='Delete'
-          />
-        </div>
-      </div>
-    </a>
+      </a>
     </div>
   )
 }

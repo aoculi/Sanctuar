@@ -3,7 +3,7 @@ import { Edit } from 'lucide-react'
 import { useTags } from '@/components/hooks/useTags'
 import type { Tag } from '@/lib/types'
 
-import TagItem from '@/components/parts/TagItem'
+import TagItem from '@/components/parts/Tags/TagItem'
 import ActionBtn from '@/components/ui/ActionBtn'
 import Text from '@/components/ui/Text'
 
