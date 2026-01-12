@@ -10,7 +10,7 @@ import SmartSearch from '@/components/parts/Bookmarks/SmartSearch'
 import PinnedTags from '@/components/parts/Tags/PinnedTags'
 import TagManageModal from '@/components/parts/Tags/TagManageModal'
 
-export interface BookmarksProps {
+interface BookmarksProps {
   searchQuery: string
   selectedTags: string[]
   onSearchChange: (query: string) => void

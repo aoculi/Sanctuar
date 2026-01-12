@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import {
   AuthSessionProvider,
@@ -143,5 +143,3 @@ export default function App({
     </AuthSessionProvider>
   )
 }
-
-export { AppContent }

@@ -2,7 +2,6 @@ import { Edit, Plus, Search, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
-import { useSettings } from '@/components/hooks/providers/useSettingsProvider'
 import { useBookmarks } from '@/components/hooks/useBookmarks'
 import { useTags } from '@/components/hooks/useTags'
 import type { Tag } from '@/lib/types'
@@ -16,7 +15,7 @@ import Text from '@/components/ui/Text'
 
 import styles from './styles.module.css'
 
-export interface TagsProps {
+interface TagsProps {
   searchQuery?: string
   onSearchChange?: (query: string) => void
 }
@@ -28,7 +27,6 @@ export default function Tags({
   const { tags, showHiddenTags, createTag, deleteTag } = useTags()
   const { bookmarks } = useBookmarks()
   const { setFlash, navigate } = useNavigation()
-  const { settings } = useSettings()
 
   const [searchQuery, setSearchQuery] = useState(initialSearchQuery)
   const [editingTag, setEditingTag] = useState<Tag | null>(null)
