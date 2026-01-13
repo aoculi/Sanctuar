@@ -8,6 +8,7 @@ import TagManageModal from '@/components/parts/Tags/TagManageModal'
 import ActionBtn from '@/components/ui/ActionBtn'
 import { Checkbox } from '@/components/ui/Checkbox'
 
+import Text from '@/components/ui/Text'
 import styles from './styles.module.css'
 
 interface BulkActionBarProps {
@@ -52,7 +53,15 @@ export default function BulkActionBar({
     <>
       <div className={styles.component}>
         <div className={styles.left}>
-          <Checkbox checked={allSelected} onChange={onSelectAll} />
+          <Checkbox
+            checked={allSelected}
+            onChange={onSelectAll}
+            label={
+              <Text as='span' size='2' weight='medium'>
+                bookmark{selectedCount > 1 ? 's' : ''}
+              </Text>
+            }
+          />
           {selectedCount > 0 && (
             <div className={styles.actions}>
               <ActionBtn

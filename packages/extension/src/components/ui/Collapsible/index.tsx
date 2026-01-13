@@ -14,6 +14,8 @@ interface CollapsibleProps {
   children: React.ReactNode
   editable?: boolean
   onIconClick?: (e: React.MouseEvent) => void
+  left?: React.ReactNode
+  right?: React.ReactNode
 }
 
 export default function Collapsible({
@@ -24,7 +26,9 @@ export default function Collapsible({
   depth = 0,
   children,
   editable = false,
-  onIconClick
+  onIconClick,
+  left,
+  right
 }: CollapsibleProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen)
 
@@ -51,6 +55,7 @@ export default function Collapsible({
         {...headerProps}
       >
         <div className={styles.left}>
+          {left && <div className={styles.before}>{left}</div>}
           <ChevronRight
             size={14}
             strokeWidth={2}
@@ -75,14 +80,14 @@ export default function Collapsible({
           ) : (
             label
           )}
-        </div>
-        <div className={styles.right}>
+
           <div className={styles.badge}>
             <Text as='span' size='2' weight='medium'>
               {count}
             </Text>
           </div>
         </div>
+        <div className={styles.right}>{right}</div>
       </HeaderElement>
 
       <div

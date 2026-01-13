@@ -13,7 +13,6 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: 1;
   min-width: 0;
 }
 
@@ -61,7 +60,6 @@
 /* Drag and drop styles */
 .collectionWrapper {
   display: flex;
-  align-items: flex-start;
   position: relative;
   transition:
     opacity 0.15s ease,
