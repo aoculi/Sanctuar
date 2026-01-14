@@ -15,7 +15,7 @@ function Text({
   size?: '1' | '2' | '3' | '4' | '5' | '6'
   weight?: 'light' | 'regular' | 'medium' | 'bold'
   as?: 'label' | 'p' | 'div' | 'h1' | 'span'
-  color?: 'inherit' | 'light' | 'primary' | 'white'
+  color?: 'inherit' | 'light' | 'primary' | 'white' | 'text'
   align?: 'left' | 'center' | 'right'
   style?: React.CSSProperties
   children: React.ReactNode

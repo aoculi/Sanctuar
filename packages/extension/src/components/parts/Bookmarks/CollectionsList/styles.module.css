@@ -79,7 +79,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 10px 4px 10px 8px;
+  margin-right: -5px;
   color: var(--text-light);
   cursor: grab;
   opacity: 0.4;

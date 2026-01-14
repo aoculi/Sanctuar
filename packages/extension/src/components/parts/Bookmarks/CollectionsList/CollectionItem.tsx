@@ -1,4 +1,4 @@
-import { ExternalLink, Folder, GripVertical, X } from 'lucide-react'
+import { ExternalLink, Folder, X } from 'lucide-react'
 import { useState } from 'react'
 
 import { getIconByName } from '@/components/ui/IconPicker'
@@ -172,13 +172,13 @@ export default function CollectionItem({
           key={collection.id}
           icon={Icon}
           onIconClick={onIconChange ? handleIconClick : undefined}
-          left={
-            draggable && (
-              <div className={styles.dragHandle}>
-                <GripVertical size={14} />
-              </div>
-            )
-          }
+          // left={
+          //   draggable && (
+          //     <div className={styles.dragHandle}>
+          //       <GripVertical size={14} />
+          //     </div>
+          //   )
+          // }
           label={
             <div className={styles.labelContent}>
               {isEditing ? (

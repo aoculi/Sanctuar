@@ -62,14 +62,16 @@ export default function Collapsible({
             className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ''}`}
           />
           {onIconClick ? (
-            <button
-              type='button'
+            <div
+              role='button'
+              tabIndex={0}
               className={styles.iconButton}
               onClick={onIconClick}
+              onKeyDown={(e) => e.key === 'Enter' && onIconClick(e as unknown as React.MouseEvent)}
               title='Change icon'
             >
               <Icon size={16} strokeWidth={2} className={styles.icon} />
-            </button>
+            </div>
           ) : (
             <Icon size={16} strokeWidth={2} className={styles.icon} />
           )}

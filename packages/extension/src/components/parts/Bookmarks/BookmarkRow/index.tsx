@@ -1,4 +1,4 @@
-import { Edit, GripVertical, Pin, PinOff, Plus, Trash2 } from 'lucide-react'
+import { Edit, Pin, PinOff, Plus, Trash2 } from 'lucide-react'
 import { useMemo } from 'react'
 
 import { createTagMap, getTagNameFromMap } from '@/lib/bookmarkUtils'
@@ -74,11 +74,11 @@ export default function BookmarkRow({
         <div className={styles.checkboxWrapper}>
           <Checkbox checked={selected} onChange={onToggleSelect} />
         </div>
-        {draggable && (
+        {/* {draggable && (
           <div className={styles.dragHandle}>
             <GripVertical size={14} />
           </div>
-        )}
+        )} */}
       </div>
 
       <a
