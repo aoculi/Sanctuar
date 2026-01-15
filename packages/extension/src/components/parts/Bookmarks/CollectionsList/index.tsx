@@ -2,6 +2,7 @@ import { Inbox } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
+import { useSettings } from '@/components/hooks/providers/useSettingsProvider'
 import { useBookmarks } from '@/components/hooks/useBookmarks'
 import { useCollections } from '@/components/hooks/useCollections'
 import { useTags } from '@/components/hooks/useTags'
@@ -38,7 +39,8 @@ export default function CollectionsList({
 }: CollectionsListProps) {
   const { bookmarks, updateBookmark, deleteBookmark } = useBookmarks()
   const { collections, updateCollection, reorderCollections } = useCollections()
-  const { tags, showHiddenTags } = useTags()
+  const { tags } = useTags()
+  const { settings } = useSettings()
   const { setFlash } = useNavigation()
 
   const [editingCollectionId, setEditingCollectionId] = useState<string | null>(
@@ -71,20 +73,15 @@ export default function CollectionsList({
   // Get non-pinned bookmarks with search and tag filtering
   const nonPinnedBookmarks = useMemo(() => {
     // Get non-pinned bookmarks
-    const nonPinned = bookmarks.filter((b: Bookmark) => !b.pinned)
+    let filtered = bookmarks.filter((b: Bookmark) => !b.pinned)
+
+    // Filter out hidden bookmarks when showHiddenBookmarks is false
+    if (!settings.showHiddenBookmarks) {
+      filtered = filtered.filter((bookmark) => !bookmark.hidden)
+    }
 
     // Apply search filter
-    let filtered = filterBookmarks(nonPinned, tags, searchQuery)
-
-    // Filter out bookmarks with hidden tags when showHiddenTags is false
-    if (!showHiddenTags) {
-      const hiddenTagIds = new Set(
-        tags.filter((t) => t.hidden).map((t) => t.id)
-      )
-      filtered = filtered.filter(
-        (bookmark) => !bookmark.tags.some((tagId) => hiddenTagIds.has(tagId))
-      )
-    }
+    filtered = filterBookmarks(filtered, tags, searchQuery)
 
     // Apply tag filter
     if (selectedTags.length > 0) {
@@ -98,7 +95,7 @@ export default function CollectionsList({
     }
 
     return filtered
-  }, [bookmarks, tags, searchQuery, selectedTags, showHiddenTags])
+  }, [bookmarks, tags, searchQuery, selectedTags, settings.showHiddenBookmarks])
 
   // Check if filtering is active
   const isFiltering = searchQuery.length > 0 || selectedTags.length > 0

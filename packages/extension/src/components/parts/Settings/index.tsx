@@ -166,7 +166,7 @@ export default function Settings() {
 
       // Save user-specific settings (without apiUrl)
       await updateSettings({
-        showHiddenTags: settings.showHiddenTags,
+        showHiddenBookmarks: settings.showHiddenBookmarks,
         autoLockTimeout: fields.autoLockTimeout,
         useCodePin: fields.useCodePin
       })
@@ -218,7 +218,7 @@ export default function Settings() {
 
       // Save settings using current settings from context, not fields state
       const settingsToSave = {
-        showHiddenTags: settings.showHiddenTags,
+        showHiddenBookmarks: settings.showHiddenBookmarks,
         autoLockTimeout: newTimeout,
         useCodePin: true
       }
@@ -258,7 +258,7 @@ export default function Settings() {
 
     // Save settings - only pass Settings properties, not fields (which includes apiUrl)
     await updateSettings({
-      showHiddenTags: settings.showHiddenTags,
+      showHiddenBookmarks: settings.showHiddenBookmarks,
       autoLockTimeout: 'never',
       useCodePin: false
     })
@@ -303,7 +303,7 @@ export default function Settings() {
     try {
       // Use current settings from context for all values to ensure consistency
       const settingsToSave = {
-        showHiddenTags: settings.showHiddenTags,
+        showHiddenBookmarks: settings.showHiddenBookmarks,
         autoLockTimeout: autoLockTimeout || settings.autoLockTimeout || '20min',
         useCodePin:
           useCodePin !== undefined ? useCodePin : settings.useCodePin || false

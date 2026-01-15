@@ -62,7 +62,8 @@ export default function Bookmark() {
         note: bookmark.note,
         picture: bookmark.picture,
         tags: bookmark.tags,
-        collectionId: bookmark.collectionId
+        collectionId: bookmark.collectionId,
+        hidden: bookmark.hidden ?? false
       })
       hasLoadedRef.current = true
     }
@@ -95,7 +96,8 @@ export default function Bookmark() {
             note: existing.note,
             picture: existing.picture,
             tags: existing.tags,
-            collectionId: existing.collectionId
+            collectionId: existing.collectionId,
+            hidden: existing.hidden ?? false
           })
         } else {
           // New bookmark - use captured page data
@@ -105,7 +107,8 @@ export default function Bookmark() {
             note: result.bookmark.note,
             picture: result.bookmark.picture,
             tags: result.bookmark.tags,
-            collectionId: result.bookmark.collectionId
+            collectionId: result.bookmark.collectionId,
+            hidden: false
           })
         }
       } else {
@@ -158,7 +161,8 @@ export default function Bookmark() {
           note: data.note,
           picture: data.picture,
           tags: data.tags,
-          collectionId: data.collectionId
+          collectionId: data.collectionId,
+          hidden: data.hidden
         })
       } else {
         await addBookmark({
@@ -168,6 +172,7 @@ export default function Bookmark() {
           picture: data.picture,
           tags: data.tags,
           collectionId: data.collectionId,
+          hidden: data.hidden,
           pinned: false
         })
       }

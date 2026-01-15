@@ -74,8 +74,7 @@ export default function Header({
         // Create the tag locally first to get its ID
         const newTag: Tag = {
           id: generateId(),
-          name: dateString,
-          hidden: false
+          name: dateString
         }
 
         // Save the tag to manifest

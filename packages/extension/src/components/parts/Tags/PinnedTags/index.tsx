@@ -20,12 +20,7 @@ export default function PinnedTags({
   onTagClick,
   onManageTags
 }: PinnedTagsProps) {
-  const { tags, pinnedTags, showHiddenTags } = useTags()
-
-  // Filter out hidden tags when showHiddenTags is false
-  const visiblePinnedTags = showHiddenTags
-    ? pinnedTags
-    : pinnedTags.filter((tag: Tag) => !tag.hidden)
+  const { tags, pinnedTags } = useTags()
 
   return (
     <div className={styles.component}>
@@ -40,9 +35,9 @@ export default function PinnedTags({
           title='Manage tags'
         />
       </div>
-      {visiblePinnedTags.length > 0 && (
+      {pinnedTags.length > 0 && (
         <div className={styles.tagsList}>
-          {visiblePinnedTags.map((tag: Tag) => {
+          {pinnedTags.map((tag: Tag) => {
             const isSelected = selectedTags.includes(tag.id)
             return (
               <button

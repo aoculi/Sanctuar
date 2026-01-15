@@ -7,7 +7,6 @@ import type { Tag } from '@/lib/types'
 import { validateTagName } from '@/lib/validation'
 
 import Button from '@/components/ui/Button'
-import { Checkbox } from '@/components/ui/Checkbox'
 import ColorPicker from '@/components/ui/ColorPicker'
 import Input from '@/components/ui/Input'
 import Text from '@/components/ui/Text'
@@ -22,7 +21,6 @@ interface TagEditFormProps {
 interface TagForm {
   name: string
   color?: string
-  hidden: boolean
 }
 
 export default function TagEditForm({ tag, onClose }: TagEditFormProps) {
@@ -31,16 +29,12 @@ export default function TagEditForm({ tag, onClose }: TagEditFormProps) {
 
   const [form, setForm] = useState<TagForm>({
     name: tag.name,
-    color: tag.color,
-    hidden: tag.hidden ?? false
+    color: tag.color
   })
   const [isSaving, setIsSaving] = useState(false)
 
   const hasChanges = useMemo(
-    () =>
-      form.name.trim() !== tag.name ||
-      form.color !== tag.color ||
-      form.hidden !== (tag.hidden ?? false),
+    () => form.name.trim() !== tag.name || form.color !== tag.color,
     [form, tag]
   )
 
@@ -55,8 +49,7 @@ export default function TagEditForm({ tag, onClose }: TagEditFormProps) {
     try {
       await updateTag(tag.id, {
         name: form.name.trim(),
-        color: form.color,
-        hidden: form.hidden
+        color: form.color
       })
       onClose()
     } catch (error) {
@@ -94,16 +87,6 @@ export default function TagEditForm({ tag, onClose }: TagEditFormProps) {
           onChange={(color) => setForm((prev) => ({ ...prev, color }))}
         />
       </div>
-
-      <Text as='label' size='2'>
-        <Checkbox
-          checked={form.hidden}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            setForm((prev) => ({ ...prev, hidden: e.target.checked }))
-          }
-          label='Hide tag from list'
-        />
-      </Text>
 
       <div className={styles.editActions}>
         <Button onClick={onClose} color='black' size='sm'>

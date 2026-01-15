@@ -1,14 +1,12 @@
 import { useCallback } from 'react'
 
 import { useManifest } from '@/components/hooks/providers/useManifestProvider'
-import { useSettings } from '@/components/hooks/providers/useSettingsProvider'
 import type { Bookmark, Tag } from '@/lib/types'
 import { generateId } from '@/lib/utils'
 import { validateTagName } from '@/lib/validation'
 
 export function useTags() {
   const { manifest, save, isSaving } = useManifest()
-  const { settings } = useSettings()
 
   const createTag = useCallback(
     async (tag: Omit<Tag, 'id'>): Promise<Tag> => {
@@ -36,7 +34,6 @@ export function useTags() {
         ...tag,
         id: generateId(),
         name: trimmedName,
-        hidden: tag.hidden ?? false,
         pinned: tag.pinned ?? false
       }
 
@@ -59,12 +56,10 @@ export function useTags() {
         throw new Error(validationError)
       }
 
-      // Validate input if URL or title is being updated
       const existingTag = manifest.tags?.find((item: Tag) => item.id === id)
       if (existingTag) {
         const validationData = {
           name: updates.name ?? existingTag.name,
-          hidden: updates.hidden ?? existingTag.hidden,
           pinned: 'pinned' in updates ? updates.pinned : existingTag.pinned,
           color: 'color' in updates ? updates.color : existingTag.color
         }
@@ -128,7 +123,6 @@ export function useTags() {
   return {
     tags: manifest?.tags || [],
     pinnedTags,
-    showHiddenTags: settings.showHiddenTags,
     createTag,
     updateTag,
     deleteTag,

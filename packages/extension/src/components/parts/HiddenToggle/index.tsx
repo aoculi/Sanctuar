@@ -26,15 +26,15 @@ export default function HiddenToggle() {
   }, [])
 
   const handleToggle = () => {
-    if (settings.showHiddenTags) {
+    if (settings.showHiddenBookmarks) {
       // Hiding doesn't require PIN verification
-      updateSettings({ showHiddenTags: false })
+      updateSettings({ showHiddenBookmarks: false })
     } else {
       // Showing requires PIN verification only if PIN is configured
       if (hasPinConfigured) {
         setShowPinVerifyModal(true)
       } else {
-        updateSettings({ showHiddenTags: true })
+        updateSettings({ showHiddenBookmarks: true })
       }
     }
   }
@@ -50,20 +50,20 @@ export default function HiddenToggle() {
       throw new Error('Invalid PIN')
     }
 
-    await updateSettings({ showHiddenTags: true })
+    await updateSettings({ showHiddenBookmarks: true })
   }
 
   return (
     <>
       <button
         type='button'
-        className={`${styles.toggle} ${settings.showHiddenTags ? styles.active : ''}`}
+        className={`${styles.toggle} ${settings.showHiddenBookmarks ? styles.active : ''}`}
         onClick={handleToggle}
         title={
-          settings.showHiddenTags ? 'Hide hidden items' : 'Show hidden items'
+          settings.showHiddenBookmarks ? 'Hide hidden items' : 'Show hidden items'
         }
       >
-        {settings.showHiddenTags ? (
+        {settings.showHiddenBookmarks ? (
           <>
             <Eye size={16} strokeWidth={1.5} />
             <span>Visible</span>

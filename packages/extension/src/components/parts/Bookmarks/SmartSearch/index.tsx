@@ -26,7 +26,7 @@ export default function SmartSearch({
   const [highlightedIndex, setHighlightedIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const { tags, showHiddenTags } = useTags()
+  const { tags } = useTags()
 
   // Filter tags based on search query
   const filteredTags = useMemo(() => {
@@ -35,11 +35,9 @@ export default function SmartSearch({
 
     return tags.filter(
       (tag: Tag) =>
-        !selectedTags.includes(tag.id) &&
-        tag.name.toLowerCase().includes(query) &&
-        (showHiddenTags || !tag.hidden)
+        !selectedTags.includes(tag.id) && tag.name.toLowerCase().includes(query)
     )
-  }, [tags, selectedTags, searchQuery, showHiddenTags])
+  }, [tags, selectedTags, searchQuery])
 
   // Get selected tag objects
   const selectedTagObjects = useMemo(() => {

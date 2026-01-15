@@ -9,7 +9,7 @@ import {
  * Note: apiUrl is stored separately in STORAGE_KEYS.API_URL (global, not per-user)
  */
 export interface Settings {
-  showHiddenTags: boolean
+  showHiddenBookmarks: boolean
   autoLockTimeout: string
   useCodePin: boolean
   theme: 'dark' | 'light'
@@ -205,7 +205,7 @@ export function setSettings(
  */
 export function getDefaultSettings(): Settings {
   return {
-    showHiddenTags: false,
+    showHiddenBookmarks: false,
     autoLockTimeout: DEFAULT_AUTO_LOCK_TIMEOUT,
     useCodePin: false,
     theme: 'dark'
