@@ -30,10 +30,6 @@ export default defineConfig({
     description: 'Secure Bookmarks Vault',
     host_permissions: ['<all_urls>'],
     permissions: ['storage', 'tabs'],
-    options_ui: {
-      page: 'settings.html',
-      open_in_tab: true
-    },
     content_security_policy: {
       extension_pages:
         "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; worker-src 'self';"
