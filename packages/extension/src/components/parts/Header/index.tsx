@@ -1,5 +1,6 @@
 import {
   Bookmark,
+  HelpCircle,
   LogOut,
   Menu,
   Save,
@@ -185,6 +186,9 @@ export default function Header({
                   onClick={() => openExtensionPage('settings')}
                 >
                   <Settings2 strokeWidth={1} size={18} color='white' /> Settings
+                </DropdownMenu.Item>
+                <DropdownMenu.Item onClick={() => openExtensionPage('help')}>
+                  <HelpCircle strokeWidth={1} size={18} color='white' /> Help
                 </DropdownMenu.Item>
                 {isAuthenticated && <DropdownMenu.Separator />}
                 {isAuthenticated && (

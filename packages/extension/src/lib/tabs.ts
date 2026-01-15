@@ -2,12 +2,13 @@
  * Utility functions for opening extension pages in browser tabs
  */
 
-type ExtensionPage = 'app' | 'settings' | 'tags'
+type ExtensionPage = 'app' | 'settings' | 'tags' | 'help'
 
 const pageUrls: Record<ExtensionPage, string> = {
   app: '/app.html',
   settings: '/app.html?route=settings',
-  tags: '/app.html?route=tags'
+  tags: '/app.html?route=tags',
+  help: '/app.html?route=help'
 }
 
 /**

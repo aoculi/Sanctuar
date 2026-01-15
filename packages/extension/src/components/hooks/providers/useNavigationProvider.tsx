@@ -14,6 +14,7 @@ export type Route =
   | '/pin-unlock'
   | '/app'
   | '/tags'
+  | '/help'
 
 type NavigationOptions = {
   bookmark?: string | null
