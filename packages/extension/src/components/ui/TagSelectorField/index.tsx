@@ -1,7 +1,6 @@
 import { Tag, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-import { useTags } from '@/components/hooks/useTags'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import { getTagColor } from '@/lib/bookmarkUtils'
@@ -26,18 +25,16 @@ export const TagSelectorField = ({
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const suggestionsRef = useRef<HTMLDivElement>(null)
-  const { showHiddenTags } = useTags()
 
-  // Filter tags based on search query, exclude already selected tags, and filter hidden tags based on settings
+  // Filter tags based on search query and exclude already selected tags
   const filteredTags = useMemo(() => {
     const query = searchQuery.toLowerCase().trim()
     return tags.filter(
       (tag) =>
         !selectedTags.includes(tag.id) &&
-        (query === '' || tag.name.toLowerCase().includes(query)) &&
-        (showHiddenTags || !tag.hidden)
+        (query === '' || tag.name.toLowerCase().includes(query))
     )
-  }, [tags, selectedTags, searchQuery, showHiddenTags])
+  }, [tags, selectedTags, searchQuery])
 
   // Get selected tag objects for display
   const selectedTagObjects = useMemo(() => {

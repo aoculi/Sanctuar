@@ -1,4 +1,4 @@
-import { Edit, GripVertical, Pin, PinOff, Plus, Trash2 } from 'lucide-react'
+import { Edit, Pin, PinOff, Plus, Trash2 } from 'lucide-react'
 import { useMemo } from 'react'
 
 import { createTagMap, getTagNameFromMap } from '@/lib/bookmarkUtils'
@@ -74,11 +74,11 @@ export default function BookmarkRow({
         <div className={styles.checkboxWrapper}>
           <Checkbox checked={selected} onChange={onToggleSelect} />
         </div>
-        {draggable && (
+        {/* {draggable && (
           <div className={styles.dragHandle}>
             <GripVertical size={14} />
           </div>
-        )}
+        )} */}
       </div>
 
       <a
@@ -87,17 +87,19 @@ export default function BookmarkRow({
         rel='noopener noreferrer'
         className={styles.component}
       >
-        <div className={styles.favicon}>
-          <img
-            src={faviconUrl}
-            alt=''
-            width={16}
-            height={16}
-            onError={(e) => {
-              e.currentTarget.style.display = 'none'
-            }}
-          />
-        </div>
+        {faviconUrl && (
+          <div className={styles.favicon}>
+            <img
+              src={faviconUrl}
+              alt=''
+              width={16}
+              height={16}
+              onError={(e) => {
+                e.currentTarget.style.display = 'none'
+              }}
+            />
+          </div>
+        )}
 
         <div className={styles.info}>
           <span className={styles.title}>{bookmark.title || '(Untitled)'}</span>

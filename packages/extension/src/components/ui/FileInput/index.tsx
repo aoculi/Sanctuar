@@ -71,7 +71,7 @@ export default function FileInput({
             disabled={disabled}
             size='sm'
             variant='ghost'
-            color='primary'
+            color='light'
           >
             {value ? 'Change' : 'Choose File'}
           </Button>

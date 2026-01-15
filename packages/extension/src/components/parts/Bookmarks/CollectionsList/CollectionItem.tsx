@@ -1,4 +1,4 @@
-import { ExternalLink, Folder, GripVertical, X } from 'lucide-react'
+import { ExternalLink, Folder, X } from 'lucide-react'
 import { useState } from 'react'
 
 import { getIconByName } from '@/components/ui/IconPicker'
@@ -167,71 +167,77 @@ export default function CollectionItem({
       }}
       onDragEnd={onDragEnd}
     >
-      {draggable && (
-        <div className={styles.dragHandle}>
-          <GripVertical size={14} />
-        </div>
-      )}
       <div className={styles.collapsibleWrapper}>
         <Collapsible
           key={collection.id}
           icon={Icon}
           onIconClick={onIconChange ? handleIconClick : undefined}
+          // left={
+          //   draggable && (
+          //     <div className={styles.dragHandle}>
+          //       <GripVertical size={14} />
+          //     </div>
+          //   )
+          // }
           label={
-            isEditing ? (
-              <div className={styles.labelContent}>
-                <div
-                  className={styles.inputWrapper}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <input
-                    ref={inputRef}
-                    type='text'
-                    className={styles.input}
-                    value={editingName}
-                    onChange={(e) => onNameChange(e.target.value)}
-                    onKeyDown={handleKeyDown}
+            <div className={styles.labelContent}>
+              {isEditing ? (
+                <>
+                  <div
+                    className={styles.inputWrapper}
                     onClick={(e) => e.stopPropagation()}
-                    placeholder='Collection name'
-                  />
-                </div>
-                <ActionBtn
-                  icon={X}
-                  size='sm'
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onCancel()
-                  }}
-                />
-              </div>
-            ) : (
-              <div className={styles.labelContent}>
-                <span
-                  className={styles.collectionName}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onStartEdit(collection.id, collection.name)
-                  }}
-                >
-                  <Text as='span' size='2' weight='medium'>
-                    {collection.name}
-                  </Text>
-                </span>
-                {bookmarks.length > 0 && (
+                  >
+                    <input
+                      ref={inputRef}
+                      type='text'
+                      className={styles.input}
+                      value={editingName}
+                      onChange={(e) => onNameChange(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      onClick={(e) => e.stopPropagation()}
+                      placeholder='Collection name'
+                    />
+                  </div>
                   <ActionBtn
-                    icon={ExternalLink}
+                    icon={X}
                     size='sm'
-                    onClick={handleOpenAllBookmarks}
-                    title='Open all bookmarks in new tabs'
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onCancel()
+                    }}
                   />
-                )}
-              </div>
-            )
+                </>
+              ) : (
+                <>
+                  <span
+                    className={styles.collectionName}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onStartEdit(collection.id, collection.name)
+                    }}
+                  >
+                    <Text as='span' size='2' weight='medium'>
+                      {collection.name}
+                    </Text>
+                  </span>
+                </>
+              )}
+            </div>
           }
           count={bookmarks.length}
           depth={depth}
           defaultOpen={false}
           editable={isEditing}
+          right={
+            bookmarks.length > 0 && (
+              <ActionBtn
+                icon={ExternalLink}
+                size='sm'
+                onClick={handleOpenAllBookmarks}
+                title='Open all bookmarks in new tabs'
+              />
+            )
+          }
         >
           {bookmarks.length > 0 && (
             <div className={styles.bookmarksList}>

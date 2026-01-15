@@ -105,11 +105,17 @@ export const STORAGE_KEYS = {
   SESSION: 'session',
   KEYSTORE: 'keystore',
   MANIFEST: 'manifest',
-  PIN_STORE: 'pin_store',
-  LOCK_STATE: 'lock_state',
   IS_SOFT_LOCKED: 'is_locked', // Soft lock flag - vault locked but can unlock with PIN (vs hard lock requiring password)
   API_URL: 'api_url' // Global API URL setting (not user-specific)
 } as const
+
+export function getPinStoreKey(userId: string): string {
+  return `pin_store:${userId}`
+}
+
+export function getLockStateKey(userId: string): string {
+  return `lock_state:${userId}`
+}
 
 // Auto-lock timer constants
 export const DEFAULT_AUTO_LOCK_TIMEOUT = '20min'

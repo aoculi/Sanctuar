@@ -9,7 +9,7 @@
   height: 44px;
   border: 2px solid var(--border);
   border-radius: var(--border-radius);
-  background: var(--background-4);
+  background: var(--background-3);
   color: var(--text);
   cursor: pointer;
   display: flex;
@@ -60,7 +60,7 @@
   flex-shrink: 0;
   border: 1px solid var(--border);
   border-radius: var(--border-radius);
-  background: var(--background-4);
+  background: var(--background-3);
   color: var(--text-light);
   cursor: pointer;
   display: flex;

@@ -24,7 +24,7 @@ export default function Tags({
   searchQuery: initialSearchQuery = '',
   onSearchChange
 }: TagsProps) {
-  const { tags, showHiddenTags, createTag, deleteTag } = useTags()
+  const { tags, createTag, deleteTag } = useTags()
   const { bookmarks } = useBookmarks()
   const { setFlash, navigate } = useNavigation()
 
@@ -32,17 +32,11 @@ export default function Tags({
   const [editingTag, setEditingTag] = useState<Tag | null>(null)
 
   const filteredTags = useMemo(() => {
-    const visibleTags = showHiddenTags
-      ? tags
-      : tags.filter((tag: Tag) => !tag.hidden)
-
-    if (!searchQuery.trim()) return visibleTags
+    if (!searchQuery.trim()) return tags
 
     const query = searchQuery.toLowerCase().trim()
-    return visibleTags.filter((tag: Tag) =>
-      tag.name.toLowerCase().includes(query)
-    )
-  }, [tags, searchQuery, showHiddenTags])
+    return tags.filter((tag: Tag) => tag.name.toLowerCase().includes(query))
+  }, [tags, searchQuery])
 
   const getBookmarkCount = (tagId: string): number => {
     return bookmarks.filter((b) => b.tags.includes(tagId)).length
@@ -83,7 +77,7 @@ export default function Tags({
     }
 
     try {
-      await createTag({ name, hidden: false })
+      await createTag({ name })
       setSearchQuery('')
     } catch (error) {
       setFlash(`Failed to create tag: ${(error as Error).message}`)

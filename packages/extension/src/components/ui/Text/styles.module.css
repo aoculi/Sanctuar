@@ -69,3 +69,6 @@
 .color-white {
   color: #fff;
 }
+.color-text {
+  color: var(--text);
+}

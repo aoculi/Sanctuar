@@ -11,6 +11,7 @@ import {
   saveManifestData
 } from '@/components/hooks/providers/useManifestProvider'
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
+import { useAuthSession } from '@/components/hooks/providers/useAuthSessionProvider'
 import { getLockState } from '@/lib/lockState'
 import { decryptManifest } from '@/lib/manifest'
 import type { LockState } from '@/lib/storage'
@@ -25,6 +26,7 @@ export type PinPhase = 'idle' | 'verifying' | 'unlocking' | 'loading'
 export const useQueryPin = () => {
   const { setManifestFromLogin } = useManifest()
   const { setFlash } = useNavigation()
+  const { session } = useAuthSession()
   const [phase, setPhase] = useState<PinPhase>('idle')
   const [lockState, setLockState] = useState<LockState | null>(null)
 
@@ -33,7 +35,8 @@ export const useQueryPin = () => {
     retry: false,
     onMutate: async () => {
       setFlash(null)
-      const state = await getLockState()
+      const userId = session.userId || ''
+      const state = await getLockState(userId)
       setLockState(state)
     },
     mutationFn: async (pin: string) => {
@@ -60,7 +63,8 @@ export const useQueryPin = () => {
     },
     onError: async () => {
       setPhase('idle')
-      const state = await getLockState()
+      const userId = session.userId || ''
+      const state = await getLockState(userId)
       setLockState(state)
     },
     onSuccess: () => {

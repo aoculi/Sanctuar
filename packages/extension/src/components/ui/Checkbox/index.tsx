@@ -3,7 +3,7 @@ import React from 'react'
 import styles from './styles.module.css'
 
 interface CheckboxProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string
+  label?: string | React.ReactNode
 }
 
 export const Checkbox = (props: CheckboxProps) => {
@@ -13,7 +13,11 @@ export const Checkbox = (props: CheckboxProps) => {
         <input type='checkbox' {...props} className={styles.checkbox} />
         <span className={styles.checkmark} />
       </div>
-      {props.label && <span>{props.label}</span>}
+      {props.label && typeof props.label === 'string' ? (
+        <span>{props.label}</span>
+      ) : (
+        props.label
+      )}
     </label>
   )
 }

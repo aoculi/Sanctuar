@@ -1,4 +1,11 @@
-import { Bookmark, ChevronDown, LogOut, Settings, Tag } from 'lucide-react'
+import {
+  Bookmark,
+  ChevronDown,
+  HelpCircle,
+  LogOut,
+  Settings,
+  Tag
+} from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
@@ -114,6 +121,14 @@ export default function SmartHeader() {
         >
           <Settings strokeWidth={1.5} size={18} />
           <span>Settings</span>
+        </button>
+        <button
+          className={styles.menuItem}
+          role='menuitem'
+          onClick={() => handleMenuItemClick(() => navigate('/help'))}
+        >
+          <HelpCircle strokeWidth={1.5} size={18} />
+          <span>Help</span>
         </button>
         <div className={styles.separator} />
         <button

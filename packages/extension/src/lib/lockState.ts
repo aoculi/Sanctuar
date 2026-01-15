@@ -2,13 +2,12 @@
  * Lock state management for PIN attempts and hard locking
  */
 
-import { STORAGE_KEYS } from '@/lib/constants'
 import { PIN_FAILED_ATTEMPTS_THRESHOLD } from '@/lib/pin'
 import {
-  clearStorageItem,
-  getStorageItem,
-  type LockState,
-  setStorageItem
+  clearUserLockState,
+  getUserLockState,
+  setUserLockState,
+  type LockState
 } from '@/lib/storage'
 
 /**
@@ -22,18 +21,19 @@ const DEFAULT_LOCK_STATE: LockState = {
 }
 
 /**
- * Get current lock state from storage
+ * Get current lock state from storage for a specific user
  */
-export async function getLockState(): Promise<LockState> {
-  const state = await getStorageItem<LockState>(STORAGE_KEYS.LOCK_STATE)
-  return state || DEFAULT_LOCK_STATE
+export async function getLockState(userId: string): Promise<LockState> {
+  return getUserLockState(userId)
 }
 
 /**
  * Increment failed PIN attempts and trigger hard lock if threshold reached
  */
-export async function incrementFailedPinAttempts(): Promise<LockState> {
-  const state = await getLockState()
+export async function incrementFailedPinAttempts(
+  userId: string
+): Promise<LockState> {
+  const state = await getLockState(userId)
   const newAttempts = state.failedPinAttempts + 1
 
   const newState: LockState = {
@@ -47,13 +47,13 @@ export async function incrementFailedPinAttempts(): Promise<LockState> {
         : state.hardLockedAt
   }
 
-  await setStorageItem(STORAGE_KEYS.LOCK_STATE, newState)
+  await setUserLockState(newState, userId)
   return newState
 }
 
 /**
- * Reset lock state on successful unlock
+ * Reset lock state on successful unlock for a specific user
  */
-export async function resetLockState(): Promise<void> {
-  await clearStorageItem(STORAGE_KEYS.LOCK_STATE)
+export async function resetLockState(userId: string): Promise<void> {
+  await clearUserLockState(userId)
 }

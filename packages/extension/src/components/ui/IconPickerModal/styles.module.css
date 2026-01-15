@@ -27,7 +27,7 @@
     border-color 0.15s ease,
     transform 0.1s ease;
   padding: 0;
-  background: var(--background-4);
+  background: var(--background-3);
   color: var(--text);
   display: flex;
   align-items: center;
@@ -63,7 +63,7 @@
   padding: 8px 16px;
   border: 1px solid var(--border);
   border-radius: var(--border-radius);
-  background: var(--background-4);
+  background: var(--background-3);
   color: var(--text);
   cursor: pointer;
   font-size: 14px;

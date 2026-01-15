@@ -3,15 +3,17 @@ import {
   DEFAULT_AUTO_LOCK_TIMEOUT_MS,
   STORAGE_KEYS
 } from '@/lib/constants'
+import { getLockStateKey, getPinStoreKey } from '@/lib/constants'
 
 /**
  * Settings interface
  * Note: apiUrl is stored separately in STORAGE_KEYS.API_URL (global, not per-user)
  */
 export interface Settings {
-  showHiddenTags: boolean
+  showHiddenBookmarks: boolean
   autoLockTimeout: string
   useCodePin: boolean
+  theme: 'dark' | 'light'
 }
 
 /**
@@ -204,9 +206,10 @@ export function setSettings(
  */
 export function getDefaultSettings(): Settings {
   return {
-    showHiddenTags: false,
+    showHiddenBookmarks: false,
     autoLockTimeout: DEFAULT_AUTO_LOCK_TIMEOUT,
-    useCodePin: false
+    useCodePin: false,
+    theme: 'dark'
   }
 }
 
@@ -270,4 +273,68 @@ export async function getAutoLockTimeout(
     settings.autoLockTimeout || DEFAULT_AUTO_LOCK_TIMEOUT
   )
   return timeout
+}
+
+/**
+ * Get PIN store for a specific user
+ */
+export async function getPinStore(
+  userId: string
+): Promise<PinStoreData | null> {
+  const key = getPinStoreKey(userId)
+  return getStorageItem<PinStoreData>(key)
+}
+
+/**
+ * Set PIN store for a specific user
+ */
+export async function setPinStore(
+  data: PinStoreData,
+  userId: string
+): Promise<void> {
+  const key = getPinStoreKey(userId)
+  return setStorageItem(key, data)
+}
+
+/**
+ * Clear PIN store for a specific user
+ */
+export async function clearPinStore(userId: string): Promise<void> {
+  const key = getPinStoreKey(userId)
+  return clearStorageItem(key)
+}
+
+/**
+ * Get lock state for a specific user
+ */
+export async function getUserLockState(userId: string): Promise<LockState> {
+  const key = getLockStateKey(userId)
+  const state = await getStorageItem<LockState>(key)
+  return (
+    state || {
+      failedPinAttempts: 0,
+      lastFailedAttempt: null,
+      isHardLocked: false,
+      hardLockedAt: null
+    }
+  )
+}
+
+/**
+ * Set lock state for a specific user
+ */
+export async function setUserLockState(
+  state: LockState,
+  userId: string
+): Promise<void> {
+  const key = getLockStateKey(userId)
+  return setStorageItem(key, state)
+}
+
+/**
+ * Clear lock state for a specific user
+ */
+export async function clearUserLockState(userId: string): Promise<void> {
+  const key = getLockStateKey(userId)
+  return clearStorageItem(key)
 }

@@ -12,9 +12,9 @@ import { fetchRefreshToken } from '@/api/auth-api'
 import { MIN_REFRESH_INTERVAL, STORAGE_KEYS } from '@/lib/constants'
 import {
   clearStorageItem,
+  getPinStore,
   getStorageItem,
-  setStorageItem,
-  type PinStoreData
+  setStorageItem
 } from '@/lib/storage'
 
 export type AuthSession = {
@@ -73,9 +73,9 @@ export function AuthSessionProvider({ children }: AuthSessionProviderProps) {
       if (lockMode === 'soft') {
         // Soft lock: Keep SESSION, clear only KEYSTORE + MANIFEST
         // Check if PIN is configured to determine if soft lock is possible
-        const pinStore = await getStorageItem<PinStoreData>(
-          STORAGE_KEYS.PIN_STORE
-        )
+        const pinStore = session.userId
+          ? await getPinStore(session.userId)
+          : null
         if (pinStore) {
           await Promise.allSettled([
             clearStorageItem(STORAGE_KEYS.KEYSTORE).catch(() => {}),
@@ -86,6 +86,8 @@ export function AuthSessionProvider({ children }: AuthSessionProviderProps) {
       }
 
       // Hard lock: Full logout
+      // NOTE: PIN store and lock state are NOT cleared - they persist tied to the account
+      // This allows users to log out and back in with PIN
       setSessionState(defaultSession)
       setIsAuthenticated(false)
 
@@ -93,12 +95,10 @@ export function AuthSessionProvider({ children }: AuthSessionProviderProps) {
         clearStorageItem(STORAGE_KEYS.SESSION).catch(() => {}),
         clearStorageItem(STORAGE_KEYS.KEYSTORE).catch(() => {}),
         clearStorageItem(STORAGE_KEYS.MANIFEST).catch(() => {}),
-        clearStorageItem(STORAGE_KEYS.PIN_STORE).catch(() => {}),
-        clearStorageItem(STORAGE_KEYS.LOCK_STATE).catch(() => {}),
         clearStorageItem(STORAGE_KEYS.IS_SOFT_LOCKED).catch(() => {})
       ])
     },
-    []
+    [session.userId]
   )
 
   useEffect(() => {

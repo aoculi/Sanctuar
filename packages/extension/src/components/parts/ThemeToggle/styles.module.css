@@ -20,13 +20,3 @@
   background-color: var(--background-2);
   color: var(--text);
 }
-
-.toggle.active {
-  background-color: var(--background-2);
-  border-color: var(--border);
-  color: var(--text);
-}
-
-.toggle.active:hover {
-  background-color: var(--background-3);
-}

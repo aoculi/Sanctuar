@@ -11,11 +11,11 @@ import { STORAGE_KEYS } from '@/lib/constants'
 import {
   clearStorageItem,
   getAutoLockTimeout,
+  getPinStore,
   getSettings,
   getStorageItem,
   parseAutoLockTimeout,
-  setStorageItem,
-  type PinStoreData
+  setStorageItem
 } from '@/lib/storage'
 import { useAuthSession, type AuthSession } from './useAuthSessionProvider'
 
@@ -71,16 +71,20 @@ export async function checkAndApplyAutoLock(): Promise<void> {
   const result = await storageApi.local.get([
     STORAGE_KEYS.SESSION,
     STORAGE_KEYS.KEYSTORE,
-    STORAGE_KEYS.PIN_STORE,
     STORAGE_KEYS.IS_SOFT_LOCKED
   ])
 
   const session = result[STORAGE_KEYS.SESSION] as AuthSession | undefined
   const keystore = result[STORAGE_KEYS.KEYSTORE]
-  const pinStore = result[STORAGE_KEYS.PIN_STORE] as PinStoreData | undefined
   const isLocked = result[STORAGE_KEYS.IS_SOFT_LOCKED] as boolean | undefined
 
-  if (!session || !session.token || !session.createdAt || isLocked) {
+  if (
+    !session ||
+    !session.userId ||
+    !session.token ||
+    !session.createdAt ||
+    isLocked
+  ) {
     return
   }
 
@@ -88,8 +92,11 @@ export async function checkAndApplyAutoLock(): Promise<void> {
     return
   }
 
+  // Check if user has PIN configured
+  const pinStore = await getPinStore(session.userId)
+
   // Get settings for this user
-  const settings = session.userId ? await getSettings(session.userId) : null
+  const settings = await getSettings(session.userId)
   const autoLockTimeout = settings?.autoLockTimeout || '20min'
   const autoLockTimeoutMs = parseAutoLockTimeout(autoLockTimeout)
 
@@ -127,7 +134,7 @@ async function calculateUnlockState(
   const [keystore, isLocked, pinStore] = await Promise.all([
     getStorageItem(STORAGE_KEYS.KEYSTORE),
     getStorageItem<boolean>(STORAGE_KEYS.IS_SOFT_LOCKED),
-    getStorageItem<PinStoreData>(STORAGE_KEYS.PIN_STORE)
+    getPinStore(session.userId)
   ])
 
   // Can unlock with PIN if PIN store exists
@@ -191,8 +198,7 @@ export function UnlockStateProvider({ children }: UnlockStateProviderProps) {
         STORAGE_KEYS.SESSION,
         STORAGE_KEYS.KEYSTORE,
         STORAGE_KEYS.IS_SOFT_LOCKED,
-        STORAGE_KEYS.SETTINGS,
-        STORAGE_KEYS.PIN_STORE
+        STORAGE_KEYS.SETTINGS
       ]
 
       if (relevantKeys.some((key) => changes[key])) {

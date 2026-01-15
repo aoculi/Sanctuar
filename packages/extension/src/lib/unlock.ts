@@ -22,13 +22,14 @@ import {
 } from '@/lib/crypto'
 import { whenCryptoReady } from '@/lib/cryptoEnv'
 import {
-  getLockState,
   incrementFailedPinAttempts,
-  resetLockState
+  resetLockState,
+  getLockState
 } from '@/lib/lockState'
 import { decryptMakWithPin, verifyPin } from '@/lib/pin'
 import {
   clearStorageItem,
+  getPinStore,
   getStorageItem,
   setStorageItem,
   type AadContext,
@@ -171,7 +172,7 @@ export async function unlock(input: UnlockInput): Promise<UnlockResult> {
     await clearStorageItem(STORAGE_KEYS.IS_SOFT_LOCKED).catch(() => {})
 
     // Reset lock state on successful unlock (clears failed PIN attempts)
-    await resetLockState()
+    await resetLockState(userId)
 
     // Zeroize local temporaries (MK, KEK, MAK)
     cryptoZeroize(mk, kek, mak)
@@ -197,14 +198,20 @@ export async function unlock(input: UnlockInput): Promise<UnlockResult> {
 export async function unlockWithPin(pin: string): Promise<UnlockResult> {
   await whenCryptoReady()
 
-  // Get PIN store
-  const pinStore = await getStorageItem<PinStoreData>(STORAGE_KEYS.PIN_STORE)
+  // Get session to determine which user's PIN store to use
+  const session = await getStorageItem<AuthSession>(STORAGE_KEYS.SESSION)
+  if (!session || !session.userId) {
+    throw new Error('No session found')
+  }
+
+  // Get PIN store for this user
+  const pinStore = await getPinStore(session.userId)
   if (!pinStore) {
     throw new Error('PIN not configured')
   }
 
-  // Check lock state
-  const lockState = await getLockState()
+  // Check lock state using user-specific key
+  const lockState = await getLockState(session.userId)
   if (lockState.isHardLocked) {
     throw new Error('Too many failed attempts. Please login with password.')
   }
@@ -212,7 +219,7 @@ export async function unlockWithPin(pin: string): Promise<UnlockResult> {
   // Verify PIN and decrypt MAK
   const isValid = await verifyPin(pin, pinStore)
   if (!isValid) {
-    await incrementFailedPinAttempts()
+    await incrementFailedPinAttempts(pinStore.userId)
     throw new Error('Invalid PIN')
   }
 
@@ -226,7 +233,6 @@ export async function unlockWithPin(pin: string): Promise<UnlockResult> {
   await setStorageItem(STORAGE_KEYS.KEYSTORE, keystoreData)
 
   // Update session's createdAt timestamp to reset auto-lock timer
-  const session = await getStorageItem<AuthSession>(STORAGE_KEYS.SESSION)
   if (session) {
     const updatedSession = {
       ...session,
@@ -239,7 +245,7 @@ export async function unlockWithPin(pin: string): Promise<UnlockResult> {
   await clearStorageItem(STORAGE_KEYS.IS_SOFT_LOCKED)
 
   // Reset lock state on successful unlock
-  await resetLockState()
+  await resetLockState(pinStore.userId)
 
   cryptoZeroize(mak)
 

@@ -1,5 +1,5 @@
 :root {
-  --text: #abb0ba;
+  --text: #c7cbd3;
   --text-light: #8d9096;
 
   --border: #464b57;
@@ -12,5 +12,20 @@
   --background-1: #57585e;
   --background-2: #2f343e;
   --background-3: #282c33;
-  --background-4: #1b1e25;
+}
+
+[data-theme='light'] {
+  --text: #1a1a1a;
+  --text-light: #666666;
+
+  --border: #d0d0d0;
+  --border-hover: #999999;
+  --border-radius: 2px;
+
+  --primary: #6e56cf;
+  --secondary: #e5a84b;
+
+  --background-1: #f0f0f0;
+  --background-2: #eeeeee;
+  --background-3: #ffffff;
 }

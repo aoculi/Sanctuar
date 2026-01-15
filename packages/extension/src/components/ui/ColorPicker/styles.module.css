@@ -45,7 +45,7 @@
 }
 
 .noColorButton {
-  background-color: var(--background-4);
+  background-color: var(--background-3);
   color: var(--text);
   border-style: dashed;
 }
@@ -61,7 +61,7 @@
 }
 
 .customColorButton {
-  background-color: var(--background-4);
+  background-color: var(--background-3);
   color: var(--text);
 }
 

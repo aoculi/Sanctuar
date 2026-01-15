@@ -19,7 +19,7 @@
 }
 
 .header:hover {
-  background-color: rgba(255, 255, 255, 0.03);
+  background-color: var(--background-2);
 }
 
 .left {
@@ -29,6 +29,13 @@
   color: var(--text);
   flex: 1;
   min-width: 0;
+}
+.before {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.header:hover .before {
+  opacity: 1;
 }
 
 .chevron {

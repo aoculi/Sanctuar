@@ -28,7 +28,7 @@ export default function TagManageModal({
   bookmark,
   bookmarkIds
 }: TagManageModalProps) {
-  const { tags, showHiddenTags, createTag, deleteTag, togglePinTag } = useTags()
+  const { tags, createTag, deleteTag, togglePinTag } = useTags()
   const { updateBookmark, updateBookmarks, bookmarks } = useBookmarks()
   const { setFlash } = useNavigation()
 
@@ -49,19 +49,13 @@ export default function TagManageModal({
     return bookmarks.filter((b: Bookmark) => bookmarkIds.includes(b.id))
   }, [isBulkMode, bookmarkIds, bookmarks])
 
-  // Filter tags by search and visibility
+  // Filter tags by search
   const filteredTags = useMemo(() => {
-    const visibleTags = showHiddenTags
-      ? tags
-      : tags.filter((tag: Tag) => !tag.hidden)
-
-    if (!searchQuery.trim()) return visibleTags
+    if (!searchQuery.trim()) return tags
 
     const query = searchQuery.toLowerCase().trim()
-    return visibleTags.filter((tag: Tag) =>
-      tag.name.toLowerCase().includes(query)
-    )
-  }, [tags, searchQuery, showHiddenTags])
+    return tags.filter((tag: Tag) => tag.name.toLowerCase().includes(query))
+  }, [tags, searchQuery])
 
   const isTagSelected = (tagId: string): boolean => {
     if (isBulkMode) {
@@ -161,7 +155,7 @@ export default function TagManageModal({
     }
 
     try {
-      const newTag = await createTag({ name, hidden: false })
+      const newTag = await createTag({ name })
       if (isBulkMode && newTag) {
         for (const b of bulkBookmarks) {
           await updateBookmark(b.id, { tags: [...b.tags, newTag.id] })

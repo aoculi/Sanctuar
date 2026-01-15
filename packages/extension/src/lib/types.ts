@@ -25,6 +25,7 @@ export interface Bookmark {
   tags: string[] // tag ids
   collectionId?: string // optional collection id
   pinned?: boolean
+  hidden?: boolean // whether bookmark is hidden (default: false)
   created_at: number // epoch ms
   updated_at: number // epoch ms
 }
@@ -36,7 +37,6 @@ export interface Tag {
   id: string // nanoid
   name: string // display name
   color?: string // optional UI hint
-  hidden?: boolean // whether tag is hidden (default: false)
   pinned?: boolean // whether tag is pinned (default: false)
 }
 

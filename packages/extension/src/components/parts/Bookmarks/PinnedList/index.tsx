@@ -2,6 +2,7 @@ import { Pin } from 'lucide-react'
 import { useMemo } from 'react'
 
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
+import { useSettings } from '@/components/hooks/providers/useSettingsProvider'
 import { useBookmarks } from '@/components/hooks/useBookmarks'
 import { useTags } from '@/components/hooks/useTags'
 import { filterBookmarks } from '@/lib/bookmarkUtils'
@@ -30,25 +31,21 @@ export default function PinnedList({
   onToggleSelect
 }: PinnedListProps) {
   const { bookmarks, updateBookmark, deleteBookmark } = useBookmarks()
-  const { tags, showHiddenTags } = useTags()
+  const { tags } = useTags()
+  const { settings } = useSettings()
   const { setFlash } = useNavigation()
 
   const pinnedBookmarks = useMemo(() => {
     // Get pinned bookmarks
-    const pinned = bookmarks.filter((bookmark: Bookmark) => bookmark.pinned)
+    let filtered = bookmarks.filter((bookmark: Bookmark) => bookmark.pinned)
+
+    // Filter out hidden bookmarks when showHiddenBookmarks is false
+    if (!settings.showHiddenBookmarks) {
+      filtered = filtered.filter((bookmark) => !bookmark.hidden)
+    }
 
     // Apply search filter
-    let filtered = filterBookmarks(pinned, tags, searchQuery)
-
-    // Filter out bookmarks with hidden tags when showHiddenTags is false
-    if (!showHiddenTags) {
-      const hiddenTagIds = new Set(
-        tags.filter((t) => t.hidden).map((t) => t.id)
-      )
-      filtered = filtered.filter(
-        (bookmark) => !bookmark.tags.some((tagId) => hiddenTagIds.has(tagId))
-      )
-    }
+    filtered = filterBookmarks(filtered, tags, searchQuery)
 
     // Apply tag filter
     if (selectedTags.length > 0) {
@@ -64,7 +61,7 @@ export default function PinnedList({
     return filtered.sort(
       (a: Bookmark, b: Bookmark) => b.updated_at - a.updated_at
     )
-  }, [bookmarks, tags, searchQuery, selectedTags, showHiddenTags])
+  }, [bookmarks, tags, searchQuery, selectedTags, settings.showHiddenBookmarks])
 
   const handleTogglePin = async (bookmark: Bookmark) => {
     try {

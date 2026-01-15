@@ -1,7 +1,6 @@
-import { Globe, Loader2 } from 'lucide-react'
+import { Check, Globe, Loader2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
-import { useSettings } from '@/components/hooks/providers/useSettingsProvider'
 import { useCollections } from '@/components/hooks/useCollections'
 import { useTags } from '@/components/hooks/useTags'
 import { flattenCollectionsWithDepth } from '@/lib/collectionUtils'
@@ -10,11 +9,12 @@ import { getHostname } from '@/lib/utils'
 import { MAX_TAGS_PER_ITEM } from '@/lib/validation'
 
 import Button from '@/components/ui/Button'
+import { Checkbox } from '@/components/ui/Checkbox'
 import Select from '@/components/ui/Select'
 import { TagSelectorField } from '@/components/ui/TagSelectorField'
-import Text from '@/components/ui/Text'
 import Textarea from '@/components/ui/Textarea'
 
+import Text from '@/components/ui/Text'
 import styles from './styles.module.css'
 
 export type BookmarkFormData = {
@@ -24,6 +24,7 @@ export type BookmarkFormData = {
   picture: string
   tags: string[]
   collectionId: string | undefined
+  hidden: boolean
 }
 
 interface BookmarkFormProps {
@@ -35,6 +36,10 @@ interface BookmarkFormProps {
   isSubmitting?: boolean
   /** Label for the submit button (default: "Save") */
   submitLabel?: string
+  /** Whether the form submission was successful */
+  isSuccess?: boolean
+  /** Message to show on success (default: "Saved!") */
+  successMessage?: string
 }
 
 const emptyFormData: BookmarkFormData = {
@@ -43,18 +48,20 @@ const emptyFormData: BookmarkFormData = {
   note: '',
   picture: '',
   tags: [],
-  collectionId: undefined
+  collectionId: undefined,
+  hidden: false
 }
 
 export default function BookmarkForm({
   initialData,
   onSubmit,
   isSubmitting = false,
-  submitLabel = 'Save'
+  submitLabel = 'Save',
+  isSuccess = false,
+  successMessage = 'Saved!'
 }: BookmarkFormProps) {
   const { collections } = useCollections()
   const { tags } = useTags()
-  const { settings } = useSettings()
 
   const [form, setForm] = useState<BookmarkFormData>(() => ({
     ...emptyFormData,
@@ -136,7 +143,8 @@ export default function BookmarkForm({
       note: form.note?.trim(),
       picture: form.picture?.trim(),
       tags: form.tags,
-      collectionId: form.collectionId
+      collectionId: form.collectionId,
+      hidden: form.hidden
     })
   }
 
@@ -145,32 +153,30 @@ export default function BookmarkForm({
     return form.url?.trim() && form.title?.trim()
   }, [form.url, form.title])
 
-  const selectableTags = useMemo(() => {
-    if (settings.showHiddenTags) {
-      return tags
-    }
-
-    const selectedTagIds = new Set(form.tags)
-    const selectedHiddenTags: typeof tags = []
-    const visibleTags: typeof tags = []
-
-    for (const tag of tags) {
-      if (tag.hidden) {
-        if (selectedTagIds.has(tag.id)) {
-          selectedHiddenTags.push(tag)
-        }
-      } else {
-        visibleTags.push(tag)
-      }
-    }
-
-    return [...visibleTags, ...selectedHiddenTags]
-  }, [tags, settings.showHiddenTags, form.tags])
-
   const collectionsWithDepth = useMemo(
     () => flattenCollectionsWithDepth(collections),
     [collections]
   )
+
+  // Show loading until we have the initial data
+  if (!initialData?.url) {
+    return (
+      <div className={styles.loadingContainer}>
+        <Loader2 size={32} className={styles.loadingSpinner} />
+      </div>
+    )
+  }
+
+  if (isSuccess) {
+    return (
+      <div className={styles.successContainer}>
+        <div className={styles.successIcon}>
+          <Check size={32} />
+        </div>
+        <span className={styles.successMessage}>{successMessage}</span>
+      </div>
+    )
+  }
 
   return (
     <form onSubmit={handleSubmit} className={styles.form}>
@@ -239,32 +245,27 @@ export default function BookmarkForm({
           rows={3}
         />
 
-        <div className={styles.section}>
-          <Text as='label' size='2' className={styles.sectionLabel}>
-            Collection
-          </Text>
-          <Select
-            size='lg'
-            value={form.collectionId || ''}
-            onChange={(e) =>
-              setForm((prev) => ({
-                ...prev,
-                collectionId: e.target.value || undefined
-              }))
-            }
-          >
-            <option value=''>None</option>
-            {collectionsWithDepth.map(({ collection, depth }) => (
-              <option key={collection.id} value={collection.id}>
-                {'  '.repeat(depth)}
-                {collection.name}
-              </option>
-            ))}
-          </Select>
-        </div>
+        <Select
+          size='lg'
+          value={form.collectionId || ''}
+          onChange={(e) =>
+            setForm((prev) => ({
+              ...prev,
+              collectionId: e.target.value || undefined
+            }))
+          }
+        >
+          <option value=''>No collection</option>
+          {collectionsWithDepth.map(({ collection, depth }) => (
+            <option key={collection.id} value={collection.id}>
+              {'  '.repeat(depth)}
+              {collection.name}
+            </option>
+          ))}
+        </Select>
 
         <TagSelectorField
-          tags={selectableTags}
+          tags={tags}
           selectedTags={form.tags}
           onChange={(tags) => setForm((prev) => ({ ...prev, tags }))}
         />
@@ -272,6 +273,18 @@ export default function BookmarkForm({
         {errors.tags && (
           <span className={styles.fieldError}>{errors.tags}</span>
         )}
+
+        <Checkbox
+          checked={form.hidden}
+          onChange={(e) =>
+            setForm((prev) => ({ ...prev, hidden: e.target.checked }))
+          }
+          label={
+            <Text as='span' size='2'>
+              Hide from list
+            </Text>
+          }
+        />
       </div>
 
       <div className={styles.actions}>

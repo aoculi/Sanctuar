@@ -16,7 +16,7 @@ import {
   zeroize
 } from '@/lib/crypto'
 import { getCryptoEnv, whenCryptoReady } from '@/lib/cryptoEnv'
-import type { PinStoreData } from '@/lib/storage'
+import { setPinStore, type PinStoreData } from '@/lib/storage'
 import type { KeystoreData } from '@/lib/unlock'
 import { argon2id } from 'hash-wasm'
 
@@ -145,6 +145,7 @@ export async function decryptMakWithPin(
 
 /**
  * Setup PIN - create PIN store from password unlock
+ * Stores the PIN store using a user-specific key
  */
 export async function setupPin(
   pin: string,
@@ -184,6 +185,9 @@ export async function setupPin(
     vaultId,
     version: 1
   }
+
+  // Store using user-specific key
+  await setPinStore(pinStoreData, userId)
 
   zeroize(pinHash, pinHashSalt, mak)
 
