@@ -1,5 +1,5 @@
 import { Loader2, RefreshCw } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { useManifest } from '@/components/hooks/providers/useManifestProvider'
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
@@ -30,24 +30,32 @@ const emptyBookmark = {
 
 export default function Bookmark() {
   usePopupSize('compact')
-  const { navigate, selectedBookmark, setFlash } = useNavigation()
+  const { selectedBookmark, setFlash } = useNavigation()
   const { isSaving } = useManifest()
   const { addBookmark, updateBookmark, bookmarks } = useBookmarks()
-
-  let bookmark = bookmarks.find((item) => item.id === selectedBookmark) || null
-  if (selectedBookmark === 'blank') {
-    bookmark = emptyBookmark
-  }
 
   const [initialFormData, setInitialFormData] = useState<
     Partial<BookmarkFormData>
   >({})
   const [isLoading, setIsLoading] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [isSuccess, setIsSuccess] = useState(false)
+  const [existingBookmarkId, setExistingBookmarkId] = useState<string | null>(
+    null
+  )
+  const hasLoadedRef = useRef(false)
 
-  // Initialize form data when editing an existing bookmark
+  // Find the bookmark being edited (by selectedBookmark ID or by URL match)
+  let bookmark =
+    bookmarks.find(
+      (item) => item.id === selectedBookmark || item.id === existingBookmarkId
+    ) || null
+  if (selectedBookmark === 'blank') {
+    bookmark = emptyBookmark
+  }
+  // Initialize form data when editing an existing bookmark (via selectedBookmark)
   useEffect(() => {
-    if (bookmark) {
+    if (selectedBookmark && selectedBookmark !== 'blank' && bookmark?.id) {
       setInitialFormData({
         url: bookmark.url,
         title: bookmark.title,
@@ -56,25 +64,13 @@ export default function Bookmark() {
         tags: bookmark.tags,
         collectionId: bookmark.collectionId
       })
+      hasLoadedRef.current = true
     }
-  }, [bookmark])
-
-  // Check for duplicate URL when creating a new bookmark
-  useEffect(() => {
-    if (!bookmark && initialFormData.url?.trim()) {
-      const trimmedUrl = initialFormData.url.trim()
-      const duplicate = bookmarks.find(
-        (b) => b.url.trim().toLowerCase() === trimmedUrl.toLowerCase()
-      )
-      if (duplicate) {
-        setFlash('This page is already bookmarked')
-      }
-    }
-  }, [initialFormData.url, bookmarks, bookmark, setFlash])
+  }, [selectedBookmark, bookmark])
 
   // Capture current page when creating a new bookmark
   useEffect(() => {
-    if (bookmark || selectedBookmark) {
+    if (hasLoadedRef.current || selectedBookmark) {
       return
     }
 
@@ -84,23 +80,44 @@ export default function Bookmark() {
 
       const result = await captureCurrentPage()
       if (result.ok) {
-        setInitialFormData({
-          url: result.bookmark.url,
-          title: result.bookmark.title,
-          note: result.bookmark.note,
-          picture: result.bookmark.picture,
-          tags: result.bookmark.tags,
-          collectionId: result.bookmark.collectionId
-        })
+        // Check if this URL already exists in bookmarks
+        const trimmedUrl = result.bookmark.url.trim().toLowerCase()
+        const existing = bookmarks.find(
+          (b) => b.url.trim().toLowerCase() === trimmedUrl
+        )
+
+        if (existing) {
+          // Switch to edit mode with existing bookmark data
+          setExistingBookmarkId(existing.id)
+          setInitialFormData({
+            url: existing.url,
+            title: existing.title,
+            note: existing.note,
+            picture: existing.picture,
+            tags: existing.tags,
+            collectionId: existing.collectionId
+          })
+        } else {
+          // New bookmark - use captured page data
+          setInitialFormData({
+            url: result.bookmark.url,
+            title: result.bookmark.title,
+            note: result.bookmark.note,
+            picture: result.bookmark.picture,
+            tags: result.bookmark.tags,
+            collectionId: result.bookmark.collectionId
+          })
+        }
       } else {
         setFlash(result.error)
       }
 
+      hasLoadedRef.current = true
       setIsLoading(false)
     }
 
     loadCurrentPage()
-  }, [bookmark, selectedBookmark, setFlash])
+  }, [selectedBookmark, setFlash, bookmarks])
 
   const handleRefreshMetadata = async () => {
     if (!initialFormData.url?.trim()) {
@@ -134,7 +151,7 @@ export default function Bookmark() {
     setIsLoading(true)
 
     try {
-      if (bookmark) {
+      if (bookmark?.id) {
         await updateBookmark(bookmark.id, {
           url: data.url,
           title: data.title,
@@ -154,6 +171,7 @@ export default function Bookmark() {
           pinned: false
         })
       }
+      setIsSuccess(true)
     } catch (error) {
       setFlash(
         'Failed to save bookmark: ' +
@@ -164,7 +182,7 @@ export default function Bookmark() {
     }
   }
 
-  const submitLabel = bookmark ? 'Save' : 'Create'
+  const submitLabel = bookmark?.id ? 'Save' : 'Create'
 
   return (
     <div className={styles.component}>
@@ -200,17 +218,23 @@ export default function Bookmark() {
       />
 
       <div className={styles.page}>
-        <div className={styles.pageTitle}>
-          <Text as='h1' size='2' weight='medium'>
-            {bookmark?.id ? 'Edit Bookmark' : 'New Bookmark'}
-          </Text>
-        </div>
+        {bookmark?.id && (
+          <div className={styles.pageTitle}>
+            <Text as='h1' size='2' weight='medium'>
+              {existingBookmarkId ? 'Already Bookmarked' : 'Edit Bookmark'}
+            </Text>
+          </div>
+        )}
 
         <BookmarkForm
           initialData={initialFormData}
           onSubmit={handleSubmit}
-          isSubmitting={isLoading || isSaving}
+          isSubmitting={isSaving}
           submitLabel={submitLabel}
+          isSuccess={isSuccess}
+          successMessage={
+            bookmark?.id ? 'Bookmark updated!' : 'Bookmark saved!'
+          }
         />
       </div>
     </div>

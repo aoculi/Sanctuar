@@ -1,4 +1,4 @@
-import { Globe, Loader2 } from 'lucide-react'
+import { Check, Globe, Loader2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { useSettings } from '@/components/hooks/providers/useSettingsProvider'
@@ -12,7 +12,6 @@ import { MAX_TAGS_PER_ITEM } from '@/lib/validation'
 import Button from '@/components/ui/Button'
 import Select from '@/components/ui/Select'
 import { TagSelectorField } from '@/components/ui/TagSelectorField'
-import Text from '@/components/ui/Text'
 import Textarea from '@/components/ui/Textarea'
 
 import styles from './styles.module.css'
@@ -35,6 +34,10 @@ interface BookmarkFormProps {
   isSubmitting?: boolean
   /** Label for the submit button (default: "Save") */
   submitLabel?: string
+  /** Whether the form submission was successful */
+  isSuccess?: boolean
+  /** Message to show on success (default: "Saved!") */
+  successMessage?: string
 }
 
 const emptyFormData: BookmarkFormData = {
@@ -50,7 +53,9 @@ export default function BookmarkForm({
   initialData,
   onSubmit,
   isSubmitting = false,
-  submitLabel = 'Save'
+  submitLabel = 'Save',
+  isSuccess = false,
+  successMessage = 'Saved!'
 }: BookmarkFormProps) {
   const { collections } = useCollections()
   const { tags } = useTags()
@@ -172,6 +177,26 @@ export default function BookmarkForm({
     [collections]
   )
 
+  // Show loading until we have the initial data
+  if (!initialData?.url) {
+    return (
+      <div className={styles.loadingContainer}>
+        <Loader2 size={32} className={styles.loadingSpinner} />
+      </div>
+    )
+  }
+
+  if (isSuccess) {
+    return (
+      <div className={styles.successContainer}>
+        <div className={styles.successIcon}>
+          <Check size={32} />
+        </div>
+        <span className={styles.successMessage}>{successMessage}</span>
+      </div>
+    )
+  }
+
   return (
     <form onSubmit={handleSubmit} className={styles.form}>
       <div className={styles.content}>
@@ -239,29 +264,24 @@ export default function BookmarkForm({
           rows={3}
         />
 
-        <div className={styles.section}>
-          <Text as='label' size='2' className={styles.sectionLabel}>
-            Collection
-          </Text>
-          <Select
-            size='lg'
-            value={form.collectionId || ''}
-            onChange={(e) =>
-              setForm((prev) => ({
-                ...prev,
-                collectionId: e.target.value || undefined
-              }))
-            }
-          >
-            <option value=''>None</option>
-            {collectionsWithDepth.map(({ collection, depth }) => (
-              <option key={collection.id} value={collection.id}>
-                {'  '.repeat(depth)}
-                {collection.name}
-              </option>
-            ))}
-          </Select>
-        </div>
+        <Select
+          size='lg'
+          value={form.collectionId || ''}
+          onChange={(e) =>
+            setForm((prev) => ({
+              ...prev,
+              collectionId: e.target.value || undefined
+            }))
+          }
+        >
+          <option value=''>No collection</option>
+          {collectionsWithDepth.map(({ collection, depth }) => (
+            <option key={collection.id} value={collection.id}>
+              {'  '.repeat(depth)}
+              {collection.name}
+            </option>
+          ))}
+        </Select>
 
         <TagSelectorField
           tags={selectableTags}
