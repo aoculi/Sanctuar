@@ -85,6 +85,16 @@ export function NavigationProvider({
           setSelectedTagState(null)
         }
       }
+
+      // Update the browser URL to reflect the current route
+      const url = new URL(window.location.href)
+      if (newRoute === '/app') {
+        url.searchParams.delete('route')
+      } else {
+        // Remove leading slash for URL parameter
+        url.searchParams.set('route', newRoute.slice(1))
+      }
+      window.history.replaceState({}, '', url.toString())
     },
     []
   )
