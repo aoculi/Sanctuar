@@ -8,9 +8,10 @@ import { useCollections } from '@/components/hooks/useCollections'
 import { useTags } from '@/components/hooks/useTags'
 import { filterBookmarks } from '@/lib/bookmarkUtils'
 import {
-  filterEmptyCollections,
-  flattenCollectionsWithBookmarks,
-  handleCollectionDrop
+  buildCollectionTree,
+  filterEmptyCollectionTree,
+  handleCollectionDrop,
+  type CollectionTreeNode
 } from '@/lib/collectionUtils'
 import type { Bookmark } from '@/lib/types'
 
@@ -100,15 +101,11 @@ export default function CollectionsList({
   // Check if filtering is active
   const isFiltering = searchQuery.length > 0 || selectedTags.length > 0
 
-  // Get collections with their bookmarks
-  const collectionsWithBookmarks = useMemo(() => {
-    const flattened = flattenCollectionsWithBookmarks(
-      collections,
-      nonPinnedBookmarks,
-      'updated_at'
-    )
+  // Get collections tree with their bookmarks
+  const collectionTree = useMemo(() => {
+    const tree = buildCollectionTree(collections, nonPinnedBookmarks, 'updated_at')
     // Filter out empty collections when searching/filtering
-    return isFiltering ? filterEmptyCollections(flattened) : flattened
+    return isFiltering ? filterEmptyCollectionTree(tree) : tree
   }, [collections, nonPinnedBookmarks, isFiltering])
 
   // Get uncategorized bookmarks (not pinned, not in any collection)
@@ -269,67 +266,66 @@ export default function CollectionsList({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [editingCollectionId, updateCollection, setFlash])
 
-  if (
-    collectionsWithBookmarks.length === 0 &&
-    uncategorizedBookmarks.length === 0
-  ) {
+  if (collectionTree.length === 0 && uncategorizedBookmarks.length === 0) {
     return null
   }
 
+  const renderCollectionNode = (node: CollectionTreeNode, depth: number) => (
+    <CollectionItem
+      key={node.collection.id}
+      collection={node.collection}
+      bookmarks={node.bookmarks}
+      childNodes={node.children}
+      depth={depth}
+      tags={tags}
+      isEditing={editingCollectionId === node.collection.id}
+      editingName={editingName}
+      onStartEdit={startEditing}
+      onSave={saveCollection}
+      onCancel={cancelEditing}
+      onNameChange={setEditingName}
+      onTogglePin={handleTogglePin}
+      onDelete={handleDelete}
+      onEdit={onEdit}
+      onAddTags={onAddTags}
+      onIconChange={handleIconChange}
+      containerRef={(el) => {
+        containerRefs.current[node.collection.id] = el
+      }}
+      inputRef={(el) => {
+        inputRefs.current[node.collection.id] = el
+      }}
+      // Drag and drop props for collections
+      draggable
+      isDragging={draggedCollectionId === node.collection.id}
+      dropZone={dragOver?.id === node.collection.id ? dragOver.zone : null}
+      dropType={dragOver?.id === node.collection.id ? dragOver.type : null}
+      onDragStart={() => setDraggedCollectionId(node.collection.id)}
+      onDragOver={(_, zone, type) => {
+        const canDrop =
+          type === 'bookmark' ||
+          (draggedCollectionId && draggedCollectionId !== node.collection.id)
+        if (canDrop) {
+          setDragOver({ id: node.collection.id, zone, type })
+        }
+      }}
+      onDragLeave={() => setDragOver(null)}
+      onDrop={(zone, type, bookmarkId) =>
+        handleDrop(node.collection.id, zone, type, bookmarkId)
+      }
+      onDragEnd={clearDragState}
+      draggedBookmarkId={draggedBookmarkId}
+      onBookmarkDragStart={(id) => setDraggedBookmarkId(id)}
+      onBookmarkDragEnd={clearDragState}
+      selectedIds={selectedIds}
+      onToggleSelect={onToggleSelect}
+      renderChildNode={renderCollectionNode}
+    />
+  )
+
   return (
     <div className={styles.component}>
-      {collectionsWithBookmarks.map(
-        ({ collection, bookmarks: collectionBookmarks, depth }) => (
-          <CollectionItem
-            key={collection.id}
-            collection={collection}
-            bookmarks={collectionBookmarks}
-            depth={depth}
-            tags={tags}
-            isEditing={editingCollectionId === collection.id}
-            editingName={editingName}
-            onStartEdit={startEditing}
-            onSave={saveCollection}
-            onCancel={cancelEditing}
-            onNameChange={setEditingName}
-            onTogglePin={handleTogglePin}
-            onDelete={handleDelete}
-            onEdit={onEdit}
-            onAddTags={onAddTags}
-            onIconChange={handleIconChange}
-            containerRef={(el) => {
-              containerRefs.current[collection.id] = el
-            }}
-            inputRef={(el) => {
-              inputRefs.current[collection.id] = el
-            }}
-            // Drag and drop props for collections
-            draggable
-            isDragging={draggedCollectionId === collection.id}
-            dropZone={dragOver?.id === collection.id ? dragOver.zone : null}
-            dropType={dragOver?.id === collection.id ? dragOver.type : null}
-            onDragStart={() => setDraggedCollectionId(collection.id)}
-            onDragOver={(_, zone, type) => {
-              const canDrop =
-                type === 'bookmark' ||
-                (draggedCollectionId && draggedCollectionId !== collection.id)
-              if (canDrop) {
-                setDragOver({ id: collection.id, zone, type })
-              }
-            }}
-            onDragLeave={() => setDragOver(null)}
-            onDrop={(zone, type, bookmarkId) =>
-              handleDrop(collection.id, zone, type, bookmarkId)
-            }
-            onDragEnd={clearDragState}
-            draggedBookmarkId={draggedBookmarkId}
-            onBookmarkDragStart={(id) => setDraggedBookmarkId(id)}
-            onBookmarkDragEnd={clearDragState}
-            selectedIds={selectedIds}
-            onToggleSelect={onToggleSelect}
-          />
-        )
-      )}
+      {collectionTree.map((node) => renderCollectionNode(node, 0))}
 
       {uncategorizedBookmarks.length > 0 && (
         <Collapsible

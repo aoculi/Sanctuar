@@ -11,6 +11,12 @@ export type CollectionWithBookmarks = {
   depth: number
 }
 
+export type CollectionTreeNode = {
+  collection: Collection
+  bookmarks: Bookmark[]
+  children: CollectionTreeNode[]
+}
+
 /**
  * Sort collections by manual order, falling back to alphabetical
  */
@@ -160,6 +166,62 @@ export function flattenCollectionsWithBookmarks(
     ])
 
   return flatten(roots, 0)
+}
+
+/**
+ * Build a tree structure of collections with their bookmarks
+ * Children are nested inside parents instead of flattened
+ */
+export function buildCollectionTree(
+  collections: Collection[],
+  bookmarks: Bookmark[],
+  sortMode: 'updated_at' | 'title' = 'updated_at'
+): CollectionTreeNode[] {
+  const { childrenMap, roots } = buildHierarchy(collections)
+  const bookmarksByCollection = buildBookmarksByCollectionMap(
+    collections,
+    bookmarks,
+    sortMode
+  )
+
+  const buildNode = (collection: Collection): CollectionTreeNode => {
+    const children = childrenMap.get(collection.id) || []
+    return {
+      collection,
+      bookmarks: bookmarksByCollection.get(collection.id) || [],
+      children: sortByOrder(children).map(buildNode)
+    }
+  }
+
+  return sortByOrder(roots).map(buildNode)
+}
+
+/**
+ * Filter out empty collections from the tree
+ * Keeps collections that have bookmarks OR have descendants with bookmarks
+ */
+export function filterEmptyCollectionTree(
+  tree: CollectionTreeNode[]
+): CollectionTreeNode[] {
+  const filterNode = (node: CollectionTreeNode): CollectionTreeNode | null => {
+    const filteredChildren = node.children
+      .map(filterNode)
+      .filter((n): n is CollectionTreeNode => n !== null)
+
+    // Keep if has bookmarks or has non-empty children
+    if (node.bookmarks.length > 0 || filteredChildren.length > 0) {
+      return {
+        ...node,
+        children: filteredChildren
+      }
+    }
+
+    return null
+  }
+
+  return tree
+    .map(filterNode)
+    .filter((n): n is CollectionTreeNode => n !== null)
 }
 
 /**

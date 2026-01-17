@@ -3,6 +3,7 @@ import { useState } from 'react'
 
 import { getIconByName } from '@/components/ui/IconPicker'
 import { openUrlsInTabs } from '@/lib/tabs'
+import type { CollectionTreeNode } from '@/lib/collectionUtils'
 import type { Bookmark, Collection } from '@/lib/types'
 
 import BookmarkRow, {
@@ -21,6 +22,7 @@ export type DragType = 'collection' | 'bookmark'
 interface CollectionItemProps {
   collection: Collection
   bookmarks: Bookmark[]
+  childNodes: CollectionTreeNode[]
   depth: number
   tags: Array<{ id: string; name: string }>
   isEditing: boolean
@@ -50,11 +52,13 @@ interface CollectionItemProps {
   onBookmarkDragEnd?: () => void
   selectedIds?: Set<string>
   onToggleSelect?: (id: string) => void
+  renderChildNode: (node: CollectionTreeNode, depth: number) => React.ReactNode
 }
 
 export default function CollectionItem({
   collection,
   bookmarks,
+  childNodes,
   depth,
   tags,
   isEditing,
@@ -83,7 +87,8 @@ export default function CollectionItem({
   onBookmarkDragStart,
   onBookmarkDragEnd,
   selectedIds = new Set(),
-  onToggleSelect
+  onToggleSelect,
+  renderChildNode
 }: CollectionItemProps) {
   const [isIconModalOpen, setIsIconModalOpen] = useState(false)
   const Icon = collection.icon ? getIconByName(collection.icon) : Folder
@@ -263,6 +268,9 @@ export default function CollectionItem({
                 />
               ))}
             </div>
+          )}
+          {childNodes.map((childNode) =>
+            renderChildNode(childNode, depth + 1)
           )}
         </Collapsible>
       </div>
