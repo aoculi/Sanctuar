@@ -50,6 +50,7 @@ export function openExtensionPage(page: ExtensionPage): void {
 /**
  * Opens multiple URLs in new tabs in the current window.
  * Handles both Chrome and Firefox, and works correctly in incognito mode.
+ * Tabs are created in order by specifying their index positions.
  */
 export function openUrlsInTabs(urls: string[]): void {
   if (urls.length === 0) return
@@ -58,15 +59,25 @@ export function openUrlsInTabs(urls: string[]): void {
   if (typeof chrome !== 'undefined' && chrome.tabs?.create) {
     chrome.tabs.query({ active: true, currentWindow: true }, (currentTabs) => {
       const windowId = currentTabs?.[0]?.windowId
-      urls.forEach((url) => {
-        chrome.tabs.create({ url, ...(windowId ? { windowId } : {}) })
+      const currentIndex = currentTabs?.[0]?.index ?? 0
+      urls.forEach((url, i) => {
+        chrome.tabs.create({
+          url,
+          index: currentIndex + 1 + i,
+          ...(windowId ? { windowId } : {})
+        })
       })
     })
   } else if (typeof browser !== 'undefined' && browser.tabs?.create) {
     browser.tabs.query({ active: true, currentWindow: true }, (currentTabs) => {
       const windowId = currentTabs?.[0]?.windowId
-      urls.forEach((url) => {
-        browser.tabs.create({ url, ...(windowId ? { windowId } : {}) })
+      const currentIndex = currentTabs?.[0]?.index ?? 0
+      urls.forEach((url, i) => {
+        browser.tabs.create({
+          url,
+          index: currentIndex + 1 + i,
+          ...(windowId ? { windowId } : {})
+        })
       })
     })
   } else {
