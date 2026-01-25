@@ -10,11 +10,12 @@ import { MAX_TAGS_PER_ITEM } from '@/lib/validation'
 
 import Button from '@/components/ui/Button'
 import { Checkbox } from '@/components/ui/Checkbox'
+import LoadingScreen from '@/components/ui/LoadingScreen'
 import Select from '@/components/ui/Select'
 import { TagSelectorField } from '@/components/ui/TagSelectorField'
+import Text from '@/components/ui/Text'
 import Textarea from '@/components/ui/Textarea'
 
-import Text from '@/components/ui/Text'
 import styles from './styles.module.css'
 
 export type BookmarkFormData = {
@@ -160,11 +161,7 @@ export default function BookmarkForm({
 
   // Show loading until we have the initial data
   if (!initialData?.url) {
-    return (
-      <div className={styles.loadingContainer}>
-        <Loader2 size={32} className={styles.loadingSpinner} />
-      </div>
-    )
+    return <LoadingScreen />
   }
 
   if (isSuccess) {

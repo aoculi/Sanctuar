@@ -142,19 +142,6 @@
   font-size: 12px;
 }
 
-.loadingContainer {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
-  flex: 1;
-}
-
-.loadingSpinner {
-  color: var(--text-light);
-  animation: spin 1s linear infinite;
-}
-
 .successContainer {
   display: flex;
   flex-direction: column;

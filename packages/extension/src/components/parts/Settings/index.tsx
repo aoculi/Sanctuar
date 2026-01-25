@@ -464,6 +464,7 @@ export default function Settings() {
                     <Button
                       type='button'
                       variant='ghost'
+                      color='light'
                       onClick={handleTestApi}
                       disabled={isTestingApi || !fields.apiUrl.trim()}
                     >
