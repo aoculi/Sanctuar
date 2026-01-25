@@ -1,4 +1,4 @@
-import { Loader2, TriangleAlert } from 'lucide-react'
+import { CheckCircle, Loader2, TriangleAlert, XCircle } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import { useAuthSession } from '@/components/hooks/providers/useAuthSessionProvider'
@@ -68,6 +68,12 @@ export default function Settings() {
 
   const [preserveFolderStructure, setPreserveFolderStructure] = useState(true)
   const [importDuplicates, setImportDuplicates] = useState(false)
+
+  const [isTestingApi, setIsTestingApi] = useState(false)
+  const [apiTestResult, setApiTestResult] = useState<{
+    success: boolean
+    message: string
+  } | null>(null)
 
   const [showPinSetupModal, setShowPinSetupModal] = useState(false)
   const [showPinVerifyModal, setShowPinVerifyModal] = useState(false)
@@ -345,6 +351,63 @@ export default function Settings() {
     setFields((prev) => ({ ...prev, [key]: value }))
   }
 
+  const handleTestApi = async () => {
+    const apiUrl = fields.apiUrl.trim()
+    if (!apiUrl) {
+      setApiTestResult({
+        success: false,
+        message: 'Please enter an API URL first'
+      })
+      return
+    }
+
+    setIsTestingApi(true)
+    setApiTestResult(null)
+
+    try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000)
+
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        signal: controller.signal,
+        credentials: 'omit',
+        mode: 'cors'
+      })
+
+      clearTimeout(timeoutId)
+
+      if (response.ok) {
+        setApiTestResult({
+          success: true,
+          message: 'Connection successful'
+        })
+      } else {
+        setApiTestResult({
+          success: false,
+          message: `Server returned ${response.status} ${response.statusText}`
+        })
+      }
+    } catch (error) {
+      let message = 'Connection failed'
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          message = 'Connection timed out'
+        } else if (error.message.includes('Failed to fetch')) {
+          message = 'Unable to reach server'
+        } else {
+          message = error.message
+        }
+      }
+      setApiTestResult({
+        success: false,
+        message
+      })
+    } finally {
+      setIsTestingApi(false)
+    }
+  }
+
   const hasChanged = JSON.stringify(fields) !== JSON.stringify(originalFields)
 
   return (
@@ -388,12 +451,38 @@ export default function Settings() {
                   <Text as='label' size='3' weight='medium'>
                     API Base URL
                   </Text>
-                  <Input
-                    type='url'
-                    placeholder='http://127.0.0.1:3500'
-                    value={fields.apiUrl}
-                    onChange={(e) => updateField('apiUrl', e.target.value)}
-                  />
+                  <div className={styles.inputWithButton}>
+                    <Input
+                      type='url'
+                      placeholder='http://127.0.0.1:3500'
+                      value={fields.apiUrl}
+                      onChange={(e) => {
+                        updateField('apiUrl', e.target.value)
+                        setApiTestResult(null)
+                      }}
+                    />
+                    <Button
+                      type='button'
+                      variant='ghost'
+                      onClick={handleTestApi}
+                      disabled={isTestingApi || !fields.apiUrl.trim()}
+                    >
+                      {isTestingApi && <Loader2 className={styles.spinner} />}
+                      {isTestingApi ? 'Testing...' : 'Test'}
+                    </Button>
+                  </div>
+                  {apiTestResult && (
+                    <div
+                      className={`${styles.testResult} ${apiTestResult.success ? styles.testSuccess : styles.testError}`}
+                    >
+                      {apiTestResult.success ? (
+                        <CheckCircle size={16} />
+                      ) : (
+                        <XCircle size={16} />
+                      )}
+                      <Text size='2'>{apiTestResult.message}</Text>
+                    </div>
+                  )}
                   <Text size='2' color='light'>
                     The URL where your Sanctuar API server is running. Default
                     is http://127.0.0.1:3500 for local-first usage.
