@@ -55,8 +55,8 @@ async function getApiUrlFromStorage(): Promise<string> {
   if (!apiUrl || apiUrl.trim() === '') {
     throw createApiError(
       -1,
-      'API URL is not configured. Please set the API Base URL in Settings.',
-      'The API URL must be defined in the extension settings before making API calls.'
+      'API URL not configured',
+      'NETWORK_ERROR_CONFIGURE_API'
     )
   }
   return apiUrl
@@ -176,7 +176,7 @@ export async function apiClient<T = unknown>(
     // Handle network errors or other unknown errors
     const errorMessage =
       err instanceof Error ? err.message : 'Network request failed'
-    throw createApiError(-1, 'Network error', errorMessage)
+    throw createApiError(-1, 'Network connection failed', 'NETWORK_ERROR_FAILED')
   }
 
   const data = await parseResponseBody(response)

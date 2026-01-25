@@ -2,8 +2,9 @@ import type { UseMutationResult } from '@tanstack/react-query'
 import { useState } from 'react'
 
 import type { LoginResponse, RegisterResponse } from '@/api/auth-api'
-import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
 import type { ApiError } from '@/lib/api'
+
+export type AuthErrorType = 'general' | 'api-config' | 'network'
 
 export type AuthFormData = {
   login: string
@@ -20,19 +21,24 @@ export type UseAuthFormOptions = {
   >
 }
 
+export type AuthErrorState = {
+  message: string
+  type: AuthErrorType
+}
+
 export function useAuthForm({ onSuccess, mutation }: UseAuthFormOptions) {
   const [formData, setFormData] = useState<AuthFormData>({
     login: '',
     password: ''
   })
-  const { setFlash } = useNavigation()
+  const [error, setError] = useState<AuthErrorState | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setFlash(null)
+    setError(null)
 
     if (!formData.login.trim() || !formData.password.trim()) {
-      setFlash('Please fill in all fields')
+      setError({ message: 'Please fill in all fields', type: 'general' })
       return
     }
 
@@ -51,15 +57,20 @@ export function useAuthForm({ onSuccess, mutation }: UseAuthFormOptions) {
       }
 
       // The api url is not set in the settings
-      if (apiError.status === -1 && apiError.message?.includes('API URL')) {
-        setFlash(apiError.message)
+      if (apiError.status === -1 && typeof apiError.details === 'string' && apiError.details === 'NETWORK_ERROR_CONFIGURE_API') {
+        setError({ message: apiError.message || 'API URL not configured', type: 'api-config' })
+        return
+      }
+
+      // Network connection failed
+      if (apiError.status === -1 && typeof apiError.details === 'string' && apiError.details === 'NETWORK_ERROR_FAILED') {
+        setError({ message: apiError.message || 'Network connection failed', type: 'network' })
         return
       }
 
       // The WMK upload failed
       if (apiError.details?.wmkUploadFailed) {
-        // WMK upload failed - show error but keep session
-        setFlash('Could not initialize vault. Please try again.')
+        setError({ message: 'Could not initialize vault. Please try again.', type: 'general' })
         return
       }
 
@@ -71,17 +82,16 @@ export function useAuthForm({ onSuccess, mutation }: UseAuthFormOptions) {
         const lines: string[] = []
         for (const [field, messages] of Object.entries(details)) {
           if (Array.isArray(messages) && messages.length > 0) {
-            lines.push(`${messages.join(', ')}`)
+            lines.push(messages.join(', '))
           }
         }
 
-        setFlash(
-          lines.length > 0
-            ? `${baseMessage}\n${lines.map((l) => `• ${l}`).join('\n')}`
-            : baseMessage
-        )
+        setError({
+          message: lines.length > 0 ? lines.join('. ') : baseMessage,
+          type: 'general'
+        })
       } else {
-        setFlash(baseMessage)
+        setError({ message: baseMessage, type: 'general' })
       }
     }
   }
@@ -101,6 +111,7 @@ export function useAuthForm({ onSuccess, mutation }: UseAuthFormOptions) {
     formData,
     disabled,
     handleSubmit,
-    handleChange
+    handleChange,
+    error
   }
 }

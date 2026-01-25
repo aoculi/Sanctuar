@@ -6,6 +6,7 @@ import usePopupSize from '@/components/hooks/usePopupSize'
 
 import Header from '@/components/parts/Header'
 import Button from '@/components/ui/Button'
+import ErrorMessage from '@/components/ui/ErrorMessage'
 import Input from '@/components/ui/Input'
 import Text from '@/components/ui/Text'
 
@@ -56,7 +57,7 @@ export default function AuthForm({
     navigate('/bookmark')
   }
 
-  const { formData, disabled, handleSubmit, handleChange } = useAuthForm({
+  const { formData, disabled, handleSubmit, handleChange, error } = useAuthForm({
     onSuccess,
     mutation
   })
@@ -71,6 +72,11 @@ export default function AuthForm({
             {title}
           </Text>
         </div>
+        
+        {error && (
+          <ErrorMessage message={error.message} type={error.type} />
+        )}
+        
         <form onSubmit={handleSubmit} className={styles.form}>
           <Input
             size='lg'
