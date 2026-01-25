@@ -27,7 +27,7 @@ export default defineConfig({
 
   manifest: {
     name: 'Sanctuar',
-    description: 'Secure Bookmarks Vault',
+    description: 'A secure, privacy-focused local vault for managing and organizing your browser bookmarks.',
     host_permissions: ['<all_urls>'],
     permissions: ['storage', 'tabs'],
     content_security_policy: {

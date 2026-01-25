@@ -96,10 +96,9 @@ export const useQueryAuth = () => {
         setManifestFromLogin(manifestData)
       }
 
-      setPhase('idle')
       return loginData
     },
-    onError: () => {
+    onSettled: () => {
       setPhase('idle')
     }
   })
@@ -169,10 +168,9 @@ export const useQueryAuth = () => {
         setManifestFromLogin(manifestData)
       }
 
-      setPhase('idle')
       return registerData
     },
-    onError: () => {
+    onSettled: () => {
       setPhase('idle')
     }
   })

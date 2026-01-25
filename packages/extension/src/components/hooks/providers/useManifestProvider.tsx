@@ -4,6 +4,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState
 } from 'react'
 
@@ -80,6 +81,7 @@ export function ManifestProvider({ children }: ManifestProviderProps) {
   const [etag, setEtag] = useState<string | null>(null)
   const [serverVersion, setServerVersion] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
+  const isSavingRef = useRef(false)
 
   const loadManifest = useCallback(async () => {
     try {
@@ -103,6 +105,42 @@ export function ManifestProvider({ children }: ManifestProviderProps) {
   useEffect(() => {
     loadManifest()
   }, [loadManifest])
+
+  // Listen for storage changes to sync manifest across windows/tabs
+  useEffect(() => {
+    const handleStorageChange = async (
+      changes: { [key: string]: chrome.storage.StorageChange },
+      areaName: string
+    ) => {
+      if (areaName !== 'local' || !changes[STORAGE_KEYS.MANIFEST]) {
+        return
+      }
+
+      // Skip if we're the ones who triggered the save
+      if (isSavingRef.current) {
+        return
+      }
+
+      const change = changes[STORAGE_KEYS.MANIFEST]
+      const newData = change.newValue as StoredManifestData | undefined
+
+      if (!newData || !newData.manifest) {
+        setManifest(null)
+        setEtag(null)
+        setServerVersion(0)
+        return
+      }
+
+      setManifest(newData.manifest)
+      setEtag(newData.etag)
+      setServerVersion(newData.serverVersion)
+    }
+
+    chrome.storage.onChanged.addListener(handleStorageChange)
+    return () => {
+      chrome.storage.onChanged.removeListener(handleStorageChange)
+    }
+  }, [])
 
   const clear = useCallback(() => {
     setManifest(null)
@@ -128,6 +166,7 @@ export function ManifestProvider({ children }: ManifestProviderProps) {
       })
 
       try {
+        isSavingRef.current = true
         await saveManifestData({
           manifest: result.manifest,
           etag: result.etag,
@@ -135,6 +174,8 @@ export function ManifestProvider({ children }: ManifestProviderProps) {
         })
       } catch (error) {
         console.error('Failed to save manifest to local storage:', error)
+      } finally {
+        isSavingRef.current = false
       }
 
       setManifest({ ...result.manifest })
