@@ -19,24 +19,102 @@
 
 .input {
   width: 100%;
-  background: none;
+  background: transparent;
   border: none;
-  border-bottom: 1px dotted var(--border);
+  border-bottom: 1px dashed var(--border-hover);
   border-radius: 0;
   color: var(--text);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
-  padding: 0;
-  padding-bottom: 2px;
+  padding: 2px 0;
   outline: none;
   font-family: inherit;
-  transition: border-color 0.15s ease;
+  letter-spacing: -0.01em;
+  transition: border-color var(--transition-fast);
 }
 
 .input:focus {
   border-bottom-color: var(--primary);
+  border-bottom-style: solid;
 }
 
 .input::placeholder {
-  color: var(--text-light);
+  color: var(--text-muted);
+}
+
+/* Compact mode styles for sidebar */
+.compactBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: none;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity var(--transition-fast),
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.compactBtn:hover {
+  background: var(--background-1);
+  color: var(--text);
+}
+
+/* Show button when section header is hovered (handled by parent) */
+.compactBtn {
+  opacity: 1;
+}
+
+.compactWrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.compactInput {
+  width: 100px;
+  padding: 4px 8px;
+  background: var(--input-background);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-sm);
+  color: var(--text);
+  font-size: 11px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.compactInput:focus {
+  border-color: var(--primary);
+}
+
+.compactInput::placeholder {
+  color: var(--text-muted);
+}
+
+.compactCancel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: none;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.compactCancel:hover {
+  background: var(--background-1);
+  color: var(--text);
 }

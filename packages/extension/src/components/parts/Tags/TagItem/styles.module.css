@@ -1,18 +1,31 @@
 .tag {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  height: 28px;
-  padding: 0 8px;
-  border-radius: var(--border-radius);
-  font-size: 12px;
-  font-weight: 500;
+  gap: 5px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 550;
   white-space: nowrap;
+  letter-spacing: 0.01em;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.tag:hover {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.15),
+    var(--shadow-sm);
 }
 
 .tagSmall {
   height: 20px;
-  font-size: 11px;
+  padding: 0 8px;
+  font-size: 10px;
+  border-radius: 10px;
 }
 
 .tagName {
@@ -25,12 +38,13 @@
   justify-content: center;
   padding: 0;
   margin: 0;
-  margin-left: 2px;
+  margin-left: 1px;
+  margin-right: -3px;
   background: none;
   border: none;
   cursor: pointer;
-  opacity: 0.7;
-  transition: opacity 0.15s ease;
+  opacity: 0.65;
+  transition: opacity var(--transition-fast);
 }
 
 .tagRemove:hover {

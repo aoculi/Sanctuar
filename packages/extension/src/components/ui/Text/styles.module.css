@@ -1,20 +1,16 @@
 .text {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 400;
   color: var(--text);
   line-height: 1.5;
-  /* text-wrap: wrap; */
-
+  letter-spacing: -0.01em;
   text-wrap: balance;
-
   text-overflow: ellipsis;
-  /* overflow: hidden;
-  white-space: nowrap; */
   word-break: break-word;
   word-wrap: break-word;
-  word-break: break-all;
   user-select: none;
 }
+
 .text-align-left {
   text-align: left;
 }
@@ -26,22 +22,30 @@
 }
 
 .size-1 {
-  font-size: 10px;
+  font-size: 11px;
+  letter-spacing: 0;
 }
 .size-2 {
-  font-size: 14px;
+  font-size: 13px;
 }
 .size-3 {
-  font-size: 18px;
+  font-size: 16px;
+  letter-spacing: -0.015em;
 }
 .size-4 {
-  font-size: 25px;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
 }
 .size-5 {
-  font-size: 30px;
+  font-size: 28px;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
 }
 .size-6 {
-  font-size: 35px;
+  font-size: 34px;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
 }
 
 .weight-light {
@@ -51,10 +55,10 @@
   font-weight: 400;
 }
 .weight-medium {
-  font-weight: 600;
+  font-weight: 500;
 }
 .weight-bold {
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .color-inherit {
@@ -62,6 +66,9 @@
 }
 .color-light {
   color: var(--text-light);
+}
+.color-muted {
+  color: var(--text-muted);
 }
 .color-primary {
   color: var(--primary);

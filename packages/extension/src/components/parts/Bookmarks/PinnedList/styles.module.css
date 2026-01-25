@@ -5,5 +5,5 @@
 .list {
   display: flex;
   flex-direction: column;
-  padding-top: 4px;
+  padding-top: 2px;
 }

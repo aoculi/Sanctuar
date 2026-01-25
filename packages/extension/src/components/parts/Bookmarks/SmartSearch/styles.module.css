@@ -6,24 +6,38 @@
 .searchBox {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
-  background-color: var(--background-3);
+  gap: 12px;
+  padding: 14px 18px;
+  background: var(--background-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border);
-  border-radius: var(--border-radius);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm);
   transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    background-color var(--transition-fast);
+}
+
+.searchBox:hover {
+  border-color: var(--border-hover);
 }
 
 .searchBox.focused {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.15);
+  box-shadow: var(--shadow-md), var(--shadow-glow);
+  background: var(--background-elevated);
 }
 
 .searchIcon {
   flex-shrink: 0;
-  color: var(--text-light);
+  color: var(--text-muted);
+  transition: color var(--transition-fast);
+}
+
+.searchBox.focused .searchIcon {
+  color: var(--primary);
 }
 
 .selectedTags {
@@ -35,59 +49,63 @@
 
 .input {
   flex: 1;
-  min-width: 120px;
+  min-width: 100px;
   padding: 0;
   background: none;
   border: none;
   outline: none;
-  font-size: 15px;
+  font-size: 14px;
+  font-weight: 450;
   font-family: inherit;
   color: var(--text);
+  letter-spacing: -0.01em;
 }
 
 .input::placeholder {
-  color: var(--text-light);
+  color: var(--text-muted);
+  font-weight: 400;
 }
 
 .suggestions {
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + 6px);
   left: 0;
   right: 0;
-  background-color: var(--background-3);
+  background: var(--background-elevated);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
   z-index: 100;
-  animation: slideIn 0.15s ease-out;
+  animation: suggestionSlide 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes slideIn {
+@keyframes suggestionSlide {
   from {
     opacity: 0;
-    transform: translateY(-8px);
+    transform: translateY(-6px) scale(0.98);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
 .suggestionsHeader {
-  padding: 10px 14px;
+  padding: 10px 14px 8px;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--text-light);
-  border-bottom: 1px solid var(--border);
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
 }
 
 .suggestionsList {
-  max-height: 240px;
+  max-height: 220px;
   overflow-y: auto;
-  padding: 6px;
+  padding: 4px 6px 6px;
 }
 
 .suggestionItem {
@@ -96,15 +114,18 @@
   gap: 10px;
   width: 100%;
   padding: 10px 12px;
-  background: none;
+  background: transparent;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--border-radius);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 450;
   font-family: inherit;
   color: var(--text);
   text-align: left;
-  transition: background-color 0.15s ease;
+  transition:
+    background-color var(--transition-fast),
+    transform var(--transition-fast);
 }
 
 .suggestionItem:hover,
@@ -112,16 +133,21 @@
   background-color: var(--background-1);
 }
 
+.suggestionItem:active {
+  transform: scale(0.99);
+}
+
 .suggestionDot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
 }
 
-/* Scrollbar styling */
+/* Custom scrollbar */
 .suggestionsList::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 .suggestionsList::-webkit-scrollbar-track {
@@ -129,10 +155,10 @@
 }
 
 .suggestionsList::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 4px;
+  background: var(--border-hover);
+  border-radius: 3px;
 }
 
 .suggestionsList::-webkit-scrollbar-thumb:hover {
-  background: var(--text-light);
+  background: var(--text-muted);
 }

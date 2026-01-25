@@ -2,39 +2,48 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  background-color: var(--background-2);
+  gap: 5px;
+  background: var(--background-1);
   border: 1px solid transparent;
-  border-radius: var(--border-radius);
+  border-radius: var(--border-radius-sm);
   cursor: pointer;
   font-family: inherit;
+  font-weight: 500;
   color: var(--text-light);
   transition:
-    border-color 0.15s ease,
-    color 0.15s ease;
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    transform var(--transition-fast);
 }
 
 .action:hover {
+  background: var(--background-2);
   border-color: var(--border);
   color: var(--text);
 }
 
+.action:active {
+  transform: scale(0.96);
+}
+
 .actionSm {
-  height: 28px;
-  padding: 0 10px;
-  font-size: 12px;
+  height: 26px;
+  padding: 0 8px;
+  font-size: 11px;
+  border-radius: var(--border-radius-sm);
 }
 
 .actionMd {
   height: 32px;
   padding: 0 12px;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .actionLg {
-  height: 40px;
+  height: 36px;
   padding: 0 14px;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .actionIcon {
@@ -42,7 +51,7 @@
 }
 
 .actionIcon.actionSm {
-  width: 28px;
+  width: 26px;
 }
 
 .actionIcon.actionMd {
@@ -54,28 +63,29 @@
 }
 
 .actionActive {
-  background-color: var(--primary);
+  background: var(--primary);
   border-color: var(--primary);
   color: white;
 }
 
 .actionActive:hover {
-  background-color: var(--primary);
-  border-color: var(--primary);
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
   color: white;
 }
 
 .actionDanger:hover {
-  background-color: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
+  background: var(--danger-subtle);
+  border-color: transparent;
+  color: var(--danger);
 }
 
 .actionBordered {
-  background-color: transparent;
+  background: transparent;
   border: 1px solid var(--border);
 }
 
 .actionBordered:hover {
-  background-color: var(--background-1);
+  background: var(--background-1);
   border-color: var(--border-hover);
 }

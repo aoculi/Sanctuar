@@ -8,39 +8,45 @@
   justify-content: space-between;
   width: 100%;
   padding: 10px 12px;
-  background: none;
+  background: transparent;
   border: none;
-  border-radius: 8px;
-  transition: background-color 0.15s ease;
+  border-radius: var(--border-radius);
+  transition: background-color var(--transition-fast);
 }
 
 .headerClickable {
   cursor: pointer;
 }
 
-.header:hover {
-  background-color: var(--background-2);
+.headerClickable:hover {
+  background-color: var(--background-1);
 }
 
 .left {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   color: var(--text);
   flex: 1;
   min-width: 0;
 }
+
 .before {
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transform: translateX(-4px);
+  transition:
+    opacity var(--transition-fast),
+    transform var(--transition-fast);
 }
+
 .header:hover .before {
   opacity: 1;
+  transform: translateX(0);
 }
 
 .chevron {
-  color: var(--text-light);
-  transition: transform 0.2s ease;
+  color: var(--text-muted);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .chevronOpen {
@@ -49,55 +55,70 @@
 
 .icon {
   color: var(--text-light);
+  transition: color var(--transition-fast);
+}
+
+.header:hover .icon {
+  color: var(--text);
 }
 
 .iconButton {
   background: none;
   border: none;
-  padding: 0;
+  padding: 4px;
+  margin: -4px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
-  transition: background-color 0.15s ease;
+  border-radius: var(--border-radius-sm);
+  transition: background-color var(--transition-fast);
 }
 
 .iconButton:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--background-1);
 }
 
 .iconButton .icon {
   color: var(--text-light);
-  transition: color 0.15s ease;
+  transition: color var(--transition-fast);
 }
 
 .iconButton:hover .icon {
-  color: var(--text);
+  color: var(--primary);
 }
 
 .right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.header:hover .right {
+  opacity: 1;
 }
 
 .badge {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 20px;
+  min-width: 22px;
   height: 20px;
   padding: 0 6px;
-  background-color: rgba(255, 255, 255, 0.1);
+  background: var(--background-1);
   border-radius: 10px;
-  color: var(--text-light);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
 }
 
 .content {
   display: grid;
   grid-template-rows: 0fr;
-  transition: grid-template-rows 0.2s ease;
+  transition: grid-template-rows 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .contentOpen {

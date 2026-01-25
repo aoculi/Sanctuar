@@ -2,29 +2,36 @@
   position: relative;
   display: flex;
   justify-content: center;
-  padding: 20px;
+  padding: 16px 20px;
 }
 
 .trigger {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
+  padding: 8px 14px;
   background: transparent;
   border: none;
   border-radius: var(--border-radius);
   cursor: pointer;
   color: var(--text);
-  transition: background-color 0.15s ease;
+  font-family: inherit;
+  transition:
+    background-color var(--transition-fast),
+    transform var(--transition-fast);
 }
 
 .trigger:hover {
-  background-color: rgba(255, 255, 255, 0.05);
+  background: var(--background-1);
+}
+
+.trigger:active {
+  transform: scale(0.98);
 }
 
 .chevron {
-  color: var(--text-light);
-  transition: transform 0.2s ease;
+  color: var(--text-muted);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .chevronOpen {
@@ -35,13 +42,15 @@
   position: absolute;
   top: 100%;
   left: 50%;
-  transform: translateX(-50%) translateY(-8px) scale(0.95);
-  min-width: 320px;
-  background-color: var(--background-3);
+  transform: translateX(-50%) translateY(-6px) scale(0.96);
+  min-width: 300px;
+  background: var(--background-elevated);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border);
-  border-radius: var(--border-radius);
-  padding: 30px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  border-radius: var(--border-radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-lg);
   opacity: 0;
   visibility: hidden;
   transition:
@@ -56,21 +65,22 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  font-size: 13px;
-  color: var(--text-light);
+  font-size: 12px;
+  color: var(--text-muted);
 }
 
 .shortcutKey {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 2px 6px;
-  background-color: rgba(255, 255, 255, 0.1);
+  padding: 3px 7px;
+  background: var(--background-1);
   border: 1px solid var(--border);
-  border-radius: 4px;
-  font-size: 11px;
-  font-family: monospace;
-  color: var(--text);
+  border-radius: var(--border-radius-sm);
+  font-size: 10px;
+  font-family: ui-monospace, 'SF Mono', monospace;
+  font-weight: 500;
+  color: var(--text-light);
 }
 
 .menuOpen {
@@ -82,48 +92,56 @@
 .menuItem {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
-  padding: 10px 12px;
+  padding: 10px 14px;
   background: transparent;
   border: none;
   border-radius: var(--border-radius);
   cursor: pointer;
   color: var(--text);
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 450;
   font-family: inherit;
   text-align: left;
   transition:
-    background-color 0.15s ease,
-    color 0.15s ease;
+    background-color var(--transition-fast),
+    color var(--transition-fast),
+    transform var(--transition-fast);
 }
 
 .menuItem:hover {
-  background-color: var(--background-2);
-  color: white;
+  background: var(--background-1);
+  color: var(--text);
+}
+
+.menuItem:active {
+  transform: scale(0.98);
 }
 
 .menuItemDanger {
-  color: #ef4444;
+  color: var(--danger);
 }
 
 .menuItemDanger:hover {
-  background-color: rgba(239, 68, 68, 0.15);
-  color: #fca5a5;
+  background: var(--danger-subtle);
+  color: var(--danger);
 }
 
 .separator {
   height: 1px;
-  background-color: var(--border);
-  margin: 4px 0;
+  background: var(--border);
+  margin: 8px 0;
 }
 
 .version {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 12px;
-  font-size: 12px;
-  color: var(--text-light);
-  margin: 0 0 20px;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin: 0 0 16px;
+  letter-spacing: 0.02em;
 }

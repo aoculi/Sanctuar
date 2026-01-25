@@ -8,7 +8,11 @@ import Collapsible from '@/components/ui/Collapsible'
 
 import styles from './styles.module.css'
 
-export default function CreateCollection() {
+interface CreateCollectionProps {
+  compact?: boolean
+}
+
+export default function CreateCollection({ compact = false }: CreateCollectionProps) {
   const { createCollection } = useCollections()
   const [isCreating, setIsCreating] = useState(false)
   const [collectionName, setCollectionName] = useState('')
@@ -36,7 +40,6 @@ export default function CreateCollection() {
       setIsCreating(false)
       setCollectionName('')
     } catch (error) {
-      // Handle error silently or show a message
       console.error('Failed to create collection:', error)
       setIsCreating(false)
       setCollectionName('')
@@ -85,6 +88,44 @@ export default function CreateCollection() {
     }
   }
 
+  // Compact mode for sidebar
+  if (compact) {
+    if (isCreating) {
+      return (
+        <div ref={containerRef} className={styles.compactWrapper}>
+          <input
+            ref={inputRef}
+            type="text"
+            className={styles.compactInput}
+            value={collectionName}
+            onChange={(e) => setCollectionName(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Name..."
+          />
+          <button
+            type="button"
+            className={styles.compactCancel}
+            onClick={handleCancel}
+          >
+            <X size={12} />
+          </button>
+        </div>
+      )
+    }
+
+    return (
+      <button
+        type="button"
+        className={styles.compactBtn}
+        onClick={handleStartCreating}
+        title="New collection"
+      >
+        <Plus size={14} />
+      </button>
+    )
+  }
+
+  // Full mode
   if (!isCreating) {
     return (
       <div className={styles.component}>

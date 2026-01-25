@@ -2,6 +2,7 @@
   width: 100%;
   display: flex;
   flex-direction: column;
+  gap: 2px;
 }
 
 .bookmarksList {
@@ -25,45 +26,47 @@
 
 .input {
   width: 100%;
-  background: none;
+  background: transparent;
   border: none;
-  border-bottom: 1px dotted var(--border);
+  border-bottom: 1px dashed var(--border-hover);
   border-radius: 0;
   color: var(--text);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
-  padding: 0;
-  padding-bottom: 2px;
+  padding: 2px 0;
   outline: none;
   font-family: inherit;
-  transition: border-color 0.15s ease;
+  letter-spacing: -0.01em;
+  transition: border-color var(--transition-fast);
 }
 
 .input:focus {
   border-bottom-color: var(--primary);
+  border-bottom-style: solid;
 }
 
 .input::placeholder {
-  color: var(--text-light);
+  color: var(--text-muted);
 }
 
 .collectionName {
   cursor: pointer;
   user-select: none;
-  transition: opacity 0.15s ease;
+  transition: color var(--transition-fast);
 }
 
 .collectionName:hover {
-  opacity: 0.7;
+  color: var(--primary);
 }
 
 /* Drag and drop styles */
 .collectionWrapper {
   display: flex;
   position: relative;
+  border-radius: var(--border-radius);
   transition:
-    opacity 0.15s ease,
-    transform 0.15s ease;
+    opacity var(--transition-fast),
+    transform var(--transition-fast);
 }
 
 .collapsibleWrapper {
@@ -72,7 +75,7 @@
 }
 
 .collectionWrapper.dragging {
-  opacity: 0.5;
+  opacity: 0.4;
 }
 
 .dragHandle {
@@ -80,15 +83,19 @@
   align-items: center;
   justify-content: center;
   margin-right: -5px;
-  color: var(--text-light);
+  color: var(--text-muted);
   cursor: grab;
-  opacity: 0.4;
-  transition: opacity 0.15s ease;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
   flex-shrink: 0;
 }
 
+.collectionWrapper:hover .dragHandle {
+  opacity: 0.4;
+}
+
 .dragHandle:hover {
-  opacity: 1;
+  opacity: 1 !important;
 }
 
 .dragHandle:active {
@@ -99,7 +106,7 @@
 .collectionWrapper.dropCenter .collapsibleWrapper {
   outline: 2px solid var(--primary);
   outline-offset: -2px;
-  background-color: color-mix(in srgb, var(--primary) 8%, transparent);
+  background: var(--primary-subtle);
   border-radius: var(--border-radius);
 }
 
@@ -107,11 +114,11 @@
 .collectionWrapper.dropAbove::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: -1px;
+  left: 8px;
+  right: 8px;
   height: 2px;
-  background-color: var(--primary);
+  background: linear-gradient(90deg, transparent, var(--primary), transparent);
   border-radius: 1px;
   z-index: 1;
 }
@@ -120,11 +127,11 @@
 .collectionWrapper.dropBelow::after {
   content: '';
   position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  bottom: -1px;
+  left: 8px;
+  right: 8px;
   height: 2px;
-  background-color: var(--primary);
+  background: linear-gradient(90deg, transparent, var(--primary), transparent);
   border-radius: 1px;
   z-index: 1;
 }

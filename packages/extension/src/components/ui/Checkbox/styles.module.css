@@ -1,10 +1,11 @@
 .checkboxContainer {
   position: relative;
-  height: 15px;
+  height: 16px;
 }
 
 .checkboxContainer input[type='checkbox'] {
   visibility: hidden;
+  position: absolute;
 }
 
 .checkmark {
@@ -12,22 +13,37 @@
   cursor: pointer;
   top: 0;
   left: 0;
-  height: 15px;
-  width: 15px;
-  background-color: var(--input-background);
-  border: 1px solid var(--border);
-  border-radius: var(--border-radius);
+  height: 16px;
+  width: 16px;
+  background: var(--input-background);
+  border: 1.5px solid var(--border-hover);
+  border-radius: 4px;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
 }
 
 /* Hover effect */
 .checkboxContainer:hover input ~ .checkmark {
   border-color: var(--primary);
-  background-color: var(--background-2);
+  box-shadow: 0 0 0 3px var(--primary-subtle);
+}
+
+.checkboxContainer:active .checkmark {
+  transform: scale(0.92);
 }
 
 /* Checked effect */
 .checkboxContainer input:checked ~ .checkmark {
-  background-color: var(--primary);
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.checkboxContainer:hover input:checked ~ .checkmark {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
 }
 
 /* Checkmark */
@@ -35,10 +51,10 @@
   content: '';
   position: absolute;
   display: none;
-  left: 4px;
-  top: -1px;
-  width: 6px;
-  height: 12px;
+  left: 4.5px;
+  top: 1px;
+  width: 5px;
+  height: 9px;
   border: solid white;
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
@@ -47,6 +63,19 @@
 /* Display checkmark when checked */
 .checkboxContainer input:checked ~ .checkmark::after {
   display: block;
+  animation: checkPop 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes checkPop {
+  0% {
+    transform: rotate(45deg) scale(0);
+  }
+  50% {
+    transform: rotate(45deg) scale(1.1);
+  }
+  100% {
+    transform: rotate(45deg) scale(1);
+  }
 }
 
 .labelContainer {
