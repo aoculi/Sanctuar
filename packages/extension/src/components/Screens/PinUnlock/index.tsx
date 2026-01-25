@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 
 import { useAuthSession } from '@/components/hooks/providers/useAuthSessionProvider'
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
+import { useUnlockState } from '@/components/hooks/providers/useUnlockStateProvider'
 import { useQueryPin } from '@/components/hooks/queries/useQueryPin'
 import usePopupSize from '@/components/hooks/usePopupSize'
 import { PIN_FAILED_ATTEMPTS_THRESHOLD } from '@/lib/pin'
@@ -32,14 +33,17 @@ export default function PinUnlock() {
   usePopupSize('compact')
   const { navigate } = useNavigation()
   const { clearSession } = useAuthSession()
+  const { isUnlocked } = useUnlockState()
   const [pin, setPin] = useState('')
   const { unlockWithPin, phase, lockState } = useQueryPin()
 
   useEffect(() => {
-    if (unlockWithPin.isSuccess) {
+    // Wait for both mutation success AND unlock state update
+    // This prevents race condition where route guard redirects back
+    if (unlockWithPin.isSuccess && isUnlocked) {
       navigate('/bookmark')
     }
-  }, [unlockWithPin.isSuccess, navigate])
+  }, [unlockWithPin.isSuccess, isUnlocked, navigate])
 
   const handlePinComplete = (completedPin: string) => {
     if (!unlockWithPin.isPending) {

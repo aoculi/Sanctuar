@@ -158,10 +158,11 @@ async function calculateUnlockState(
 }
 
 export function UnlockStateProvider({ children }: UnlockStateProviderProps) {
-  const { session, isAuthenticated } = useAuthSession()
+  const { session, isAuthenticated, isLoading: authLoading } = useAuthSession()
   const [unlockState, setUnlockState] = useState<UnlockState>('loading')
   const [canUnlockWithPin, setCanUnlockWithPin] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [hasInitialized, setHasInitialized] = useState(false)
 
   const refreshUnlockState = useCallback(async () => {
     const result = await calculateUnlockState(isAuthenticated, session)
@@ -170,14 +171,28 @@ export function UnlockStateProvider({ children }: UnlockStateProviderProps) {
   }, [isAuthenticated, session])
 
   useEffect(() => {
+    // Don't calculate unlock state until auth has finished loading
+    // This prevents race conditions where we calculate with stale session data
+    if (authLoading) {
+      if (!hasInitialized) {
+        setIsLoading(true)
+      }
+      return
+    }
+
     const loadState = async () => {
-      setIsLoading(true)
+      // Only show loading spinner on initial load, not on refreshes
+      // This prevents unmounting components (like PinUnlock) during state updates
+      if (!hasInitialized) {
+        setIsLoading(true)
+      }
       await refreshUnlockState()
       setIsLoading(false)
+      setHasInitialized(true)
     }
 
     loadState()
-  }, [refreshUnlockState])
+  }, [refreshUnlockState, authLoading, hasInitialized])
 
   useEffect(() => {
     const interval = setInterval(() => {
