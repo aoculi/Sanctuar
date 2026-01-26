@@ -1,5 +1,5 @@
-import { Plus, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { Eye, EyeOff, Plus, Trash2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
 
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
 import { useBookmarks } from '@/components/hooks/useBookmarks'
@@ -24,12 +24,21 @@ export default function BulkActionBar({
   onSelectAll,
   onClearSelection
 }: BulkActionBarProps) {
-  const { deleteBookmarks } = useBookmarks()
+  const { bookmarks, deleteBookmarks, updateBookmarks } = useBookmarks()
   const { setFlash } = useNavigation()
   const [showTagModal, setShowTagModal] = useState(false)
 
   const selectedCount = selectedIds.size
   const allSelected = selectedCount > 0 && selectedCount === totalCount
+
+  // Check if all selected bookmarks are hidden
+  const allSelectedHidden = useMemo(() => {
+    if (selectedCount === 0) return false
+    return Array.from(selectedIds).every((id) => {
+      const bookmark = bookmarks.find((b) => b.id === id)
+      return bookmark?.hidden === true
+    })
+  }, [selectedIds, selectedCount, bookmarks])
 
   const handleBulkDelete = async () => {
     if (confirm(`Delete ${selectedCount} bookmarks?`)) {
@@ -47,6 +56,20 @@ export default function BulkActionBar({
 
   const handleBulkAddTags = () => {
     setShowTagModal(true)
+  }
+
+  const handleToggleHidden = async () => {
+    const newHiddenState = !allSelectedHidden
+    try {
+      await updateBookmarks(Array.from(selectedIds), { hidden: newHiddenState })
+      onClearSelection()
+      const action = newHiddenState ? 'hidden' : 'visible'
+      setFlash(`${selectedCount} bookmark${selectedCount > 1 ? 's' : ''} ${action}`)
+      setTimeout(() => setFlash(null), 3000)
+    } catch (error) {
+      setFlash(`Failed to update bookmarks: ${(error as Error).message}`)
+      setTimeout(() => setFlash(null), 5000)
+    }
   }
 
   return (
@@ -70,6 +93,13 @@ export default function BulkActionBar({
                 variant='bordered'
                 size='sm'
                 onClick={handleBulkAddTags}
+              />
+              <ActionBtn
+                icon={allSelectedHidden ? Eye : EyeOff}
+                label={allSelectedHidden ? 'Show' : 'Hide'}
+                variant='bordered'
+                size='sm'
+                onClick={handleToggleHidden}
               />
               <ActionBtn
                 icon={Trash2}
