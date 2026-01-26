@@ -15,6 +15,7 @@ import TagManageModal from '@/components/parts/Tags/TagManageModal'
 interface BookmarksProps {
   searchQuery: string
   selectedTags: string[]
+  selectedCollectionId?: string | null
   onSearchChange: (query: string) => void
   onSelectedTagsChange: (tags: string[]) => void
 }
@@ -22,6 +23,7 @@ interface BookmarksProps {
 export default function Bookmarks({
   searchQuery,
   selectedTags,
+  selectedCollectionId,
   onSearchChange,
   onSelectedTagsChange
 }: BookmarksProps) {
@@ -99,6 +101,7 @@ export default function Bookmarks({
       <PinnedList
         searchQuery={searchQuery}
         selectedTags={selectedTags}
+        selectedCollectionId={selectedCollectionId}
         onEdit={setEditingBookmark}
         onAddTags={handleAddTags}
         selectedIds={selectedIds}
@@ -108,6 +111,7 @@ export default function Bookmarks({
       <CollectionsList
         searchQuery={searchQuery}
         selectedTags={selectedTags}
+        selectedCollectionId={selectedCollectionId}
         onEdit={setEditingBookmark}
         onAddTags={handleAddTags}
         selectedIds={selectedIds}

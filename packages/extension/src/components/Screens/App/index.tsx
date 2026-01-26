@@ -19,12 +19,23 @@ import {
   useUnlockState
 } from '@/components/hooks/providers/useUnlockStateProvider'
 
-import Bookmarks from '@/components/parts/Bookmarks'
+import { useBookmarks } from '@/components/hooks/useBookmarks'
+import type { Bookmark } from '@/lib/types'
+
+import BookmarkEditModal from '@/components/parts/Bookmarks/BookmarkEditModal'
+import BulkActionBar from '@/components/parts/Bookmarks/BulkActionBar'
+import CollectionsList from '@/components/parts/Bookmarks/CollectionsList'
+import CreateCollection from '@/components/parts/Bookmarks/CreateCollection'
+import PinnedList from '@/components/parts/Bookmarks/PinnedList'
+import SmartSearch from '@/components/parts/Bookmarks/SmartSearch'
+import CollectionTree from '@/components/parts/CollectionTree'
 import HiddenToggle from '@/components/parts/HiddenToggle'
 import LockMessage from '@/components/parts/LockMessage'
 import Settings from '@/components/parts/Settings'
 import SmartHeader from '@/components/parts/SmartHeader'
 import Tags from '@/components/parts/Tags'
+import PinnedTags from '@/components/parts/Tags/PinnedTags'
+import TagManageModal from '@/components/parts/Tags/TagManageModal'
 import Text from '@/components/ui/Text'
 import ThemeToggle from '@/components/parts/ThemeToggle'
 import Help from '@/components/parts/Help'
@@ -40,6 +51,7 @@ function AppContent() {
   } = useUnlockState()
   const { isLoading: manifestLoading } = useManifest()
   const { route, selectedTag } = useNavigation()
+  const { bookmarks } = useBookmarks()
 
   const [isAppLoading, setIsAppLoading] = useState(true)
   const initialLoadComplete = useRef(false)
@@ -56,6 +68,15 @@ function AppContent() {
     }
     return []
   })
+  const [selectedCollectionId, setSelectedCollectionId] = useState<
+    string | null
+  >(null)
+
+  // Bookmarks state (moved from Bookmarks component)
+  const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null)
+  const [showTagManageModal, setShowTagManageModal] = useState(false)
+  const [bookmarkForTags, setBookmarkForTags] = useState<Bookmark | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     if (initialLoadComplete.current) {
@@ -76,6 +97,52 @@ function AppContent() {
     }
   }, [selectedTag])
 
+  // Handlers (moved from Bookmarks component)
+  const handleTagClick = (tagId: string) => {
+    setSelectedTags(
+      selectedTags.includes(tagId)
+        ? selectedTags.filter((id) => id !== tagId)
+        : [...selectedTags, tagId]
+    )
+  }
+
+  const handleManageTags = () => {
+    setBookmarkForTags(null)
+    setShowTagManageModal(true)
+  }
+
+  const handleAddTags = (bookmark: Bookmark) => {
+    setBookmarkForTags(bookmark)
+    setShowTagManageModal(true)
+  }
+
+  const handleTagManageClose = () => {
+    setShowTagManageModal(false)
+    setBookmarkForTags(null)
+  }
+
+  const handleToggleSelect = (id: string) => {
+    const newSelected = new Set(selectedIds)
+    if (newSelected.has(id)) {
+      newSelected.delete(id)
+    } else {
+      newSelected.add(id)
+    }
+    setSelectedIds(newSelected)
+  }
+
+  const handleSelectAll = () => {
+    if (selectedIds.size === bookmarks.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(bookmarks.map((b: Bookmark) => b.id)))
+    }
+  }
+
+  const handleClearSelection = () => {
+    setSelectedIds(new Set())
+  }
+
   if (isAppLoading) {
     return (
       <div className={styles.component}>
@@ -92,6 +159,8 @@ function AppContent() {
     return <LockMessage canUnlockWithPin={canUnlockWithPin} />
   }
 
+  const isBookmarksRoute = route === '/app' || route === undefined
+
   const renderContent = () => {
     switch (route) {
       case '/tags':
@@ -104,14 +173,7 @@ function AppContent() {
         return <Help />
       case '/app':
       default:
-        return (
-          <Bookmarks
-            searchQuery={searchQuery}
-            selectedTags={selectedTags}
-            onSearchChange={setSearchQuery}
-            onSelectedTagsChange={setSelectedTags}
-          />
-        )
+        return null
     }
   }
 
@@ -125,7 +187,75 @@ function AppContent() {
         </div>
       </div>
       <div className={styles.content}>
-        <div className={styles.container}>{renderContent()}</div>
+        <div className={styles.container}>
+          {isBookmarksRoute ? (
+            <>
+              {/* Top section - full width */}
+              <div className={styles.topSection}>
+                <SmartSearch
+                  searchQuery={searchQuery}
+                  selectedTags={selectedTags}
+                  onSearchChange={setSearchQuery}
+                  onSelectedTagsChange={setSelectedTags}
+                />
+                <PinnedTags
+                  selectedTags={selectedTags}
+                  onTagClick={handleTagClick}
+                  onManageTags={handleManageTags}
+                />
+              </div>
+
+              {/* Two column section */}
+              <div className={styles.twoColumns}>
+                <div className={styles.sidebar}>
+                  <CreateCollection />
+                  <CollectionTree
+                    selectedCollectionId={selectedCollectionId}
+                    onSelectCollection={setSelectedCollectionId}
+                  />
+                </div>
+                <div className={styles.main}>
+                  <BulkActionBar
+                    totalCount={bookmarks.length}
+                    selectedIds={selectedIds}
+                    onSelectAll={handleSelectAll}
+                    onClearSelection={handleClearSelection}
+                  />
+                  <PinnedList
+                    searchQuery={searchQuery}
+                    selectedTags={selectedTags}
+                    selectedCollectionId={selectedCollectionId}
+                    onEdit={setEditingBookmark}
+                    onAddTags={handleAddTags}
+                    selectedIds={selectedIds}
+                    onToggleSelect={handleToggleSelect}
+                  />
+                  <CollectionsList
+                    searchQuery={searchQuery}
+                    selectedTags={selectedTags}
+                    selectedCollectionId={selectedCollectionId}
+                    onEdit={setEditingBookmark}
+                    onAddTags={handleAddTags}
+                    selectedIds={selectedIds}
+                    onToggleSelect={handleToggleSelect}
+                  />
+                </div>
+              </div>
+
+              <BookmarkEditModal
+                bookmark={editingBookmark}
+                onClose={() => setEditingBookmark(null)}
+              />
+              <TagManageModal
+                open={showTagManageModal}
+                onClose={handleTagManageClose}
+                bookmark={bookmarkForTags}
+              />
+            </>
+          ) : (
+            <div className={styles.main}>{renderContent()}</div>
+          )}
+        </div>
       </div>
     </div>
   )

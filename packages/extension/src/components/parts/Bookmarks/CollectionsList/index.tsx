@@ -24,6 +24,7 @@ import styles from './styles.module.css'
 interface CollectionsListProps {
   searchQuery: string
   selectedTags: string[]
+  selectedCollectionId?: string | null
   onEdit?: (bookmark: Bookmark) => void
   onAddTags?: (bookmark: Bookmark) => void
   selectedIds?: Set<string>
@@ -33,6 +34,7 @@ interface CollectionsListProps {
 export default function CollectionsList({
   searchQuery,
   selectedTags,
+  selectedCollectionId,
   onEdit,
   onAddTags,
   selectedIds = new Set(),
@@ -103,10 +105,33 @@ export default function CollectionsList({
 
   // Get collections tree with their bookmarks
   const collectionTree = useMemo(() => {
-    const tree = buildCollectionTree(collections, nonPinnedBookmarks, 'updated_at')
+    let tree = buildCollectionTree(collections, nonPinnedBookmarks, 'updated_at')
+
     // Filter out empty collections when searching/filtering
-    return isFiltering ? filterEmptyCollectionTree(tree) : tree
-  }, [collections, nonPinnedBookmarks, isFiltering])
+    if (isFiltering) {
+      tree = filterEmptyCollectionTree(tree)
+    }
+
+    // Filter to specific collection when selected from sidebar
+    if (selectedCollectionId && selectedCollectionId !== 'uncategorized') {
+      const findNode = (
+        nodes: CollectionTreeNode[]
+      ): CollectionTreeNode | null => {
+        for (const node of nodes) {
+          if (node.collection.id === selectedCollectionId) {
+            return node
+          }
+          const found = findNode(node.children)
+          if (found) return found
+        }
+        return null
+      }
+      const selectedNode = findNode(tree)
+      tree = selectedNode ? [selectedNode] : []
+    }
+
+    return tree
+  }, [collections, nonPinnedBookmarks, isFiltering, selectedCollectionId])
 
   // Get uncategorized bookmarks (not pinned, not in any collection)
   const uncategorizedBookmarks = useMemo(
@@ -266,6 +291,12 @@ export default function CollectionsList({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [editingCollectionId, updateCollection, setFlash])
 
+  // Determine what to show based on collection selection
+  const showCollections =
+    !selectedCollectionId || selectedCollectionId !== 'uncategorized'
+  const showUncategorized =
+    !selectedCollectionId || selectedCollectionId === 'uncategorized'
+
   if (collectionTree.length === 0 && uncategorizedBookmarks.length === 0) {
     return null
   }
@@ -325,14 +356,15 @@ export default function CollectionsList({
 
   return (
     <div className={styles.component}>
-      {collectionTree.map((node) => renderCollectionNode(node, 0))}
+      {showCollections &&
+        collectionTree.map((node) => renderCollectionNode(node, 0))}
 
-      {uncategorizedBookmarks.length > 0 && (
+      {showUncategorized && uncategorizedBookmarks.length > 0 && (
         <Collapsible
           icon={Inbox}
           label='Uncategorized'
           count={uncategorizedBookmarks.length}
-          defaultOpen={false}
+          defaultOpen={selectedCollectionId === 'uncategorized'}
         >
           <div className={styles.bookmarksList}>
             {uncategorizedBookmarks.map((bookmark: Bookmark) => (

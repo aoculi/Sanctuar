@@ -1,0 +1,81 @@
+.component {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 300px;
+}
+
+.header {
+  padding: 8px 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tree {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  text-align: left;
+}
+
+.item:hover {
+  background-color: var(--background-2);
+}
+
+.itemSelected {
+  background-color: var(--background-2);
+}
+
+.itemSelected .icon {
+  color: var(--text);
+}
+
+.itemSelected .name {
+  color: var(--text);
+}
+
+.icon {
+  flex-shrink: 0;
+  color: var(--text-light);
+}
+
+.name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.count {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 5px;
+  background-color: rgba(255, 255, 255, 0.08);
+  border-radius: 9px;
+  color: var(--text-light);
+}
+
+.children {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
