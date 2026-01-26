@@ -33,3 +33,5 @@ packages/api/.env.production
 packages/api/prod.db
 packages/extension/assets/icon-old.png
 packages/extension/.env.production
+
+.claude
