@@ -110,11 +110,7 @@ export default function CreateCollection() {
           onKeyDown={handleKeyDown}
           placeholder='Collection name'
         />
-        <ActionBtn
-          icon={X}
-          size='sm'
-          onClick={handleCancel}
-        />
+        <ActionBtn icon={X} size='sm' onClick={handleCancel} />
       </div>
     </div>
   )
