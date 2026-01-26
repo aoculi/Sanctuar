@@ -54,9 +54,17 @@ export function useRouteGuard() {
     }
 
     if (unlockState === 'locked') {
+      // If user is on an auth route (login/register), let them stay there
+      // This handles two cases:
+      // 1. User chose to use password authentication instead of PIN
+      // 2. Race condition during login/register flow when keystore isn't set yet
+      //    but session is already authenticated
+      if (isAuthRoute(route)) {
+        return
+      }
       if (canUnlockWithPin && route !== '/pin-unlock') {
         navigate('/pin-unlock')
-      } else if (!canUnlockWithPin && route !== '/login') {
+      } else if (!canUnlockWithPin) {
         navigate('/login')
       }
       return
