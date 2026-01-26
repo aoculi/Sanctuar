@@ -2,23 +2,23 @@
   width: 100%;
 }
 
-.labelContent {
+.createRow {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: 1;
-  min-width: 0;
+  padding: 6px 10px;
+  background-color: var(--background-2);
+  border-radius: 6px;
 }
 
-.inputWrapper {
-  flex: 1;
-  min-width: 0;
-  position: relative;
-  max-width: 200px;
+.icon {
+  flex-shrink: 0;
+  color: var(--text-light);
 }
 
 .input {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   background: none;
   border: none;
   border-bottom: 1px dotted var(--border);

@@ -73,18 +73,26 @@ export function useCollections() {
         )
       }
 
+      // Shift existing sibling orders up by 1 to make room at position 0
+      const updatedCollections = collections.map((c) => {
+        if (c.parentId === collection.parentId) {
+          return { ...c, order: (c.order ?? 0) + 1 }
+        }
+        return c
+      })
+
       const newCollection: Collection = {
         ...collection,
         id: generateId(),
         name: trimmedName,
-        order: getNextCollectionOrder(collections, collection.parentId),
+        order: 0, // New collections go first
         created_at: now,
         updated_at: now
       }
 
       await save({
         ...manifest,
-        collections: [...collections, newCollection]
+        collections: [...updatedCollections, newCollection]
       })
     },
     [manifest, validateCollection, save]

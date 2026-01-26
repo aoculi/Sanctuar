@@ -28,6 +28,7 @@ import CollectionsList from '@/components/parts/Bookmarks/CollectionsList'
 import CreateCollection from '@/components/parts/Bookmarks/CreateCollection'
 import PinnedList from '@/components/parts/Bookmarks/PinnedList'
 import SmartSearch from '@/components/parts/Bookmarks/SmartSearch'
+import CollectionHeader from '@/components/parts/CollectionHeader'
 import CollectionTree from '@/components/parts/CollectionTree'
 import HiddenToggle from '@/components/parts/HiddenToggle'
 import LockMessage from '@/components/parts/LockMessage'
@@ -215,6 +216,7 @@ function AppContent() {
                   />
                 </div>
                 <div className={styles.main}>
+                  <CollectionHeader collectionId={selectedCollectionId} />
                   <BulkActionBar
                     totalCount={bookmarks.length}
                     selectedIds={selectedIds}

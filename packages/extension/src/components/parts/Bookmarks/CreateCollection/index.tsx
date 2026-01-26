@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useCollections } from '@/components/hooks/useCollections'
 
 import ActionBtn from '@/components/ui/ActionBtn'
-import Collapsible from '@/components/ui/Collapsible'
 
 import styles from './styles.module.css'
 
@@ -100,41 +99,23 @@ export default function CreateCollection() {
 
   return (
     <div ref={containerRef} className={styles.component}>
-      <Collapsible
-        icon={Folder}
-        label={
-          <div className={styles.labelContent}>
-            <div
-              className={styles.inputWrapper}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <input
-                ref={inputRef}
-                type='text'
-                className={styles.input}
-                value={collectionName}
-                onChange={(e) => setCollectionName(e.target.value)}
-                onKeyDown={handleKeyDown}
-                onClick={(e) => e.stopPropagation()}
-                placeholder='Collection name'
-              />
-            </div>
-            <ActionBtn
-              icon={X}
-              size='sm'
-              onClick={(e) => {
-                e.stopPropagation()
-                handleCancel()
-              }}
-            />
-          </div>
-        }
-        count={0}
-        defaultOpen={true}
-        editable={true}
-      >
-        <></>
-      </Collapsible>
+      <div className={styles.createRow}>
+        <Folder size={16} className={styles.icon} />
+        <input
+          ref={inputRef}
+          type='text'
+          className={styles.input}
+          value={collectionName}
+          onChange={(e) => setCollectionName(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder='Collection name'
+        />
+        <ActionBtn
+          icon={X}
+          size='sm'
+          onClick={handleCancel}
+        />
+      </div>
     </div>
   )
 }
