@@ -189,6 +189,27 @@ export function useBookmarks() {
     [manifest]
   )
 
+  const reorderBookmarks = useCallback(
+    async (orderedIds: string[]) => {
+      if (!manifest) return
+
+      // Create a map of id -> new order
+      const orderMap = new Map(orderedIds.map((id, index) => [id, index]))
+
+      await save({
+        ...manifest,
+        items: (manifest.items || []).map((item: Bookmark) => {
+          const newOrder = orderMap.get(item.id)
+          if (newOrder !== undefined) {
+            return { ...item, order: newOrder }
+          }
+          return item
+        })
+      })
+    },
+    [manifest, save]
+  )
+
   return {
     bookmarks: [...(manifest?.items || [])],
     addBookmark,
@@ -197,6 +218,7 @@ export function useBookmarks() {
     updateBookmarks,
     deleteBookmark,
     deleteBookmarks,
-    getBookmark
+    getBookmark,
+    reorderBookmarks
   }
 }

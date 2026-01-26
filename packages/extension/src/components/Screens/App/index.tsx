@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import {
   AuthSessionProvider,
@@ -24,10 +24,10 @@ import type { Bookmark } from '@/lib/types'
 
 import BookmarkEditModal from '@/components/parts/Bookmarks/BookmarkEditModal'
 import BulkActionBar from '@/components/parts/Bookmarks/BulkActionBar'
-import CollectionsList from '@/components/parts/Bookmarks/CollectionsList'
 import CreateCollection from '@/components/parts/Bookmarks/CreateCollection'
 import PinnedList from '@/components/parts/Bookmarks/PinnedList'
 import SmartSearch from '@/components/parts/Bookmarks/SmartSearch'
+import BookmarkList from '@/components/parts/BookmarkList'
 import CollectionHeader from '@/components/parts/CollectionHeader'
 import CollectionTree from '@/components/parts/CollectionTree'
 import HiddenToggle from '@/components/parts/HiddenToggle'
@@ -132,11 +132,26 @@ function AppContent() {
     setSelectedIds(newSelected)
   }
 
+  // Filter bookmarks for current collection
+  const filteredBookmarksForSelection = useMemo(() => {
+    if (!selectedCollectionId) {
+      return bookmarks
+    }
+    if (selectedCollectionId === 'uncategorized') {
+      return bookmarks.filter((b: Bookmark) => !b.collectionId)
+    }
+    return bookmarks.filter(
+      (b: Bookmark) => b.collectionId === selectedCollectionId
+    )
+  }, [bookmarks, selectedCollectionId])
+
   const handleSelectAll = () => {
-    if (selectedIds.size === bookmarks.length) {
+    if (selectedIds.size === filteredBookmarksForSelection.length) {
       setSelectedIds(new Set())
     } else {
-      setSelectedIds(new Set(bookmarks.map((b: Bookmark) => b.id)))
+      setSelectedIds(
+        new Set(filteredBookmarksForSelection.map((b: Bookmark) => b.id))
+      )
     }
   }
 
@@ -216,9 +231,12 @@ function AppContent() {
                   />
                 </div>
                 <div className={styles.main}>
-                  <CollectionHeader collectionId={selectedCollectionId} />
+                  <CollectionHeader
+                    collectionId={selectedCollectionId}
+                    onCollectionDeleted={() => setSelectedCollectionId(null)}
+                  />
                   <BulkActionBar
-                    totalCount={bookmarks.length}
+                    totalCount={filteredBookmarksForSelection.length}
                     selectedIds={selectedIds}
                     onSelectAll={handleSelectAll}
                     onClearSelection={handleClearSelection}
@@ -232,7 +250,7 @@ function AppContent() {
                     selectedIds={selectedIds}
                     onToggleSelect={handleToggleSelect}
                   />
-                  <CollectionsList
+                  <BookmarkList
                     searchQuery={searchQuery}
                     selectedTags={selectedTags}
                     selectedCollectionId={selectedCollectionId}

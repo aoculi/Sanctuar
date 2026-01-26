@@ -3,9 +3,15 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 8px 12px;
-  background-color: var(--background-2);
-  border-radius: 8px;
+}
+
+.component > button {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.component:hover > button {
+  opacity: 1;
 }
 
 .content {
