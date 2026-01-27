@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import {
   AuthSessionProvider,
@@ -18,167 +18,66 @@ import {
   UnlockStateProvider,
   useUnlockState
 } from '@/components/hooks/providers/useUnlockStateProvider'
+import { useLockTimerReset } from '@/components/hooks/useLockTimerReset'
 
-import { useBookmarks } from '@/components/hooks/useBookmarks'
-import type { Bookmark } from '@/lib/types'
-import { resetLockTimer } from '@/lib/unlock'
-
-import BookmarkEditModal from '@/components/parts/Bookmarks/BookmarkEditModal'
-import BulkActionBar from '@/components/parts/Bookmarks/BulkActionBar'
-import CreateCollection from '@/components/parts/Bookmarks/CreateCollection'
-import PinnedList from '@/components/parts/Bookmarks/PinnedList'
-import SmartSearch from '@/components/parts/Bookmarks/SmartSearch'
-import BookmarkList from '@/components/parts/BookmarkList'
-import CollectionHeader from '@/components/parts/CollectionHeader'
-import CollectionTree from '@/components/parts/CollectionTree'
+import BookmarksView from '@/components/parts/BookmarksView'
+import Help from '@/components/parts/Help'
 import HiddenToggle from '@/components/parts/HiddenToggle'
 import LockMessage from '@/components/parts/LockMessage'
 import Settings from '@/components/parts/Settings'
 import SmartHeader from '@/components/parts/SmartHeader'
 import Tags from '@/components/parts/Tags'
-import PinnedTags from '@/components/parts/Tags/PinnedTags'
-import TagManageModal from '@/components/parts/Tags/TagManageModal'
-import Text from '@/components/ui/Text'
 import ThemeToggle from '@/components/parts/ThemeToggle'
-import Help from '@/components/parts/Help'
+import Text from '@/components/ui/Text'
 
 import styles from './styles.module.css'
 
+function getInitialTags(selectedTag: string | null): string[] {
+  if (selectedTag) {
+    return [selectedTag]
+  }
+  const hash = window.location.hash
+  if (hash?.startsWith('#tag=')) {
+    const tagId = hash.substring(5)
+    return tagId ? [tagId] : []
+  }
+  return []
+}
+
 function AppContent() {
   const { isLoading: authLoading, isAuthenticated } = useAuthSession()
-  const {
-    isLocked,
-    canUnlockWithPin,
-    isLoading: unlockLoading
-  } = useUnlockState()
+  const { isLocked, canUnlockWithPin, isLoading: unlockLoading } = useUnlockState()
   const { isLoading: manifestLoading } = useManifest()
   const { route, selectedTag } = useNavigation()
-  const { bookmarks } = useBookmarks()
 
   const [isAppLoading, setIsAppLoading] = useState(true)
   const initialLoadComplete = useRef(false)
 
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedTags, setSelectedTags] = useState<string[]>(() => {
-    if (selectedTag) {
-      return [selectedTag]
-    }
-    const hash = window.location.hash
-    if (hash?.startsWith('#tag=')) {
-      const tagId = hash.substring(5)
-      return tagId ? [tagId] : []
-    }
-    return []
-  })
-  const [selectedCollectionId, setSelectedCollectionId] = useState<
-    string | null
-  >(null)
+  const [selectedTags, setSelectedTags] = useState<string[]>(() =>
+    getInitialTags(selectedTag)
+  )
 
-  // Bookmarks state (moved from Bookmarks component)
-  const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null)
-  const [showTagManageModal, setShowTagManageModal] = useState(false)
-  const [bookmarkForTags, setBookmarkForTags] = useState<Bookmark | null>(null)
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  // Reset lock timer on user interaction
+  useLockTimerReset()
 
+  // Track initial loading state
   useEffect(() => {
-    if (initialLoadComplete.current) {
-      return
-    }
+    if (initialLoadComplete.current) return
 
     const allLoaded = !authLoading && !unlockLoading && !manifestLoading
-
     if (allLoaded) {
       initialLoadComplete.current = true
       setIsAppLoading(false)
     }
   }, [authLoading, unlockLoading, manifestLoading])
 
+  // Sync selectedTag from navigation
   useEffect(() => {
     if (selectedTag) {
       setSelectedTags([selectedTag])
     }
   }, [selectedTag])
-
-  // Handlers (moved from Bookmarks component)
-  const handleTagClick = (tagId: string) => {
-    setSelectedTags(
-      selectedTags.includes(tagId)
-        ? selectedTags.filter((id) => id !== tagId)
-        : [...selectedTags, tagId]
-    )
-  }
-
-  const handleManageTags = () => {
-    setBookmarkForTags(null)
-    setShowTagManageModal(true)
-  }
-
-  const handleAddTags = (bookmark: Bookmark) => {
-    setBookmarkForTags(bookmark)
-    setShowTagManageModal(true)
-  }
-
-  const handleTagManageClose = () => {
-    setShowTagManageModal(false)
-    setBookmarkForTags(null)
-  }
-
-  const handleToggleSelect = (id: string) => {
-    const newSelected = new Set(selectedIds)
-    if (newSelected.has(id)) {
-      newSelected.delete(id)
-    } else {
-      newSelected.add(id)
-    }
-    setSelectedIds(newSelected)
-  }
-
-  // Filter bookmarks for current collection
-  const filteredBookmarksForSelection = useMemo(() => {
-    if (!selectedCollectionId) {
-      return bookmarks
-    }
-    if (selectedCollectionId === 'uncategorized') {
-      return bookmarks.filter((b: Bookmark) => !b.collectionId)
-    }
-    return bookmarks.filter(
-      (b: Bookmark) => b.collectionId === selectedCollectionId
-    )
-  }, [bookmarks, selectedCollectionId])
-
-  const handleSelectAll = () => {
-    if (selectedIds.size === filteredBookmarksForSelection.length) {
-      setSelectedIds(new Set())
-    } else {
-      setSelectedIds(
-        new Set(filteredBookmarksForSelection.map((b: Bookmark) => b.id))
-      )
-    }
-  }
-
-  const handleClearSelection = () => {
-    setSelectedIds(new Set())
-  }
-
-  // Reset lock timer on interaction (debounced)
-  const lastResetRef = useRef(0)
-  const handleInteraction = useCallback(() => {
-    const now = Date.now()
-    // Debounce: only reset if more than 60 seconds since last reset
-    if (now - lastResetRef.current > 60000) {
-      lastResetRef.current = now
-      resetLockTimer()
-    }
-  }, [])
-
-  useEffect(() => {
-    document.addEventListener('click', handleInteraction)
-    document.addEventListener('keydown', handleInteraction)
-    return () => {
-      document.removeEventListener('click', handleInteraction)
-      document.removeEventListener('keydown', handleInteraction)
-    }
-  }, [handleInteraction])
 
   if (isAppLoading) {
     return (
@@ -201,14 +100,11 @@ function AppContent() {
   const renderContent = () => {
     switch (route) {
       case '/tags':
-        return (
-          <Tags searchQuery={searchQuery} onSearchChange={setSearchQuery} />
-        )
+        return <Tags searchQuery={searchQuery} onSearchChange={setSearchQuery} />
       case '/settings':
         return <Settings />
       case '/help':
         return <Help />
-      case '/app':
       default:
         return null
     }
@@ -226,73 +122,12 @@ function AppContent() {
       <div className={styles.content}>
         <div className={styles.container}>
           {isBookmarksRoute ? (
-            <>
-              {/* Top section - full width */}
-              <div className={styles.topSection}>
-                <SmartSearch
-                  searchQuery={searchQuery}
-                  selectedTags={selectedTags}
-                  onSearchChange={setSearchQuery}
-                  onSelectedTagsChange={setSelectedTags}
-                />
-                <PinnedTags
-                  selectedTags={selectedTags}
-                  onTagClick={handleTagClick}
-                  onManageTags={handleManageTags}
-                />
-              </div>
-
-              {/* Two column section */}
-              <div className={styles.twoColumns}>
-                <div className={styles.sidebar}>
-                  <CreateCollection />
-                  <CollectionTree
-                    selectedCollectionId={selectedCollectionId}
-                    onSelectCollection={setSelectedCollectionId}
-                  />
-                </div>
-                <div className={styles.main}>
-                  <CollectionHeader
-                    collectionId={selectedCollectionId}
-                    onCollectionDeleted={() => setSelectedCollectionId(null)}
-                  />
-                  <BulkActionBar
-                    totalCount={filteredBookmarksForSelection.length}
-                    selectedIds={selectedIds}
-                    onSelectAll={handleSelectAll}
-                    onClearSelection={handleClearSelection}
-                  />
-                  <PinnedList
-                    searchQuery={searchQuery}
-                    selectedTags={selectedTags}
-                    selectedCollectionId={selectedCollectionId}
-                    onEdit={setEditingBookmark}
-                    onAddTags={handleAddTags}
-                    selectedIds={selectedIds}
-                    onToggleSelect={handleToggleSelect}
-                  />
-                  <BookmarkList
-                    searchQuery={searchQuery}
-                    selectedTags={selectedTags}
-                    selectedCollectionId={selectedCollectionId}
-                    onEdit={setEditingBookmark}
-                    onAddTags={handleAddTags}
-                    selectedIds={selectedIds}
-                    onToggleSelect={handleToggleSelect}
-                  />
-                </div>
-              </div>
-
-              <BookmarkEditModal
-                bookmark={editingBookmark}
-                onClose={() => setEditingBookmark(null)}
-              />
-              <TagManageModal
-                open={showTagManageModal}
-                onClose={handleTagManageClose}
-                bookmark={bookmarkForTags}
-              />
-            </>
+            <BookmarksView
+              searchQuery={searchQuery}
+              selectedTags={selectedTags}
+              onSearchChange={setSearchQuery}
+              onSelectedTagsChange={setSelectedTags}
+            />
           ) : (
             <div className={styles.main}>{renderContent()}</div>
           )}
@@ -302,11 +137,7 @@ function AppContent() {
   )
 }
 
-export default function App({
-  initialRoute = '/app'
-}: {
-  initialRoute?: Route
-}) {
+export default function App({ initialRoute = '/app' }: { initialRoute?: Route }) {
   return (
     <AuthSessionProvider>
       <SettingsProvider>

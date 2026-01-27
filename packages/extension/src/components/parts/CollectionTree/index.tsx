@@ -1,11 +1,12 @@
 import { ExternalLink, Folder, Inbox, Library } from 'lucide-react'
 import * as Icons from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
+import { useSettings } from '@/components/hooks/providers/useSettingsProvider'
 import { useBookmarks } from '@/components/hooks/useBookmarks'
 import { useCollections } from '@/components/hooks/useCollections'
-import { useSettings } from '@/components/hooks/providers/useSettingsProvider'
+import { useDragReorder, type DropZone } from '@/components/hooks/useDragReorder'
 import {
   buildCollectionTree,
   handleCollectionDrop,
@@ -18,8 +19,6 @@ import ActionBtn from '@/components/ui/ActionBtn'
 import Text from '@/components/ui/Text'
 
 import styles from './styles.module.css'
-
-type DropZone = 'above' | 'center' | 'below'
 
 interface CollectionTreeProps {
   selectedCollectionId: string | null
@@ -35,15 +34,18 @@ export default function CollectionTree({
   const { settings } = useSettings()
   const { setFlash } = useNavigation()
 
-  // Drag and drop state
-  const [draggedId, setDraggedId] = useState<string | null>(null)
-  const [dropTarget, setDropTarget] = useState<{
-    id: string
-    zone: DropZone
-  } | null>(null)
+  const {
+    draggedId,
+    getDropZone,
+    handleDragStart,
+    handleDragOver,
+    handleDragLeave,
+    handleDragEnd,
+    clearDragState,
+    isDragging,
+    getDropZoneForTarget
+  } = useDragReorder<DropZone>({ includeCenter: true })
 
-
-  // Get non-pinned bookmarks (same filtering as CollectionsList)
   const nonPinnedBookmarks = useMemo(() => {
     let filtered = bookmarks.filter((b: Bookmark) => !b.pinned)
     if (!settings.showHiddenBookmarks) {
@@ -52,13 +54,11 @@ export default function CollectionTree({
     return filtered
   }, [bookmarks, settings.showHiddenBookmarks])
 
-  // Build tree structure
   const collectionTree = useMemo(
     () => buildCollectionTree(collections, nonPinnedBookmarks, 'updated_at'),
     [collections, nonPinnedBookmarks]
   )
 
-  // Count uncategorized bookmarks
   const uncategorizedCount = useMemo(
     () => nonPinnedBookmarks.filter((b: Bookmark) => !b.collectionId).length,
     [nonPinnedBookmarks]
@@ -68,31 +68,6 @@ export default function CollectionTree({
     if (!iconName) return Folder
     const Icon = (Icons as unknown as Record<string, typeof Folder>)[iconName]
     return Icon || Folder
-  }
-
-  const getDropZone = (e: React.DragEvent): DropZone => {
-    const rect = e.currentTarget.getBoundingClientRect()
-    const y = e.clientY - rect.top
-    const threshold = rect.height * 0.25
-    if (y < threshold) return 'above'
-    if (y > rect.height - threshold) return 'below'
-    return 'center'
-  }
-
-  const handleDragStart = (collectionId: string) => {
-    setDraggedId(collectionId)
-  }
-
-  const handleDragOver = (e: React.DragEvent, collectionId: string) => {
-    e.preventDefault()
-    if (draggedId && draggedId !== collectionId) {
-      const zone = getDropZone(e)
-      setDropTarget({ id: collectionId, zone })
-    }
-  }
-
-  const handleDragLeave = () => {
-    setDropTarget(null)
   }
 
   const handleDrop = async (e: React.DragEvent, targetId: string) => {
@@ -121,15 +96,6 @@ export default function CollectionTree({
     clearDragState()
   }
 
-  const handleDragEnd = () => {
-    clearDragState()
-  }
-
-  const clearDragState = () => {
-    setDraggedId(null)
-    setDropTarget(null)
-  }
-
   const handleOpenAllBookmarks = (
     e: React.MouseEvent,
     nodeBookmarks: Bookmark[]
@@ -139,8 +105,9 @@ export default function CollectionTree({
   }
 
   const getDropZoneClass = (collectionId: string) => {
-    if (dropTarget?.id !== collectionId) return ''
-    switch (dropTarget.zone) {
+    const zone = getDropZoneForTarget(collectionId)
+    if (!zone) return ''
+    switch (zone) {
       case 'above':
         return styles.dropAbove
       case 'below':
@@ -155,13 +122,13 @@ export default function CollectionTree({
   const renderNode = (node: CollectionTreeNode, depth: number) => {
     const Icon = getIcon(node.collection.icon)
     const isSelected = selectedCollectionId === node.collection.id
-    const isDragging = draggedId === node.collection.id
+    const dragging = isDragging(node.collection.id)
     const dropZoneClass = getDropZoneClass(node.collection.id)
 
     return (
       <div key={node.collection.id}>
         <div
-          className={`${styles.itemWrapper} ${isDragging ? styles.dragging : ''} ${dropZoneClass}`}
+          className={`${styles.itemWrapper} ${dragging ? styles.dragging : ''} ${dropZoneClass}`}
           draggable
           onDragStart={() => handleDragStart(node.collection.id)}
           onDragOver={(e) => handleDragOver(e, node.collection.id)}
