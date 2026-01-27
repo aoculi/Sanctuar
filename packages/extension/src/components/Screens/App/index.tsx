@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import {
   AuthSessionProvider,
@@ -21,6 +21,7 @@ import {
 
 import { useBookmarks } from '@/components/hooks/useBookmarks'
 import type { Bookmark } from '@/lib/types'
+import { resetLockTimer } from '@/lib/unlock'
 
 import BookmarkEditModal from '@/components/parts/Bookmarks/BookmarkEditModal'
 import BulkActionBar from '@/components/parts/Bookmarks/BulkActionBar'
@@ -158,6 +159,26 @@ function AppContent() {
   const handleClearSelection = () => {
     setSelectedIds(new Set())
   }
+
+  // Reset lock timer on interaction (debounced)
+  const lastResetRef = useRef(0)
+  const handleInteraction = useCallback(() => {
+    const now = Date.now()
+    // Debounce: only reset if more than 60 seconds since last reset
+    if (now - lastResetRef.current > 60000) {
+      lastResetRef.current = now
+      resetLockTimer()
+    }
+  }, [])
+
+  useEffect(() => {
+    document.addEventListener('click', handleInteraction)
+    document.addEventListener('keydown', handleInteraction)
+    return () => {
+      document.removeEventListener('click', handleInteraction)
+      document.removeEventListener('keydown', handleInteraction)
+    }
+  }, [handleInteraction])
 
   if (isAppLoading) {
     return (

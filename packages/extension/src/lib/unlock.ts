@@ -37,6 +37,19 @@ import {
 } from '@/lib/storage'
 
 /**
+ * Reset the auto-lock timer by updating session.createdAt to current time
+ */
+export async function resetLockTimer(): Promise<void> {
+  const session = await getStorageItem<AuthSession>(STORAGE_KEYS.SESSION)
+  if (session?.userId && session?.token) {
+    await setStorageItem(STORAGE_KEYS.SESSION, {
+      ...session,
+      createdAt: Date.now()
+    })
+  }
+}
+
+/**
  * Keystore data stored in chrome.storage
  */
 export type KeystoreData = {
