@@ -1,0 +1,38 @@
+.component {
+  display: flex;
+  flex-direction: column;
+}
+
+.itemWrapper {
+  position: relative;
+  transition: opacity 0.15s ease;
+}
+
+.itemWrapper.dragging {
+  opacity: 0.5;
+}
+
+/* Drop zone indicators */
+.dropAbove::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--primary);
+  border-radius: 1px;
+  z-index: 1;
+}
+
+.dropBelow::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--primary);
+  border-radius: 1px;
+  z-index: 1;
+}

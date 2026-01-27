@@ -16,6 +16,7 @@ import styles from './styles.module.css'
 interface PinnedListProps {
   searchQuery: string
   selectedTags: string[]
+  selectedCollectionId?: string | null
   onEdit?: (bookmark: Bookmark) => void
   onAddTags?: (bookmark: Bookmark) => void
   selectedIds?: Set<string>
@@ -25,6 +26,7 @@ interface PinnedListProps {
 export default function PinnedList({
   searchQuery,
   selectedTags,
+  selectedCollectionId,
   onEdit,
   onAddTags,
   selectedIds = new Set(),
@@ -58,10 +60,28 @@ export default function PinnedList({
       }
     }
 
+    // Apply collection filter
+    if (selectedCollectionId) {
+      if (selectedCollectionId === 'uncategorized') {
+        filtered = filtered.filter((bookmark) => !bookmark.collectionId)
+      } else {
+        filtered = filtered.filter(
+          (bookmark) => bookmark.collectionId === selectedCollectionId
+        )
+      }
+    }
+
     return filtered.sort(
       (a: Bookmark, b: Bookmark) => b.updated_at - a.updated_at
     )
-  }, [bookmarks, tags, searchQuery, selectedTags, settings.showHiddenBookmarks])
+  }, [
+    bookmarks,
+    tags,
+    searchQuery,
+    selectedTags,
+    selectedCollectionId,
+    settings.showHiddenBookmarks
+  ])
 
   const handleTogglePin = async (bookmark: Bookmark) => {
     try {

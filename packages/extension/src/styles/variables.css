@@ -1,6 +1,6 @@
 :root {
-  --text: #c7cbd3;
-  --text-light: #8d9096;
+  --text: #e2e5eb;
+  --text-light: #9ca1ab;
 
   --border: #464b57;
   --border-hover: #6f7075;
@@ -11,14 +11,14 @@
 
   --background-1: #57585e;
   --background-2: #2f343e;
-  --background-3: #282c33;
+  --background-3: #1e2228;
 
-  --input-background: #16191f;
+  --input-background: #13161d;
 }
 
 [data-theme='light'] {
-  --text: #1a1a1a;
-  --text-light: #666666;
+  --text: #111111;
+  --text-light: #555555;
 
   --border: #d0d0d0;
   --border-hover: #999999;

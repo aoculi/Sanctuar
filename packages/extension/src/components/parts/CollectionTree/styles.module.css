@@ -1,0 +1,132 @@
+.component {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.header {
+  padding: 8px 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tree {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.itemWrapper {
+  position: relative;
+  transition: opacity 0.15s ease;
+}
+
+.itemWrapper.dragging {
+  opacity: 0.5;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  text-align: left;
+}
+
+.item:hover {
+  background-color: var(--background-2);
+}
+
+.itemSelected {
+  background-color: var(--background-2);
+}
+
+.itemSelected .icon {
+  color: var(--text);
+}
+
+.itemSelected .name {
+  color: var(--text);
+}
+
+.icon {
+  flex-shrink: 0;
+  color: var(--text-light);
+}
+
+.name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.item:hover .actions {
+  opacity: 1;
+}
+
+.count {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 5px;
+  background-color: rgba(255, 255, 255, 0.08);
+  border-radius: 9px;
+  color: var(--text-light);
+}
+
+.children {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Drop zone indicators */
+.dropAbove::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--primary);
+  border-radius: 1px;
+  z-index: 1;
+}
+
+.dropBelow::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--primary);
+  border-radius: 1px;
+  z-index: 1;
+}
+
+.dropCenter .item {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+  background-color: color-mix(in srgb, var(--primary) 8%, transparent);
+}

@@ -18,26 +18,35 @@ import {
   UnlockStateProvider,
   useUnlockState
 } from '@/components/hooks/providers/useUnlockStateProvider'
+import { useLockTimerReset } from '@/components/hooks/useLockTimerReset'
 
-import Bookmarks from '@/components/parts/Bookmarks'
+import BookmarksView from '@/components/parts/BookmarksView'
+import Help from '@/components/parts/Help'
 import HiddenToggle from '@/components/parts/HiddenToggle'
 import LockMessage from '@/components/parts/LockMessage'
 import Settings from '@/components/parts/Settings'
 import SmartHeader from '@/components/parts/SmartHeader'
 import Tags from '@/components/parts/Tags'
-import Text from '@/components/ui/Text'
 import ThemeToggle from '@/components/parts/ThemeToggle'
-import Help from '@/components/parts/Help'
+import Text from '@/components/ui/Text'
 
 import styles from './styles.module.css'
 
+function getInitialTags(selectedTag: string | null): string[] {
+  if (selectedTag) {
+    return [selectedTag]
+  }
+  const hash = window.location.hash
+  if (hash?.startsWith('#tag=')) {
+    const tagId = hash.substring(5)
+    return tagId ? [tagId] : []
+  }
+  return []
+}
+
 function AppContent() {
   const { isLoading: authLoading, isAuthenticated } = useAuthSession()
-  const {
-    isLocked,
-    canUnlockWithPin,
-    isLoading: unlockLoading
-  } = useUnlockState()
+  const { isLocked, canUnlockWithPin, isLoading: unlockLoading } = useUnlockState()
   const { isLoading: manifestLoading } = useManifest()
   const { route, selectedTag } = useNavigation()
 
@@ -45,31 +54,25 @@ function AppContent() {
   const initialLoadComplete = useRef(false)
 
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedTags, setSelectedTags] = useState<string[]>(() => {
-    if (selectedTag) {
-      return [selectedTag]
-    }
-    const hash = window.location.hash
-    if (hash?.startsWith('#tag=')) {
-      const tagId = hash.substring(5)
-      return tagId ? [tagId] : []
-    }
-    return []
-  })
+  const [selectedTags, setSelectedTags] = useState<string[]>(() =>
+    getInitialTags(selectedTag)
+  )
 
+  // Reset lock timer on user interaction
+  useLockTimerReset()
+
+  // Track initial loading state
   useEffect(() => {
-    if (initialLoadComplete.current) {
-      return
-    }
+    if (initialLoadComplete.current) return
 
     const allLoaded = !authLoading && !unlockLoading && !manifestLoading
-
     if (allLoaded) {
       initialLoadComplete.current = true
       setIsAppLoading(false)
     }
   }, [authLoading, unlockLoading, manifestLoading])
 
+  // Sync selectedTag from navigation
   useEffect(() => {
     if (selectedTag) {
       setSelectedTags([selectedTag])
@@ -92,26 +95,18 @@ function AppContent() {
     return <LockMessage canUnlockWithPin={canUnlockWithPin} />
   }
 
+  const isBookmarksRoute = route === '/app' || route === undefined
+
   const renderContent = () => {
     switch (route) {
       case '/tags':
-        return (
-          <Tags searchQuery={searchQuery} onSearchChange={setSearchQuery} />
-        )
+        return <Tags searchQuery={searchQuery} onSearchChange={setSearchQuery} />
       case '/settings':
         return <Settings />
       case '/help':
         return <Help />
-      case '/app':
       default:
-        return (
-          <Bookmarks
-            searchQuery={searchQuery}
-            selectedTags={selectedTags}
-            onSearchChange={setSearchQuery}
-            onSelectedTagsChange={setSelectedTags}
-          />
-        )
+        return null
     }
   }
 
@@ -125,17 +120,24 @@ function AppContent() {
         </div>
       </div>
       <div className={styles.content}>
-        <div className={styles.container}>{renderContent()}</div>
+        <div className={styles.container}>
+          {isBookmarksRoute ? (
+            <BookmarksView
+              searchQuery={searchQuery}
+              selectedTags={selectedTags}
+              onSearchChange={setSearchQuery}
+              onSelectedTagsChange={setSelectedTags}
+            />
+          ) : (
+            <div className={styles.main}>{renderContent()}</div>
+          )}
+        </div>
       </div>
     </div>
   )
 }
 
-export default function App({
-  initialRoute = '/app'
-}: {
-  initialRoute?: Route
-}) {
+export default function App({ initialRoute = '/app' }: { initialRoute?: Route }) {
   return (
     <AuthSessionProvider>
       <SettingsProvider>

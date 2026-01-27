@@ -26,6 +26,7 @@ export interface Bookmark {
   collectionId?: string // optional collection id
   pinned?: boolean
   hidden?: boolean // whether bookmark is hidden (default: false)
+  order?: number // manual sort order (lower = first)
   created_at: number // epoch ms
   updated_at: number // epoch ms
 }
