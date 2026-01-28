@@ -39,7 +39,10 @@ export default defineConfig({
         id: '@sanctuar'
       },
       gecko: {
-        id: '@sanctuar'
+        id: '@sanctuar',
+        data_collection_permissions: {
+          required: false
+        }
       },
       edge: {
         id: '@sanctuar'
