@@ -5,16 +5,21 @@
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 
+import { fetchRefreshToken } from '@/api/auth-api'
 import { fetchVaultManifest } from '@/api/vault-api'
 import {
   useManifest,
   saveManifestData
 } from '@/components/hooks/providers/useManifestProvider'
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
-import { useAuthSession } from '@/components/hooks/providers/useAuthSessionProvider'
+import {
+  useAuthSession,
+  type AuthSession
+} from '@/components/hooks/providers/useAuthSessionProvider'
+import { STORAGE_KEYS } from '@/lib/constants'
 import { getLockState } from '@/lib/lockState'
 import { decryptManifest } from '@/lib/manifest'
-import type { LockState } from '@/lib/storage'
+import { getStorageItem, setStorageItem, type LockState } from '@/lib/storage'
 import { unlockWithPin } from '@/lib/unlock'
 
 export const QUERY_KEYS = {
@@ -44,7 +49,30 @@ export const useQueryPin = () => {
       setPhase('verifying')
       const result = await unlockWithPin(pin)
 
-      // Phase 2: Fetch and decrypt manifest from server
+      // Phase 2: Check if token needs refresh before API calls
+      // This handles the case where the token expired while popup was closed
+      const session = await getStorageItem<AuthSession>(STORAGE_KEYS.SESSION)
+      if (session && session.expiresAt) {
+        const timeUntilExpiry = session.expiresAt - Date.now()
+        // If token is expired or expires in less than 60 seconds, refresh it
+        if (timeUntilExpiry <= 60000) {
+          try {
+            const refreshResponse = await fetchRefreshToken()
+            const updatedSession: AuthSession = {
+              ...session,
+              token: refreshResponse.token,
+              expiresAt: refreshResponse.expires_at
+            }
+            await setStorageItem(STORAGE_KEYS.SESSION, updatedSession)
+          } catch (error) {
+            // If refresh fails (e.g., no connection), we'll try the API call anyway
+            // The API call will fail with 401 if token is truly invalid
+            console.warn('Token refresh failed in PIN unlock, continuing:', error)
+          }
+        }
+      }
+
+      // Phase 3: Fetch and decrypt manifest from server
       setPhase('loading')
       const vaultManifestResponse = await fetchVaultManifest()
       const decryptedManifest = await decryptManifest(vaultManifestResponse)

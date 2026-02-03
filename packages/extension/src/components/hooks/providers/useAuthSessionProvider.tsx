@@ -119,15 +119,13 @@ export function AuthSessionProvider({ children }: AuthSessionProviderProps) {
       const now = Date.now()
       const timeUntilExpiry = session.expiresAt - now
 
-      if (timeUntilExpiry <= 0) {
-        await clearSession()
-        setIsLoading(false)
-        return
-      }
-
+      // Determine if we should attempt token refresh:
+      // 1. Token is expired (timeUntilExpiry <= 0)
+      // 2. Token needs refresh based on MIN_REFRESH_INTERVAL
       const timeSinceCreation = now - session.createdAt
+      const shouldRefresh = timeUntilExpiry <= 0 || timeSinceCreation > MIN_REFRESH_INTERVAL
 
-      if (timeSinceCreation > MIN_REFRESH_INTERVAL) {
+      if (shouldRefresh) {
         try {
           const refreshResponse = await fetchRefreshToken()
           const updatedSession: AuthSession = {
@@ -149,7 +147,13 @@ export function AuthSessionProvider({ children }: AuthSessionProviderProps) {
           setIsLoading(false)
           return
         } catch (error) {
-          console.warn('Token refresh failed, using existing session:', error)
+          // Token refresh failed (network error, server error, etc.)
+          // We keep the existing session but mark it as needing refresh
+          // User will still be "authenticated" but API calls may fail until refresh succeeds
+          console.warn('Token refresh failed, keeping existing session:', error)
+          
+          // If token is actually expired, we'll still keep the session
+          // The PIN unlock flow will handle refreshing before API calls
           setSessionState(session)
           setIsAuthenticated(true)
           setIsLoading(false)

@@ -1,7 +1,9 @@
 import type { AuthSession } from '@/components/hooks/providers/useAuthSessionProvider'
 import { checkAndApplyAutoLock } from '@/components/hooks/providers/useUnlockStateProvider'
+import { fetchRefreshToken } from '@/api/auth-api'
 import { STORAGE_KEYS } from '@/lib/constants'
 import { fetchMetadata, type MetadataResponse } from '@/lib/pageCapture'
+import { getStorageItem, setStorageItem } from '@/lib/storage'
 
 declare const browser: typeof chrome | undefined
 
@@ -73,6 +75,46 @@ async function checkAuthState(): Promise<boolean> {
   }
 }
 
+/**
+ * Proactively refresh token before it expires
+ * This keeps the session valid indefinitely (Proton-style behavior)
+ * Only logs out on explicit user action
+ */
+async function proactiveTokenRefresh(): Promise<void> {
+  try {
+    const session = await getStorageItem<AuthSession>(STORAGE_KEYS.SESSION)
+    if (!session || !session.token || !session.expiresAt) {
+      return
+    }
+
+    const now = Date.now()
+    const timeUntilExpiry = session.expiresAt - now
+    
+    // Refresh token if it expires in less than 5 minutes
+    // This prevents the token from expiring while the extension is idle
+    const REFRESH_THRESHOLD_MS = 5 * 60 * 1000 // 5 minutes
+    
+    if (timeUntilExpiry <= REFRESH_THRESHOLD_MS) {
+      console.log('[Background] Proactively refreshing token...')
+      try {
+        const refreshResponse = await fetchRefreshToken()
+        const updatedSession: AuthSession = {
+          ...session,
+          token: refreshResponse.token,
+          expiresAt: refreshResponse.expires_at
+        }
+        await setStorageItem(STORAGE_KEYS.SESSION, updatedSession)
+        console.log('[Background] Token refreshed successfully')
+      } catch (error) {
+        // Silent fail - will retry on next interval or when popup opens
+        console.warn('[Background] Token refresh failed, will retry:', error)
+      }
+    }
+  } catch (error) {
+    console.error('[Background] Error in proactive token refresh:', error)
+  }
+}
+
 export default defineBackground(() => {
   checkAuthState().then(updateIconForAuthState)
 
@@ -98,6 +140,16 @@ export default defineBackground(() => {
   }, AUTO_LOCK_CHECK_INTERVAL)
 
   checkAndApplyAutoLock()
+
+  // Proactive token refresh - keeps session valid indefinitely
+  // Run every 5 minutes to check if token needs refreshing
+  const TOKEN_REFRESH_INTERVAL = 5 * 60 * 1000
+  setInterval(() => {
+    proactiveTokenRefresh()
+  }, TOKEN_REFRESH_INTERVAL)
+
+  // Run initial token refresh check
+  proactiveTokenRefresh()
 
   chrome.runtime.onMessage.addListener(
     (
