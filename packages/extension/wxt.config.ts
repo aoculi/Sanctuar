@@ -41,7 +41,7 @@ export default defineConfig({
       gecko: {
         id: '@sanctuar',
         data_collection_permissions: {
-          required: false
+          required: ['none']
         }
       },
       edge: {
