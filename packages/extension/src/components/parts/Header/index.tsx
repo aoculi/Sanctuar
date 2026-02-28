@@ -147,6 +147,17 @@ export default function Header({
         <div className={styles.right}>
           {rightContent}
 
+          {isAuthenticated && (
+            <Button
+              asIcon={true}
+              variant='ghost'
+              title='Open bookmarks'
+              onClick={() => openExtensionPage('app')}
+            >
+              <Bookmark strokeWidth={2} size={18} color='white' />
+            </Button>
+          )}
+
           {canShowMenu && (
             <DropdownMenu.Root>
               <DropdownMenu.Trigger asChild>
@@ -171,12 +182,6 @@ export default function Header({
                   </DropdownMenu.Item>
                 )}
 
-                {isAuthenticated && (
-                  <DropdownMenu.Item onClick={() => openExtensionPage('app')}>
-                    <Bookmark strokeWidth={1} size={18} color='white' />{' '}
-                    Bookmarks
-                  </DropdownMenu.Item>
-                )}
                 {isAuthenticated && (
                   <DropdownMenu.Item onClick={() => openExtensionPage('tags')}>
                     <TagIcon strokeWidth={1} size={18} color='white' /> Tags

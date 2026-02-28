@@ -55,7 +55,12 @@ export default function Bookmark() {
   }
   // Initialize form data when editing an existing bookmark (via selectedBookmark)
   useEffect(() => {
-    if (selectedBookmark && selectedBookmark !== 'blank' && bookmark?.id) {
+    if (selectedBookmark === 'blank') {
+      setInitialFormData({ url: '', title: '', note: '', picture: '', tags: [], collectionId: undefined, hidden: false })
+      hasLoadedRef.current = true
+      return
+    }
+    if (selectedBookmark && bookmark?.id) {
       setInitialFormData({
         url: bookmark.url,
         title: bookmark.title,
@@ -113,6 +118,8 @@ export default function Bookmark() {
         }
       } else {
         setFlash(result.error)
+        // Set empty form data so BookmarkForm renders instead of showing a spinner
+        setInitialFormData({ url: '', title: '', note: '', picture: '', tags: [], collectionId: undefined, hidden: false })
       }
 
       hasLoadedRef.current = true

@@ -238,14 +238,9 @@ export async function unlockWithPin(pin: string): Promise<UnlockResult> {
 
   const mak = await decryptMakWithPin(pin, pinStore)
 
-  // Restore keystore
-  const keystoreData: KeystoreData = {
-    mak: uint8ArrayToBase64(mak),
-    aadContext: pinStore.aadContext
-  }
-  await setStorageItem(STORAGE_KEYS.KEYSTORE, keystoreData)
-
-  // Update session's createdAt timestamp to reset auto-lock timer
+  // Update session's createdAt timestamp BEFORE setting keystore.
+  // This prevents a race where checkAndApplyAutoLock sees a fresh keystore
+  // but a stale createdAt and immediately re-locks the vault.
   if (session) {
     const updatedSession = {
       ...session,
@@ -253,6 +248,13 @@ export async function unlockWithPin(pin: string): Promise<UnlockResult> {
     }
     await setStorageItem(STORAGE_KEYS.SESSION, updatedSession)
   }
+
+  // Restore keystore
+  const keystoreData: KeystoreData = {
+    mak: uint8ArrayToBase64(mak),
+    aadContext: pinStore.aadContext
+  }
+  await setStorageItem(STORAGE_KEYS.KEYSTORE, keystoreData)
 
   // Clear the explicit locked flag
   await clearStorageItem(STORAGE_KEYS.IS_SOFT_LOCKED)

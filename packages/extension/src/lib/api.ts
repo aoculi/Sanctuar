@@ -100,17 +100,11 @@ async function parseResponseBody(response: Response): Promise<unknown> {
 
 /**
  * Handle 401 Unauthorized response
- * Clears session and keystore, then throws ApiError
+ * NOTE: We do NOT clear session here - session persistence is intentional.
+ * Users should only be logged out on explicit logout action.
+ * The extension will attempt token refresh on next popup open.
  */
 async function handle401Error(data: unknown): Promise<never> {
-  // Try to clear session storage, but don't fail if it errors
-  try {
-    await clearStorageItem(STORAGE_KEYS.SESSION)
-  } catch (error) {
-    // Log but don't throw - we still want to throw the 401 error
-    console.warn('Failed to clear session storage on 401:', error)
-  }
-
   const errorData = data as {
     message?: string
     error?: string
