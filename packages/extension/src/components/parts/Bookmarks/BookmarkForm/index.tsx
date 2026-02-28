@@ -159,8 +159,10 @@ export default function BookmarkForm({
     [collections]
   )
 
-  // Show loading until we have the initial data
-  if (!initialData?.url) {
+  // Show loading while initial data hasn't been provided yet.
+  // Once the parent has finished capturing the page (even if url is empty),
+  // the 'url' key will be present and we render the form.
+  if (!initialData || !('url' in initialData)) {
     return <LoadingScreen />
   }
 
