@@ -32,7 +32,6 @@ body {
 body.compact {
   width: 400px;
   height: 500px;
-  min-height: 1000%;
 }
 
 body.large {
@@ -48,4 +47,45 @@ body.large {
   max-height: 100%;
 
   background-color: var(--background-3);
+}
+
+/* ── Custom scrollbars ─────────────────────────────────────────── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 99px;
+  transition: background 0.2s ease;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+[data-theme='light'] * {
+  scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+}
+
+[data-theme='light'] *::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+[data-theme='light'] *::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
 }

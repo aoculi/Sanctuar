@@ -19,7 +19,6 @@
 }
 
 .content {
-  height: calc(100vh - 60px);
   padding: 10px 20px;
   position: relative;
   margin: 0 auto;
