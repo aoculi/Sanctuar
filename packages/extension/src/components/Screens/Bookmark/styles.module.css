@@ -1,37 +1,147 @@
 .component {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  flex: 1;
+  min-height: 0;
 }
 
+/* Scrollable body; the form pins its own footer to the bottom */
 .page {
-  padding: 50px 50px 40px;
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 20px;
 }
 
 .pageTitle {
-  margin: 10px 0;
-}
-
-.cancelAction {
   display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 16px 0;
+  flex-shrink: 0;
+  min-width: 0;
 }
 
-.refreshButton {
-  margin-right: 8px;
+.pageTitleInfo {
+  font-size: 11px;
+  color: var(--text-light);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.refreshIcon:global(.lucide-loader-2) {
-  animation: spin 1s linear infinite;
+.pageTitleText {
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 11px;
 }
 
-@keyframes spin {
+.successContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px 16px;
+}
+
+.successIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  background-color: var(--primary);
+  border-radius: 50%;
+  color: white;
+}
+
+.successMessage {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.successActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.successDetail {
+  margin-top: -8px;
+  font-size: 13px;
+  color: var(--text-light);
+}
+
+/* "After saving: close automatically" countdown */
+.autoClose {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  max-width: 240px;
+  margin-top: 4px;
+}
+
+.autoCloseTrack {
+  width: 100%;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 2px;
+  background-color: var(--background-2);
+}
+
+.autoCloseBar {
+  display: block;
+  height: 100%;
+  background-color: var(--primary);
+  transform-origin: left center;
+  animation-name: autoCloseShrink;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+.autoCloseText {
+  font-size: 11px;
+  color: var(--text-light);
+  text-align: center;
+}
+
+@keyframes autoCloseShrink {
   from {
-    transform: rotate(0deg);
+    transform: scaleX(1);
   }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .autoCloseBar {
+    animation: none;
+  }
+}
+
+.removedIcon {
+  background-color: var(--background-2);
+  color: var(--text-light);
+}
+
+.removeButton:hover:not(:disabled) {
+  color: #ef4444 !important;
+}
+
+.spinner {
+  animation: bookmark-spin 1s linear infinite;
+}
+
+@keyframes bookmark-spin {
   to {
     transform: rotate(360deg);
   }

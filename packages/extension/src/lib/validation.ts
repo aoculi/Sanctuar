@@ -4,6 +4,7 @@
 export const MAX_TAGS_PER_ITEM = 15
 export const MAX_TAG_NAME_LENGTH = 32
 export const MAX_COLLECTION_NAME_LENGTH = 50
+export const MAX_DESCRIPTION_LENGTH = 300
 export const MANIFEST_SIZE_WARNING_THRESHOLD = 4 * 1024 * 1024 // 4MB (warn before 5MB limit)
 
 /**
@@ -85,4 +86,14 @@ export function validateCollectionName(name: string): string | null {
     return `Collection name cannot exceed ${MAX_COLLECTION_NAME_LENGTH} characters`
   }
   return null
+}
+
+/**
+ * Clean up a page description for storage: collapse whitespace and cut it
+ * to MAX_DESCRIPTION_LENGTH characters (with an ellipsis when cut).
+ */
+export function normalizeDescription(value: string | null | undefined): string {
+  const text = (value ?? '').replace(/\s+/g, ' ').trim()
+  if (text.length <= MAX_DESCRIPTION_LENGTH) return text
+  return text.slice(0, MAX_DESCRIPTION_LENGTH - 1).trimEnd() + '…'
 }

@@ -40,6 +40,11 @@ body.large {
   height: 600px;
 }
 
+/* Let screens fill the fixed popup size so they can scroll internally */
+#root {
+  height: 100%;
+}
+
 .settings {
   width: 100%;
   height: 100%;

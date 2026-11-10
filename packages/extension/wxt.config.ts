@@ -25,11 +25,24 @@ export default defineConfig({
     disabled: true
   },
 
-  manifest: {
+  manifest: ({ manifestVersion }) => ({
     name: 'Sanctuar',
     description: 'A secure, privacy-focused local vault for managing and organizing your browser bookmarks.',
     host_permissions: ['<all_urls>'],
-    permissions: ['storage', 'tabs'],
+    // MV3 needs "scripting" to read the active tab's meta description;
+    // Firefox MV2 uses tabs.executeScript, already covered by <all_urls>
+    permissions:
+      manifestVersion === 3
+        ? ['storage', 'tabs', 'scripting']
+        : ['storage', 'tabs'],
+    // Keyboard shortcut that opens the popup (users can remap it in
+    // about:addons → Manage Extension Shortcuts / chrome://extensions/shortcuts)
+    commands: {
+      [manifestVersion === 2 ? '_execute_browser_action' : '_execute_action']: {
+        suggested_key: { default: 'Alt+Shift+B', mac: 'Alt+Shift+B' },
+        description: 'Save the current page to Sanctuar'
+      }
+    },
     content_security_policy: {
       extension_pages:
         "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; worker-src 'self';"
@@ -48,5 +61,5 @@ export default defineConfig({
         id: '@sanctuar'
       }
     } as any
-  }
+  })
 })

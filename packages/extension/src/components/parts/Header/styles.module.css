@@ -1,13 +1,13 @@
 .component {
-  padding: 10px 15px 0;
-  height: 48px;
+  flex-shrink: 0;
+  padding: 8px 12px 8px 16px;
 }
 
 .content {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 30px;
+  gap: 8px;
 }
 
 .left {
@@ -20,6 +20,23 @@
 .right {
   display: flex;
   align-items: center;
+  gap: 4px;
+}
+
+.libraryButton {
+  gap: 6px !important;
+  font-size: 13px !important;
+  padding: 5px 8px !important;
+}
+
+.libraryButton:hover {
+  background-color: var(--background-2) !important;
+}
+
+.dialogActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .newBookmarkButton {

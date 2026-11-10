@@ -21,6 +21,7 @@ export interface Bookmark {
   url: string
   title: string
   note: string
+  description?: string // short page summary (meta/og description), max ~300 chars
   picture: string
   tags: string[] // tag ids
   collectionId?: string // optional collection id

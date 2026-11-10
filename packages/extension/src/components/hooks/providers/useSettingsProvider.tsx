@@ -78,8 +78,8 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
         const storedSettings = await getSettings(userId)
 
         if (storedSettings) {
-          // User has existing settings, use them
-          setSettingsState(storedSettings)
+          // User has existing settings, use them (new fields get defaults)
+          setSettingsState({ ...defaultSettings, ...storedSettings })
         } else {
           // First time for this user, save defaults
           await saveSettings(defaultSettings, userId)

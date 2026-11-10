@@ -49,8 +49,23 @@ export function useBookmarks() {
         ...manifest,
         items: [...(manifest.items || []), newBookmark]
       })
+      return newBookmark
     },
     [manifest, validateBookmark, save]
+  )
+
+  /**
+   * Put a previously deleted bookmark back exactly as it was (same id and
+   * timestamps). Used by "Undo" after removing a bookmark.
+   */
+  const restoreBookmark = useCallback(
+    async (bookmark: Bookmark) => {
+      if (!manifest) return
+      const items = manifest.items || []
+      if (items.some((item: Bookmark) => item.id === bookmark.id)) return
+      await save({ ...manifest, items: [...items, bookmark] })
+    },
+    [manifest, save]
   )
 
   /**
@@ -218,6 +233,7 @@ export function useBookmarks() {
     updateBookmarks,
     deleteBookmark,
     deleteBookmarks,
+    restoreBookmark,
     getBookmark,
     reorderBookmarks
   }
