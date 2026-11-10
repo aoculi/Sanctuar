@@ -155,6 +155,7 @@ export default function Settings() {
     if (
       !isAuthenticated &&
       (activeTab === 'security' ||
+        activeTab === 'popup' ||
         activeTab === 'import' ||
         activeTab === 'export')
     ) {
@@ -432,6 +433,12 @@ export default function Settings() {
                 Security
               </Tabs.Trigger>
               <Tabs.Trigger
+                value='popup'
+                disabled={!isAuthenticated || isLocked}
+              >
+                Popup
+              </Tabs.Trigger>
+              <Tabs.Trigger
                 value='import'
                 disabled={!isAuthenticated || isLocked}
               >
@@ -555,6 +562,27 @@ export default function Settings() {
                     </Text>
                   </div>
                 )}
+              </div>
+            </Tabs.Content>
+
+            <Tabs.Content value='popup'>
+              <div className={styles.form}>
+                <div className={styles.field}>
+                  <Text as='label' size='2'>
+                    <Checkbox
+                      checked={settings.showSavedBadge !== false}
+                      onChange={(e) =>
+                        updateSettings({ showSavedBadge: e.target.checked })
+                      }
+                      label="Show a badge on pages you've already saved"
+                    />
+                  </Text>
+                  <Text size='2' color='light'>
+                    A ✓ appears on the Sanctuar icon when the current page is
+                    in your vault. It works while the vault is unlocked, once
+                    you have opened Sanctuar since the browser started.
+                  </Text>
+                </div>
               </div>
             </Tabs.Content>
 

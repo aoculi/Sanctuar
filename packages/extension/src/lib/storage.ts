@@ -14,6 +14,8 @@ export interface Settings {
   autoLockTimeout: string
   useCodePin: boolean
   theme: 'dark' | 'light'
+  /** Show a ✓ badge on the toolbar icon when the current page is saved */
+  showSavedBadge: boolean
 }
 
 /**
@@ -209,7 +211,8 @@ export function getDefaultSettings(): Settings {
     showHiddenBookmarks: false,
     autoLockTimeout: DEFAULT_AUTO_LOCK_TIMEOUT,
     useCodePin: false,
-    theme: 'dark'
+    theme: 'dark',
+    showSavedBadge: true
   }
 }
 

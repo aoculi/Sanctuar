@@ -9,6 +9,8 @@ import {
 } from 'react'
 
 import { useQueryVault } from '@/components/hooks/queries/useQueryVault'
+import { useSettings } from '@/components/hooks/providers/useSettingsProvider'
+import { hashUrls, sendSavedUrls } from '@/lib/savedBadge'
 import { STORAGE_KEYS } from '@/lib/constants'
 import { clearStorageItem, getStorageItem, setStorageItem } from '@/lib/storage'
 import type { ManifestV1 } from '@/lib/types'
@@ -105,6 +107,27 @@ export function ManifestProvider({ children }: ManifestProviderProps) {
   useEffect(() => {
     loadManifest()
   }, [loadManifest])
+
+  // Keep the background's "already saved" badge set current. Only hashes of
+  // normalized URLs leave this page, and the background keeps them in memory.
+  const { settings, isLoading: settingsLoading } = useSettings()
+  const showSavedBadge = settings.showSavedBadge !== false
+  useEffect(() => {
+    if (isLoading || settingsLoading) return
+    if (!manifest || !showSavedBadge) {
+      sendSavedUrls(null)
+      return
+    }
+    let cancelled = false
+    hashUrls((manifest.items || []).map((item) => item.url))
+      .then((hashes) => {
+        if (!cancelled) sendSavedUrls(hashes)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [manifest, isLoading, settingsLoading, showSavedBadge])
 
   // Listen for storage changes to sync manifest across windows/tabs
   useEffect(() => {
