@@ -3,7 +3,7 @@ import { useMemo } from 'react'
 
 import { createTagMap, getTagNameFromMap } from '@/lib/bookmarkUtils'
 import type { Bookmark, Tag } from '@/lib/types'
-import { getHostname } from '@/lib/utils'
+import { getFaviconUrl, getHostname } from '@/lib/utils'
 
 import TagItem from '@/components/parts/Tags/TagItem'
 import ActionBtn from '@/components/ui/ActionBtn'
@@ -44,7 +44,7 @@ export default function BookmarkRow({
 }: BookmarkRowProps) {
   const tagMap = useMemo(() => createTagMap(tags), [tags])
   const hostname = getHostname(bookmark.url)
-  const faviconUrl = `https://www.google.com/s2/favicons?domain=${hostname}&sz=32`
+  const faviconUrl = getFaviconUrl(bookmark.url, bookmark.picture)
 
   const bookmarkTags = useMemo(() => {
     return bookmark.tags

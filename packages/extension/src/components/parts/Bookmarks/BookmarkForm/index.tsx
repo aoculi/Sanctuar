@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useCollections } from '@/components/hooks/useCollections'
 import { useTags } from '@/components/hooks/useTags'
 import type { Bookmark } from '@/lib/types'
-import { getHostname } from '@/lib/utils'
+import { getFaviconUrl } from '@/lib/utils'
 import { MAX_TAGS_PER_ITEM } from '@/lib/validation'
 
 import Button from '@/components/ui/Button'
@@ -76,7 +76,7 @@ export default function BookmarkForm({
 }: BookmarkFormProps) {
   const noteRef = useRef<HTMLTextAreaElement>(null)
   const { collections } = useCollections()
-  const { tags } = useTags()
+  const { tags, createTag } = useTags()
 
   const [form, setForm] = useState<BookmarkFormData>(() => ({
     ...emptyFormData,
@@ -85,25 +85,36 @@ export default function BookmarkForm({
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [faviconError, setFaviconError] = useState(false)
 
-  // Update form when initialData changes
+  // Apply only the fields of initialData that actually changed. Parents often
+  // pass a fresh object on every render (e.g. after creating a tag saves the
+  // manifest), and blindly merging it would wipe what the user has typed.
+  const prevInitialRef = useRef<Partial<BookmarkFormData> | undefined>(
+    initialData
+  )
   useEffect(() => {
-    if (initialData) {
-      setForm((prev) => ({
-        ...prev,
-        ...initialData
-      }))
-      setFaviconError(false)
+    if (!initialData) return
+    const prev = prevInitialRef.current
+    prevInitialRef.current = initialData
+    const changed: Partial<BookmarkFormData> = {}
+    for (const key of Object.keys(initialData) as (keyof BookmarkFormData)[]) {
+      if (
+        !prev ||
+        !(key in prev) ||
+        JSON.stringify(prev[key]) !== JSON.stringify(initialData[key])
+      ) {
+        ;(changed as Record<string, unknown>)[key] = initialData[key]
+      }
     }
+    if (Object.keys(changed).length === 0) return
+    setForm((current) => ({ ...current, ...changed }))
+    if ('url' in changed || 'picture' in changed) setFaviconError(false)
   }, [initialData])
 
   // Get favicon URL from the bookmark URL
-  const faviconUrl = useMemo(() => {
-    if (form.picture) return form.picture
-    if (!form.url?.trim()) return null
-    const hostname = getHostname(form.url)
-    if (!hostname) return null
-    return `https://www.google.com/s2/favicons?domain=${hostname}&sz=32`
-  }, [form.url, form.picture])
+  const faviconUrl = useMemo(
+    () => getFaviconUrl(form.url?.trim() ?? '', form.picture),
+    [form.url, form.picture]
+  )
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
@@ -315,6 +326,7 @@ export default function BookmarkForm({
             tags={tags}
             selectedTags={form.tags}
             onChange={(tags) => setForm((prev) => ({ ...prev, tags }))}
+            onCreateTag={(name) => createTag({ name })}
           />
           {errors.tags && (
             <span className={styles.fieldError}>{errors.tags}</span>

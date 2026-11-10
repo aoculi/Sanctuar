@@ -1,5 +1,5 @@
 import * as Popover from '@radix-ui/react-popover'
-import { Tag, X } from 'lucide-react'
+import { Loader2, Plus, Tag, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import Button from '@/components/ui/Button'
@@ -13,35 +13,58 @@ export const TagSelectorField = ({
   tags,
   selectedTags,
   onChange,
-  isDropdownOpen
+  isDropdownOpen,
+  onCreateTag
 }: {
   tags: EntityTag[]
   selectedTags: string[]
   onChange: (selectedTags: string[]) => void
   isDropdownOpen?: boolean
+  /** When provided, typing a name that doesn't exist offers to create it */
+  onCreateTag?: (name: string) => Promise<EntityTag>
 }) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
   const [highlightedIndex, setHighlightedIndex] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const [isCreating, setIsCreating] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
 
-  // Filter tags based on search query and exclude already selected tags
+  const trimmedQuery = searchQuery.trim()
+  const lowerQuery = trimmedQuery.toLowerCase()
+
+  // Filter tags based on search query and exclude already selected tags.
+  // An exact name match is listed first so Enter picks it.
   const filteredTags = useMemo(() => {
-    const query = searchQuery.toLowerCase().trim()
-    return tags.filter(
+    const matches = tags.filter(
       (tag) =>
         !selectedTags.includes(tag.id) &&
-        (query === '' || tag.name.toLowerCase().includes(query))
+        (lowerQuery === '' || tag.name.toLowerCase().includes(lowerQuery))
     )
-  }, [tags, selectedTags, searchQuery])
+    return matches.sort(
+      (a, b) =>
+        Number(b.name.toLowerCase() === lowerQuery) -
+        Number(a.name.toLowerCase() === lowerQuery)
+    )
+  }, [tags, selectedTags, lowerQuery])
+
+  const exactMatch = useMemo(
+    () => tags.find((tag) => tag.name.toLowerCase() === lowerQuery),
+    [tags, lowerQuery]
+  )
+
+  // Offer "Create …" when the typed name doesn't exist yet
+  const canCreate = !!onCreateTag && trimmedQuery !== '' && !exactMatch
+  const optionCount = filteredTags.length + (canCreate ? 1 : 0)
+  const createIndex = filteredTags.length
 
   // Get selected tag objects for display
   const selectedTagObjects = useMemo(() => {
     return tags.filter((tag) => selectedTags.includes(tag.id))
   }, [tags, selectedTags])
 
-  const showSuggestions = (isDropdownOpen ?? isOpen) && filteredTags.length > 0
+  const showSuggestions = (isDropdownOpen ?? isOpen) && optionCount > 0
 
   // Handle tag selection
   const handleSelectTag = (tagId: string) => {
@@ -50,6 +73,39 @@ export const TagSelectorField = ({
       setSearchQuery('')
       setHighlightedIndex(0)
       inputRef.current?.focus()
+    }
+  }
+
+  const handleCreateTag = async () => {
+    if (!onCreateTag || !canCreate || isCreating) return
+    setIsCreating(true)
+    setCreateError(null)
+    try {
+      const created = await onCreateTag(trimmedQuery)
+      onChange([...selectedTags, created.id])
+      setSearchQuery('')
+      setHighlightedIndex(0)
+      inputRef.current?.focus()
+    } catch (error) {
+      setCreateError(
+        error instanceof Error ? error.message : 'Failed to create tag'
+      )
+    } finally {
+      setIsCreating(false)
+    }
+  }
+
+  // Comma (or Enter on the "Create" row) commits what was typed
+  const commitQuery = () => {
+    if (!trimmedQuery) return
+    if (exactMatch) {
+      if (!selectedTags.includes(exactMatch.id)) {
+        handleSelectTag(exactMatch.id)
+      } else {
+        setSearchQuery('')
+      }
+    } else if (canCreate) {
+      void handleCreateTag()
     }
   }
 
@@ -64,7 +120,7 @@ export const TagSelectorField = ({
     if (e.key === 'ArrowDown') {
       e.preventDefault()
       setHighlightedIndex((prev) =>
-        prev < filteredTags.length - 1 ? prev + 1 : prev
+        prev < optionCount - 1 ? prev + 1 : prev
       )
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
@@ -75,7 +131,12 @@ export const TagSelectorField = ({
       e.preventDefault()
       if (showSuggestions && filteredTags[highlightedIndex]) {
         handleSelectTag(filteredTags[highlightedIndex].id)
+      } else if (canCreate && highlightedIndex === createIndex) {
+        void handleCreateTag()
       }
+    } else if (e.key === ',') {
+      e.preventDefault()
+      commitQuery()
     } else if (e.key === 'Escape') {
       setIsOpen(false)
       inputRef.current?.blur()
@@ -103,7 +164,7 @@ export const TagSelectorField = ({
   // Reset highlighted index when filtered tags change
   useEffect(() => {
     setHighlightedIndex(0)
-  }, [filteredTags.length])
+  }, [optionCount])
 
   return (
     <div ref={containerRef} className={styles.container}>
@@ -119,10 +180,11 @@ export const TagSelectorField = ({
               ref={inputRef}
               size='md'
               className={styles.input}
-              placeholder='Add tags...'
+              placeholder={onCreateTag ? 'Add or create tags…' : 'Add tags...'}
               value={searchQuery}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                 setSearchQuery(e.target.value)
+                setCreateError(null)
                 setIsOpen(true)
               }}
               onFocus={() => setIsOpen(true)}
@@ -177,10 +239,40 @@ export const TagSelectorField = ({
                   {tag.name}
                 </Button>
               ))}
+              {canCreate && (
+                <Button
+                  type='button'
+                  variant='ghost'
+                  color='dark'
+                  role='option'
+                  aria-selected={highlightedIndex === createIndex}
+                  tabIndex={-1}
+                  disabled={isCreating}
+                  className={`${styles.suggestionItem} ${styles.createItem} ${
+                    highlightedIndex === createIndex
+                      ? styles.suggestionItemHighlighted
+                      : ''
+                  }`}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => void handleCreateTag()}
+                  onMouseEnter={() => setHighlightedIndex(createIndex)}
+                >
+                  {isCreating ? (
+                    <Loader2 size={14} className={styles.spinner} />
+                  ) : (
+                    <Plus size={14} />
+                  )}
+                  <span className={styles.createLabel}>
+                    Create <strong>{trimmedQuery}</strong>
+                  </span>
+                </Button>
+              )}
             </div>
           </Popover.Content>
         </Popover.Portal>
       </Popover.Root>
+
+      {createError && <span className={styles.error}>{createError}</span>}
 
       {/* Selected tags displayed below the input */}
       {selectedTagObjects.length > 0 && (

@@ -4,8 +4,11 @@ import { useEffect, useRef, useState } from 'react'
 import { useManifest } from '@/components/hooks/providers/useManifestProvider'
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
 import { useBookmarks } from '@/components/hooks/useBookmarks'
+import { useCollections } from '@/components/hooks/useCollections'
 import usePopupSize from '@/components/hooks/usePopupSize'
 import { captureCurrentPage, refreshBookmarkMetadata } from '@/lib/pageCapture'
+import { STORAGE_KEYS } from '@/lib/constants'
+import { getStorageItem, setStorageItem } from '@/lib/storage'
 import { openExtensionPage } from '@/lib/tabs'
 
 import BookmarkForm, {
@@ -34,6 +37,17 @@ export default function Bookmark() {
   const { selectedBookmark, setFlash } = useNavigation()
   const { isSaving } = useManifest()
   const { addBookmark, updateBookmark, bookmarks } = useBookmarks()
+  const { collections } = useCollections()
+
+  // The collection used for the last new bookmark, if it still exists
+  const getLastCollectionId = async (): Promise<string | undefined> => {
+    try {
+      const id = await getStorageItem<string>(STORAGE_KEYS.LAST_COLLECTION)
+      return id && collections.some((c) => c.id === id) ? id : undefined
+    } catch {
+      return undefined
+    }
+  }
 
   const [initialFormData, setInitialFormData] = useState<
     Partial<BookmarkFormData>
@@ -57,8 +71,11 @@ export default function Bookmark() {
   // Initialize form data when editing an existing bookmark (via selectedBookmark)
   useEffect(() => {
     if (selectedBookmark === 'blank') {
-      setInitialFormData({ url: '', title: '', note: '', picture: '', tags: [], collectionId: undefined, hidden: false })
+      if (hasLoadedRef.current) return
       hasLoadedRef.current = true
+      getLastCollectionId().then((collectionId) =>
+        setInitialFormData({ url: '', title: '', note: '', picture: '', tags: [], collectionId, hidden: false })
+      )
       return
     }
     if (selectedBookmark && bookmark?.id) {
@@ -113,7 +130,8 @@ export default function Bookmark() {
             note: result.bookmark.note,
             picture: result.bookmark.picture,
             tags: result.bookmark.tags,
-            collectionId: result.bookmark.collectionId,
+            collectionId:
+              result.bookmark.collectionId ?? (await getLastCollectionId()),
             hidden: false
           })
         }
@@ -183,6 +201,10 @@ export default function Bookmark() {
           hidden: data.hidden,
           pinned: false
         })
+        // Pre-select this collection next time (also remembers "No collection")
+        setStorageItem(STORAGE_KEYS.LAST_COLLECTION, data.collectionId ?? null).catch(
+          () => {}
+        )
       }
       setIsSuccess(true)
     } catch (error) {
