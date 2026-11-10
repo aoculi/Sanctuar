@@ -244,3 +244,8 @@
   font-weight: 500;
   color: var(--text);
 }
+
+/* Pushes Remove to the left, hint + Save stay on the right */
+.secondaryAction {
+  margin-right: auto;
+}

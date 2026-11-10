@@ -1,4 +1,4 @@
-import { Check, ExternalLink } from 'lucide-react'
+import { Check, ExternalLink, Loader2, Trash2, Undo2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import { useManifest } from '@/components/hooks/providers/useManifestProvider'
@@ -10,6 +10,8 @@ import { captureCurrentPage, refreshBookmarkMetadata } from '@/lib/pageCapture'
 import { STORAGE_KEYS } from '@/lib/constants'
 import { getStorageItem, setStorageItem } from '@/lib/storage'
 import { openExtensionPage } from '@/lib/tabs'
+import type { Bookmark as BookmarkItem } from '@/lib/types'
+import { formatRelativeTime, normalizeUrl } from '@/lib/utils'
 
 import BookmarkForm, {
   type BookmarkFormData
@@ -19,6 +21,22 @@ import Button from '@/components/ui/Button'
 import Text from '@/components/ui/Text'
 
 import styles from './styles.module.css'
+
+/** What the last action did, so the result screen can offer Undo */
+type Outcome =
+  | { kind: 'created'; bookmark: BookmarkItem }
+  | { kind: 'updated'; previous: BookmarkItem }
+  | { kind: 'removed'; bookmark: BookmarkItem }
+
+const toFormData = (b: BookmarkItem): Partial<BookmarkFormData> => ({
+  url: b.url,
+  title: b.title,
+  note: b.note,
+  picture: b.picture,
+  tags: b.tags,
+  collectionId: b.collectionId,
+  hidden: b.hidden ?? false
+})
 
 const emptyBookmark = {
   id: '',
@@ -36,7 +54,13 @@ export default function Bookmark() {
   usePopupSize('compact')
   const { selectedBookmark, setFlash } = useNavigation()
   const { isSaving } = useManifest()
-  const { addBookmark, updateBookmark, bookmarks } = useBookmarks()
+  const {
+    addBookmark,
+    updateBookmark,
+    deleteBookmark,
+    restoreBookmark,
+    bookmarks
+  } = useBookmarks()
   const { collections } = useCollections()
 
   // The collection used for the last new bookmark, if it still exists
@@ -54,7 +78,8 @@ export default function Bookmark() {
   >({})
   const [isLoading, setIsLoading] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [isSuccess, setIsSuccess] = useState(false)
+  const [outcome, setOutcome] = useState<Outcome | null>(null)
+  const [isWorking, setIsWorking] = useState(false)
   const [existingBookmarkId, setExistingBookmarkId] = useState<string | null>(
     null
   )
@@ -104,10 +129,11 @@ export default function Bookmark() {
 
       const result = await captureCurrentPage()
       if (result.ok) {
-        // Check if this URL already exists in bookmarks
-        const trimmedUrl = result.bookmark.url.trim().toLowerCase()
+        // Check if this page is already saved (ignoring tracking params,
+        // www., trailing slash, #fragment, http vs https)
+        const normalized = normalizeUrl(result.bookmark.url)
         const existing = bookmarks.find(
-          (b) => b.url.trim().toLowerCase() === trimmedUrl
+          (b) => normalizeUrl(b.url) === normalized
         )
 
         if (existing) {
@@ -181,6 +207,7 @@ export default function Bookmark() {
 
     try {
       if (bookmark?.id) {
+        const previous = { ...bookmark } as BookmarkItem
         await updateBookmark(bookmark.id, {
           url: data.url,
           title: data.title,
@@ -190,8 +217,9 @@ export default function Bookmark() {
           collectionId: data.collectionId,
           hidden: data.hidden
         })
+        setOutcome({ kind: 'updated', previous })
       } else {
-        await addBookmark({
+        const created = await addBookmark({
           url: data.url,
           title: data.title,
           note: data.note,
@@ -205,8 +233,8 @@ export default function Bookmark() {
         setStorageItem(STORAGE_KEYS.LAST_COLLECTION, data.collectionId ?? null).catch(
           () => {}
         )
+        if (created) setOutcome({ kind: 'created', bookmark: created })
       }
-      setIsSuccess(true)
     } catch (error) {
       setFlash(
         'Failed to save bookmark: ' +
@@ -219,6 +247,67 @@ export default function Bookmark() {
 
   const submitLabel = bookmark?.id ? 'Save' : 'Create'
 
+  const handleRemove = async () => {
+    if (!bookmark?.id) return
+    const snapshot = { ...bookmark } as BookmarkItem
+    setIsWorking(true)
+    try {
+      await deleteBookmark(snapshot.id)
+      setOutcome({ kind: 'removed', bookmark: snapshot })
+    } catch (error) {
+      setFlash(
+        'Failed to remove bookmark: ' +
+          ((error as Error).message ?? 'Unknown error')
+      )
+    } finally {
+      setIsWorking(false)
+    }
+  }
+
+  // Undo the last action and go back to the form with the data it had
+  const handleUndo = async () => {
+    if (!outcome) return
+    setIsWorking(true)
+    try {
+      if (outcome.kind === 'created') {
+        await deleteBookmark(outcome.bookmark.id)
+        setExistingBookmarkId(null)
+        setInitialFormData(toFormData(outcome.bookmark))
+      } else if (outcome.kind === 'updated') {
+        const { id, created_at, updated_at, ...fields } = outcome.previous
+        await updateBookmark(id, fields)
+        setInitialFormData(toFormData(outcome.previous))
+      } else {
+        await restoreBookmark(outcome.bookmark)
+        if (outcome.bookmark.id !== selectedBookmark) {
+          setExistingBookmarkId(outcome.bookmark.id)
+        }
+        setInitialFormData(toFormData(outcome.bookmark))
+      }
+      setOutcome(null)
+    } catch (error) {
+      setFlash('Undo failed: ' + ((error as Error).message ?? 'Unknown error'))
+    } finally {
+      setIsWorking(false)
+    }
+  }
+
+  const outcomeMessage =
+    outcome?.kind === 'removed'
+      ? 'Bookmark removed'
+      : outcome?.kind === 'updated'
+        ? 'Bookmark updated'
+        : 'Bookmark saved'
+
+  // "Saved 3 weeks ago in Reading" for pages that are already bookmarked
+  const existingInfo = (() => {
+    if (!existingBookmarkId || !bookmark?.id || !bookmark.created_at) return null
+    const collection = collections.find((c) => c.id === bookmark.collectionId)
+    return `Saved ${formatRelativeTime(bookmark.created_at)}${
+      collection ? ` in ${collection.name}` : ''
+    }`
+  })()
+
   const handleOpenLibrary = () => {
     openExtensionPage('app')
     window.close()
@@ -228,20 +317,41 @@ export default function Bookmark() {
     <div className={styles.component}>
       <Header />
 
-      {isSuccess ? (
+      {outcome ? (
         <div className={styles.successContainer}>
-          <div className={styles.successIcon}>
-            <Check size={32} />
+          <div
+            className={`${styles.successIcon} ${
+              outcome.kind === 'removed' ? styles.removedIcon : ''
+            }`}
+          >
+            {outcome.kind === 'removed' ? (
+              <Trash2 size={28} />
+            ) : (
+              <Check size={32} />
+            )}
           </div>
-          <span className={styles.successMessage}>
-            {bookmark?.id ? 'Bookmark updated' : 'Bookmark saved'}
-          </span>
+          <span className={styles.successMessage}>{outcomeMessage}</span>
           <div className={styles.successActions}>
-            <Button color='light' variant='ghost' onClick={handleOpenLibrary}>
-              <ExternalLink size={14} />
-              Open my bookmarks
+            <Button
+              color='light'
+              variant='ghost'
+              onClick={handleUndo}
+              disabled={isWorking}
+            >
+              {isWorking ? (
+                <Loader2 size={14} className={styles.spinner} />
+              ) : (
+                <Undo2 size={14} />
+              )}
+              Undo
             </Button>
-            <Button autoFocus onClick={() => window.close()}>
+            {outcome.kind !== 'removed' && (
+              <Button color='light' variant='ghost' onClick={handleOpenLibrary}>
+                <ExternalLink size={14} />
+                Open my bookmarks
+              </Button>
+            )}
+            <Button autoFocus onClick={() => window.close()} disabled={isWorking}>
               Done
             </Button>
           </div>
@@ -253,6 +363,9 @@ export default function Bookmark() {
               <Text as='h1' size='1' weight='medium' className={styles.pageTitleText}>
                 {existingBookmarkId ? 'Already bookmarked' : 'Edit bookmark'}
               </Text>
+              {existingInfo && (
+                <span className={styles.pageTitleInfo}>{existingInfo}</span>
+              )}
             </div>
           )}
 
@@ -269,6 +382,22 @@ export default function Bookmark() {
                 : undefined
             }
             isRefreshing={isRefreshing || isLoading}
+            secondaryAction={
+              bookmark?.id ? (
+                <Button
+                  type='button'
+                  variant='ghost'
+                  color='light'
+                  className={styles.removeButton}
+                  onClick={handleRemove}
+                  disabled={isWorking || isSaving}
+                  title='Remove this bookmark'
+                >
+                  <Trash2 size={14} />
+                  Remove
+                </Button>
+              ) : undefined
+            }
           />
         </div>
       )}

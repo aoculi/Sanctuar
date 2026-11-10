@@ -47,6 +47,8 @@ interface BookmarkFormProps {
   /** When provided, shows a button to re-fetch title and favicon */
   onRefreshMetadata?: () => void
   isRefreshing?: boolean
+  /** Extra control shown at the start of the footer (e.g. Remove) */
+  secondaryAction?: React.ReactNode
 }
 
 const isMac =
@@ -72,10 +74,11 @@ export default function BookmarkForm({
   layout = 'default',
   autoFocusNote = false,
   onRefreshMetadata,
-  isRefreshing = false
+  isRefreshing = false,
+  secondaryAction
 }: BookmarkFormProps) {
   const noteRef = useRef<HTMLTextAreaElement>(null)
-  const { collections } = useCollections()
+  const { collections, createCollection } = useCollections()
   const { tags, createTag } = useTags()
 
   const [form, setForm] = useState<BookmarkFormData>(() => ({
@@ -317,6 +320,7 @@ export default function BookmarkForm({
             onChange={(collectionId) =>
               setForm((prev) => ({ ...prev, collectionId }))
             }
+            onCreateCollection={(name) => createCollection({ name })}
           />
         </div>
 
@@ -352,6 +356,9 @@ export default function BookmarkForm({
       </div>
 
       <div className={styles.actions}>
+        {secondaryAction && (
+          <div className={styles.secondaryAction}>{secondaryAction}</div>
+        )}
         <span className={styles.shortcutHint}>
           {isMac ? '⌘' : 'Ctrl'} + Enter
         </span>

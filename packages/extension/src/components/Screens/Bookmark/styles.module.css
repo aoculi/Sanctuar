@@ -14,8 +14,20 @@
 }
 
 .pageTitle {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
   padding: 4px 16px 0;
   flex-shrink: 0;
+  min-width: 0;
+}
+
+.pageTitleInfo {
+  font-size: 11px;
+  color: var(--text-light);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .pageTitleText {
@@ -56,4 +68,23 @@
   display: flex;
   gap: 8px;
   margin-top: 8px;
+}
+
+.removedIcon {
+  background-color: var(--background-2);
+  color: var(--text-light);
+}
+
+.removeButton:hover:not(:disabled) {
+  color: #ef4444 !important;
+}
+
+.spinner {
+  animation: bookmark-spin 1s linear infinite;
+}
+
+@keyframes bookmark-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

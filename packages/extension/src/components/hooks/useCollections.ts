@@ -94,6 +94,7 @@ export function useCollections() {
         ...manifest,
         collections: [...updatedCollections, newCollection]
       })
+      return newCollection
     },
     [manifest, validateCollection, save]
   )
