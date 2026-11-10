@@ -3,13 +3,8 @@
   width: 100%;
 }
 
-.selectedTagsContainer {
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid var(--border);
-}
-
 .selectedTags {
+  margin-top: 8px;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -43,7 +38,7 @@
 .selectedTags button:not(.coloredTag) {
   background-color: transparent !important;
   border: 1px solid var(--primary) !important;
-  color: white !important;
+  color: var(--text) !important;
 }
 
 /* Colored tags - border removed, colors come from inline styles */
@@ -56,22 +51,17 @@
 }
 
 .suggestions {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  margin-top: 4px;
+  width: var(--radix-popover-trigger-width);
   background-color: var(--background-3);
   border: 1px solid var(--border);
   border-radius: var(--border-radius);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   z-index: 1000;
-  max-height: 200px;
   overflow: hidden;
 }
 
 .suggestionsList {
-  max-height: 200px;
+  max-height: min(200px, calc(var(--radix-popover-content-available-height) - 2px));
   overflow-y: auto;
   padding: 4px;
 }
@@ -88,8 +78,8 @@
 
 .suggestionItem:hover,
 .suggestionItemHighlighted {
-  background-color: var(--background-1) !important;
-  color: white !important;
+  background-color: var(--background-2) !important;
+  color: var(--text) !important;
 }
 
 /* Scrollbar styling */
@@ -109,4 +99,8 @@
 
 .suggestionsList::-webkit-scrollbar-thumb:hover {
   background: var(--text-light);
+}
+
+.input {
+  padding: 6px 10px 6px 34px !important;
 }
