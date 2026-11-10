@@ -414,8 +414,8 @@ export default function Settings() {
     <div className={styles.component}>
       {flash && (
         <div className={styles.flash}>
-          <TriangleAlert size={16} color='white' />
-          <Text size='2' weight='regular' color='white'>
+          <TriangleAlert size={16} color='var(--secondary)' />
+          <Text size='2' weight='regular' color='text'>
             {flash}
           </Text>
         </div>

@@ -67,8 +67,8 @@ function RootContent() {
     <div className={styles.container}>
       {flash && (route !== '/login' && route !== '/register') && (
         <div className={styles.flash}>
-          <TriangleAlert size={16} color='white' />
-          <Text size='2' weight='regular' color='white'>
+          <TriangleAlert size={16} className={styles.flashIcon} />
+          <Text size='2' weight='regular' color='text'>
             {flash}
           </Text>
         </div>

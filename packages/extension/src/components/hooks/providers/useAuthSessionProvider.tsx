@@ -95,7 +95,8 @@ export function AuthSessionProvider({ children }: AuthSessionProviderProps) {
         clearStorageItem(STORAGE_KEYS.SESSION).catch(() => {}),
         clearStorageItem(STORAGE_KEYS.KEYSTORE).catch(() => {}),
         clearStorageItem(STORAGE_KEYS.MANIFEST).catch(() => {}),
-        clearStorageItem(STORAGE_KEYS.IS_SOFT_LOCKED).catch(() => {})
+        clearStorageItem(STORAGE_KEYS.IS_SOFT_LOCKED).catch(() => {}),
+        clearStorageItem(STORAGE_KEYS.LAST_COLLECTION).catch(() => {})
       ])
     },
     [session.userId]

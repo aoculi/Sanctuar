@@ -1,17 +1,16 @@
-import { Check, Globe, Loader2 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { Check, Globe, Loader2, RefreshCw } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { useCollections } from '@/components/hooks/useCollections'
 import { useTags } from '@/components/hooks/useTags'
-import { flattenCollectionsWithDepth } from '@/lib/collectionUtils'
 import type { Bookmark } from '@/lib/types'
-import { getHostname } from '@/lib/utils'
+import { getFaviconUrl } from '@/lib/utils'
 import { MAX_TAGS_PER_ITEM } from '@/lib/validation'
 
 import Button from '@/components/ui/Button'
 import { Checkbox } from '@/components/ui/Checkbox'
 import LoadingScreen from '@/components/ui/LoadingScreen'
-import Select from '@/components/ui/Select'
+import CollectionSelect from '@/components/ui/CollectionSelect'
 import { TagSelectorField } from '@/components/ui/TagSelectorField'
 import Text from '@/components/ui/Text'
 import Textarea from '@/components/ui/Textarea'
@@ -41,7 +40,19 @@ interface BookmarkFormProps {
   isSuccess?: boolean
   /** Message to show on success (default: "Saved!") */
   successMessage?: string
+  /** 'popup' pins the actions to the bottom and scrolls the fields */
+  layout?: 'default' | 'popup'
+  /** Focus the note field on mount (quick capture) */
+  autoFocusNote?: boolean
+  /** When provided, shows a button to re-fetch title and favicon */
+  onRefreshMetadata?: () => void
+  isRefreshing?: boolean
+  /** Extra control shown at the start of the footer (e.g. Remove) */
+  secondaryAction?: React.ReactNode
 }
+
+const isMac =
+  typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
 
 const emptyFormData: BookmarkFormData = {
   url: '',
@@ -59,10 +70,16 @@ export default function BookmarkForm({
   isSubmitting = false,
   submitLabel = 'Save',
   isSuccess = false,
-  successMessage = 'Saved!'
+  successMessage = 'Saved!',
+  layout = 'default',
+  autoFocusNote = false,
+  onRefreshMetadata,
+  isRefreshing = false,
+  secondaryAction
 }: BookmarkFormProps) {
-  const { collections } = useCollections()
-  const { tags } = useTags()
+  const noteRef = useRef<HTMLTextAreaElement>(null)
+  const { collections, createCollection } = useCollections()
+  const { tags, createTag } = useTags()
 
   const [form, setForm] = useState<BookmarkFormData>(() => ({
     ...emptyFormData,
@@ -71,25 +88,36 @@ export default function BookmarkForm({
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [faviconError, setFaviconError] = useState(false)
 
-  // Update form when initialData changes
+  // Apply only the fields of initialData that actually changed. Parents often
+  // pass a fresh object on every render (e.g. after creating a tag saves the
+  // manifest), and blindly merging it would wipe what the user has typed.
+  const prevInitialRef = useRef<Partial<BookmarkFormData> | undefined>(
+    initialData
+  )
   useEffect(() => {
-    if (initialData) {
-      setForm((prev) => ({
-        ...prev,
-        ...initialData
-      }))
-      setFaviconError(false)
+    if (!initialData) return
+    const prev = prevInitialRef.current
+    prevInitialRef.current = initialData
+    const changed: Partial<BookmarkFormData> = {}
+    for (const key of Object.keys(initialData) as (keyof BookmarkFormData)[]) {
+      if (
+        !prev ||
+        !(key in prev) ||
+        JSON.stringify(prev[key]) !== JSON.stringify(initialData[key])
+      ) {
+        ;(changed as Record<string, unknown>)[key] = initialData[key]
+      }
     }
+    if (Object.keys(changed).length === 0) return
+    setForm((current) => ({ ...current, ...changed }))
+    if ('url' in changed || 'picture' in changed) setFaviconError(false)
   }, [initialData])
 
   // Get favicon URL from the bookmark URL
-  const faviconUrl = useMemo(() => {
-    if (form.picture) return form.picture
-    if (!form.url?.trim()) return null
-    const hostname = getHostname(form.url)
-    if (!hostname) return null
-    return `https://www.google.com/s2/favicons?domain=${hostname}&sz=32`
-  }, [form.url, form.picture])
+  const faviconUrl = useMemo(
+    () => getFaviconUrl(form.url?.trim() ?? '', form.picture),
+    [form.url, form.picture]
+  )
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
@@ -131,8 +159,8 @@ export default function BookmarkForm({
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault()
 
     if (!validateForm() || isSubmitting) {
       return
@@ -154,15 +182,26 @@ export default function BookmarkForm({
     return form.url?.trim() && form.title?.trim()
   }, [form.url, form.title])
 
-  const collectionsWithDepth = useMemo(
-    () => flattenCollectionsWithDepth(collections),
-    [collections]
-  )
+  const isReady = !!initialData && 'url' in initialData
+
+  useEffect(() => {
+    if (autoFocusNote && isReady) {
+      noteRef.current?.focus()
+    }
+  }, [autoFocusNote, isReady])
+
+  // Ctrl/Cmd + Enter saves from any field
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault()
+      handleSubmit()
+    }
+  }
 
   // Show loading while initial data hasn't been provided yet.
   // Once the parent has finished capturing the page (even if url is empty),
   // the 'url' key will be present and we render the form.
-  if (!initialData || !('url' in initialData)) {
+  if (!isReady) {
     return <LoadingScreen />
   }
 
@@ -178,7 +217,11 @@ export default function BookmarkForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className={styles.form}>
+    <form
+      onSubmit={handleSubmit}
+      onKeyDown={handleKeyDown}
+      className={`${styles.form} ${layout === 'popup' ? styles.popup : ''}`}
+    >
       <div className={styles.content}>
         {/* Header section: favicon + title/url */}
         <div className={styles.header}>
@@ -198,6 +241,7 @@ export default function BookmarkForm({
           <div className={styles.headerInfo}>
             <input
               type='text'
+              aria-label='Title'
               className={`${styles.titleInput} ${errors.title ? styles.inputError : ''}`}
               value={form.title}
               onChange={(e) => {
@@ -209,6 +253,7 @@ export default function BookmarkForm({
             />
             <input
               type='url'
+              aria-label='URL'
               className={`${styles.urlInput} ${errors.url ? styles.inputError : ''}`}
               value={form.url}
               onChange={(e) => {
@@ -220,6 +265,22 @@ export default function BookmarkForm({
               placeholder='https://example.com'
             />
           </div>
+          {onRefreshMetadata && (
+            <button
+              type='button'
+              className={styles.refreshButton}
+              onClick={onRefreshMetadata}
+              disabled={isRefreshing}
+              title='Re-fetch title and icon from the page'
+              aria-label='Re-fetch title and icon from the page'
+            >
+              {isRefreshing ? (
+                <Loader2 size={14} className={styles.spinner} />
+              ) : (
+                <RefreshCw size={14} />
+              )}
+            </button>
+          )}
         </div>
 
         {(errors.title || errors.url) && (
@@ -233,62 +294,76 @@ export default function BookmarkForm({
           </div>
         )}
 
-        <Textarea
-          size='lg'
-          value={form.note}
-          onChange={(e) => {
-            const next = e.target.value
-            setForm((prev) => ({ ...prev, note: next }))
-          }}
-          placeholder='Add a note...'
-          rows={3}
-        />
+        <div className={styles.field}>
+          <label className={styles.label} htmlFor='bookmark-note'>
+            Note
+          </label>
+          <Textarea
+            id='bookmark-note'
+            ref={noteRef}
+            size='md'
+            value={form.note}
+            onChange={(e) => {
+              const next = e.target.value
+              setForm((prev) => ({ ...prev, note: next }))
+            }}
+            placeholder='Why are you saving this?'
+            rows={2}
+          />
+        </div>
 
-        <Select
-          size='lg'
-          value={form.collectionId || ''}
-          onChange={(e) =>
-            setForm((prev) => ({
-              ...prev,
-              collectionId: e.target.value || undefined
-            }))
-          }
-        >
-          <option value=''>No collection</option>
-          {collectionsWithDepth.map(({ collection, depth }) => (
-            <option key={collection.id} value={collection.id}>
-              {'  '.repeat(depth)}
-              {collection.name}
-            </option>
-          ))}
-        </Select>
+        <div className={styles.field}>
+          <span className={styles.label}>Collection</span>
+          <CollectionSelect
+            collections={collections}
+            value={form.collectionId}
+            onChange={(collectionId) =>
+              setForm((prev) => ({ ...prev, collectionId }))
+            }
+            onCreateCollection={(name) => createCollection({ name })}
+          />
+        </div>
 
-        <TagSelectorField
-          tags={tags}
-          selectedTags={form.tags}
-          onChange={(tags) => setForm((prev) => ({ ...prev, tags }))}
-        />
+        <div className={styles.field}>
+          <span className={styles.label}>Tags</span>
+          <TagSelectorField
+            tags={tags}
+            selectedTags={form.tags}
+            onChange={(tags) => setForm((prev) => ({ ...prev, tags }))}
+            onCreateTag={(name) => createTag({ name })}
+          />
+          {errors.tags && (
+            <span className={styles.fieldError}>{errors.tags}</span>
+          )}
+        </div>
 
-        {errors.tags && (
-          <span className={styles.fieldError}>{errors.tags}</span>
-        )}
-
-        <Checkbox
-          checked={form.hidden}
-          onChange={(e) =>
-            setForm((prev) => ({ ...prev, hidden: e.target.checked }))
-          }
-          label={
-            <Text as='span' size='2'>
-              Hide from list
-            </Text>
-          }
-        />
+        <div className={styles.hiddenField}>
+          <Checkbox
+            checked={form.hidden}
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, hidden: e.target.checked }))
+            }
+            label={
+              <Text as='span' size='2'>
+                Hide from list
+              </Text>
+            }
+          />
+          <span className={styles.hint}>
+            Only shown when you reveal hidden items in your bookmarks.
+          </span>
+        </div>
       </div>
 
       <div className={styles.actions}>
+        {secondaryAction && (
+          <div className={styles.secondaryAction}>{secondaryAction}</div>
+        )}
+        <span className={styles.shortcutHint}>
+          {isMac ? '⌘' : 'Ctrl'} + Enter
+        </span>
         <Button type='submit' disabled={!canSubmit || isSubmitting}>
-          {isSubmitting && <Loader2 className={styles.spinner} />}
+          {isSubmitting && <Loader2 size={14} className={styles.spinner} />}
           {submitLabel}
         </Button>
       </div>

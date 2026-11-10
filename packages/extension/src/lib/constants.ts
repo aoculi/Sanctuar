@@ -106,7 +106,8 @@ export const STORAGE_KEYS = {
   KEYSTORE: 'keystore',
   MANIFEST: 'manifest',
   IS_SOFT_LOCKED: 'is_locked', // Soft lock flag - vault locked but can unlock with PIN (vs hard lock requiring password)
-  API_URL: 'api_url' // Global API URL setting (not user-specific)
+  API_URL: 'api_url', // Global API URL setting (not user-specific)
+  LAST_COLLECTION: 'last_collection' // Collection id picked on the last save from the popup (an opaque id, no names)
 } as const
 
 export function getPinStoreKey(userId: string): string {

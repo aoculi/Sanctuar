@@ -1,37 +1,89 @@
 .component {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  flex: 1;
+  min-height: 0;
 }
 
+/* Scrollable body; the form pins its own footer to the bottom */
 .page {
-  padding: 50px 50px 40px;
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 20px;
 }
 
 .pageTitle {
-  margin: 10px 0;
-}
-
-.cancelAction {
   display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 16px 0;
+  flex-shrink: 0;
+  min-width: 0;
 }
 
-.refreshButton {
-  margin-right: 8px;
+.pageTitleInfo {
+  font-size: 11px;
+  color: var(--text-light);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.refreshIcon:global(.lucide-loader-2) {
-  animation: spin 1s linear infinite;
+.pageTitleText {
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 11px;
 }
 
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
+.successContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px 16px;
+}
+
+.successIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  background-color: var(--primary);
+  border-radius: 50%;
+  color: white;
+}
+
+.successMessage {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.successActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.removedIcon {
+  background-color: var(--background-2);
+  color: var(--text-light);
+}
+
+.removeButton:hover:not(:disabled) {
+  color: #ef4444 !important;
+}
+
+.spinner {
+  animation: bookmark-spin 1s linear infinite;
+}
+
+@keyframes bookmark-spin {
   to {
     transform: rotate(360deg);
   }

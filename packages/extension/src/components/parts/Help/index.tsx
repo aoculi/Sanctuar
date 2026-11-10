@@ -1,4 +1,4 @@
-import { Globe, Link, Lock, Shield, Terminal } from 'lucide-react'
+import { Globe, Keyboard, Link, Lock, Shield, Terminal } from 'lucide-react'
 
 import Text from '@/components/ui/Text'
 
@@ -77,6 +77,23 @@ export default function Help() {
                 <Text size='2' color='light'>
                   All bookmarks are encrypted client-side before being stored.
                   Your data stays private
+                </Text>
+              </div>
+            </div>
+
+            <div className={styles.step}>
+              <div className={styles.stepNumber}>
+                <Keyboard size={16} />
+              </div>
+              <div className={styles.stepContent}>
+                <Text size='3' weight='medium'>
+                  5. Save without the mouse
+                </Text>
+                <Text size='2' color='light'>
+                  Press <code>Alt+Shift+B</code> to open Sanctuar on any page,
+                  type a note, then <code>Ctrl/⌘+Enter</code> to save. Change
+                  the shortcut in your browser&apos;s extension shortcuts
+                  settings
                 </Text>
               </div>
             </div>
