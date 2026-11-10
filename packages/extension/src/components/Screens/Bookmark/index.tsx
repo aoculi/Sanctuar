@@ -32,6 +32,7 @@ const toFormData = (b: BookmarkItem): Partial<BookmarkFormData> => ({
   url: b.url,
   title: b.title,
   note: b.note,
+  description: b.description ?? '',
   picture: b.picture,
   tags: b.tags,
   collectionId: b.collectionId,
@@ -45,6 +46,7 @@ const emptyBookmark = {
   url: '',
   title: '',
   note: '',
+  description: '',
   picture: '',
   tags: [] as string[],
   collectionId: undefined as string | undefined
@@ -99,7 +101,7 @@ export default function Bookmark() {
       if (hasLoadedRef.current) return
       hasLoadedRef.current = true
       getLastCollectionId().then((collectionId) =>
-        setInitialFormData({ url: '', title: '', note: '', picture: '', tags: [], collectionId, hidden: false })
+        setInitialFormData({ url: '', title: '', note: '', description: '', picture: '', tags: [], collectionId, hidden: false })
       )
       return
     }
@@ -108,6 +110,7 @@ export default function Bookmark() {
         url: bookmark.url,
         title: bookmark.title,
         note: bookmark.note,
+        description: bookmark.description ?? '',
         picture: bookmark.picture,
         tags: bookmark.tags,
         collectionId: bookmark.collectionId,
@@ -143,6 +146,7 @@ export default function Bookmark() {
             url: existing.url,
             title: existing.title,
             note: existing.note,
+            description: existing.description ?? '',
             picture: existing.picture,
             tags: existing.tags,
             collectionId: existing.collectionId,
@@ -154,6 +158,7 @@ export default function Bookmark() {
             url: result.bookmark.url,
             title: result.bookmark.title,
             note: result.bookmark.note,
+            description: result.bookmark.description ?? '',
             picture: result.bookmark.picture,
             tags: result.bookmark.tags,
             collectionId:
@@ -164,7 +169,7 @@ export default function Bookmark() {
       } else {
         setFlash(result.error)
         // Set empty form data so BookmarkForm renders instead of showing a spinner
-        setInitialFormData({ url: '', title: '', note: '', picture: '', tags: [], collectionId: undefined, hidden: false })
+        setInitialFormData({ url: '', title: '', note: '', description: '', picture: '', tags: [], collectionId: undefined, hidden: false })
       }
 
       hasLoadedRef.current = true
@@ -188,7 +193,9 @@ export default function Bookmark() {
         setInitialFormData((prev) => ({
           ...prev,
           title: result.title,
-          picture: result.favicon
+          picture: result.favicon,
+          // Keep the current description when the page has none
+          ...(result.description ? { description: result.description } : {})
         }))
       } else {
         setFlash(result.error)
@@ -212,6 +219,7 @@ export default function Bookmark() {
           url: data.url,
           title: data.title,
           note: data.note,
+          description: data.description || undefined,
           picture: data.picture,
           tags: data.tags,
           collectionId: data.collectionId,
@@ -223,6 +231,7 @@ export default function Bookmark() {
           url: data.url,
           title: data.title,
           note: data.note,
+          description: data.description || undefined,
           picture: data.picture,
           tags: data.tags,
           collectionId: data.collectionId,

@@ -29,6 +29,7 @@ export default function BookmarkEditModal({
         url: data.url,
         title: data.title,
         note: data.note,
+        description: data.description || undefined,
         picture: data.picture,
         tags: data.tags,
         collectionId: data.collectionId
@@ -57,6 +58,7 @@ export default function BookmarkEditModal({
               url: bookmark.url,
               title: bookmark.title,
               note: bookmark.note,
+              description: bookmark.description ?? '',
               picture: bookmark.picture,
               tags: bookmark.tags,
               collectionId: bookmark.collectionId

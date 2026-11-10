@@ -4,6 +4,9 @@
  */
 
 import type { Bookmark } from '@/lib/types'
+import { normalizeDescription } from '@/lib/validation'
+
+declare const browser: typeof chrome | undefined
 
 /** A draft bookmark created from captured page data */
 export type BookmarkDraft = Omit<Bookmark, 'id' | 'created_at' | 'updated_at'>
@@ -13,7 +16,7 @@ export type CaptureResult =
   | { ok: false; error: string }
 
 export type MetadataResponse =
-  | { ok: true; title: string; favicon: string }
+  | { ok: true; title: string; favicon: string; description: string }
   | { ok: false; error: string }
 
 /**
@@ -26,6 +29,72 @@ const BLOCKED_URL_PREFIXES = ['chrome://', 'chrome-extension://', 'about:']
  */
 function isBookmarkableUrl(url: string): boolean {
   return !BLOCKED_URL_PREFIXES.some((prefix) => url.startsWith(prefix))
+}
+
+/**
+ * Runs inside the page (injected) and returns its short description, if any.
+ * Must stay self-contained: it is serialized with toString() for Firefox MV2.
+ */
+function extractDescriptionFromDocument(): string {
+  const selectors = [
+    'meta[name="description" i]',
+    'meta[property="og:description" i]',
+    'meta[name="og:description" i]',
+    'meta[name="twitter:description" i]'
+  ]
+  for (const selector of selectors) {
+    const value = document.querySelector(selector)?.getAttribute('content')
+    if (value && value.trim()) return value
+  }
+  return ''
+}
+
+const DESCRIPTION_TIMEOUT_MS = 800
+
+/**
+ * Read the description of an open tab from its DOM.
+ * - Firefox MV2: tabs.executeScript (covered by the existing <all_urls> host permission)
+ * - Chrome MV3: scripting.executeScript (needs the "scripting" permission)
+ * Returns '' when the page can't be scripted (internal pages, AMO, PDFs…).
+ */
+async function readTabDescription(tabId: number | undefined): Promise<string> {
+  if (tabId === undefined) return ''
+
+  const withTimeout = <T>(promise: Promise<T>) =>
+    Promise.race([
+      promise,
+      new Promise<undefined>((resolve) =>
+        setTimeout(() => resolve(undefined), DESCRIPTION_TIMEOUT_MS)
+      )
+    ])
+
+  try {
+    const ffTabs =
+      typeof browser !== 'undefined' ? (browser.tabs as any) : undefined
+    if (ffTabs && typeof ffTabs.executeScript === 'function') {
+      const results = (await withTimeout(
+        ffTabs.executeScript(tabId, {
+          code: `(${extractDescriptionFromDocument.toString()})()`
+        }) as Promise<unknown[]>
+      )) as unknown[] | undefined
+      const value = results?.[0]
+      return normalizeDescription(typeof value === 'string' ? value : '')
+    }
+
+    if (chrome.scripting?.executeScript) {
+      const results = await withTimeout(
+        chrome.scripting.executeScript({
+          target: { tabId },
+          func: extractDescriptionFromDocument
+        })
+      )
+      const value = results?.[0]?.result
+      return normalizeDescription(typeof value === 'string' ? value : '')
+    }
+  } catch {
+    // Restricted page or no permission: no description
+  }
+  return ''
 }
 
 /**
@@ -155,12 +224,15 @@ export async function captureCurrentPage(): Promise<CaptureResult> {
       }
     }
 
+    const description = await readTabDescription(tab.id)
+
     return {
       ok: true,
       bookmark: {
         url: tab.url,
         title: tab.title,
         note: '',
+        description,
         picture: tab.favIconUrl || '',
         tags: []
       }
@@ -239,6 +311,59 @@ function extractTitle(html: string, fallbackUrl: string): string {
   }
 }
 
+const HTML_ENTITIES: Record<string, string> = {
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  nbsp: ' '
+}
+
+function decodeHtmlEntities(text: string): string {
+  return text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (match, entity) => {
+    const lower = String(entity).toLowerCase()
+    if (lower.startsWith('#')) {
+      const code = lower.startsWith('#x')
+        ? parseInt(lower.slice(2), 16)
+        : parseInt(lower.slice(1), 10)
+      try {
+        return Number.isFinite(code) ? String.fromCodePoint(code) : match
+      } catch {
+        return match
+      }
+    }
+    return HTML_ENTITIES[lower] ?? match
+  })
+}
+
+/**
+ * Extract the page description (meta description, then og:/twitter:)
+ * from raw HTML. Attribute order and quoting vary, so parse each <meta>.
+ */
+function extractDescription(html: string): string {
+  const metaTags = html.slice(0, 500_000).match(/<meta\b[^>]*>/gi) || []
+  const found: Record<string, string> = {}
+  for (const tag of metaTags) {
+    const attrs: Record<string, string> = {}
+    for (const m of tag.matchAll(
+      /([a-zA-Z:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/g
+    )) {
+      attrs[m[1].toLowerCase()] = m[2] ?? m[3] ?? m[4] ?? ''
+    }
+    const key = (attrs.name || attrs.property || '').toLowerCase()
+    if (key && attrs.content?.trim() && !(key in found)) {
+      found[key] = attrs.content
+    }
+  }
+  const raw =
+    found['description'] ||
+    found['og:description'] ||
+    found['twitter:description'] ||
+    ''
+  return normalizeDescription(decodeHtmlEntities(raw))
+}
+
 /**
  * Fetch metadata from a URL
  */
@@ -273,11 +398,13 @@ export async function fetchMetadata(url: string): Promise<MetadataResponse> {
     const html = await response.text()
     const title = extractTitle(html, response.url || url)
     const favicon = extractFavicon(html, response.url || url)
+    const description = extractDescription(html)
 
     return {
       ok: true,
       title,
-      favicon
+      favicon,
+      description
     }
   } catch (error) {
     const errorMessage =
@@ -290,7 +417,8 @@ export async function fetchMetadata(url: string): Promise<MetadataResponse> {
 }
 
 /**
- * Refresh bookmark metadata by fetching the page and extracting title and favicon
+ * Refresh bookmark metadata by fetching the page and extracting title, favicon
+ * and description
  * This function communicates with the background script to fetch metadata
  * @param url - The URL to fetch metadata from
  * @returns Promise with metadata result

@@ -29,7 +29,12 @@ export default defineConfig({
     name: 'Sanctuar',
     description: 'A secure, privacy-focused local vault for managing and organizing your browser bookmarks.',
     host_permissions: ['<all_urls>'],
-    permissions: ['storage', 'tabs'],
+    // MV3 needs "scripting" to read the active tab's meta description;
+    // Firefox MV2 uses tabs.executeScript, already covered by <all_urls>
+    permissions:
+      manifestVersion === 3
+        ? ['storage', 'tabs', 'scripting']
+        : ['storage', 'tabs'],
     // Keyboard shortcut that opens the popup (users can remap it in
     // about:addons → Manage Extension Shortcuts / chrome://extensions/shortcuts)
     commands: {

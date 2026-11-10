@@ -5,7 +5,11 @@ import { useCollections } from '@/components/hooks/useCollections'
 import { useTags } from '@/components/hooks/useTags'
 import type { Bookmark } from '@/lib/types'
 import { getFaviconUrl } from '@/lib/utils'
-import { MAX_TAGS_PER_ITEM } from '@/lib/validation'
+import {
+  MAX_DESCRIPTION_LENGTH,
+  MAX_TAGS_PER_ITEM,
+  normalizeDescription
+} from '@/lib/validation'
 
 import Button from '@/components/ui/Button'
 import { Checkbox } from '@/components/ui/Checkbox'
@@ -21,6 +25,7 @@ export type BookmarkFormData = {
   url: string
   title: string
   note: string
+  description: string
   picture: string
   tags: string[]
   collectionId: string | undefined
@@ -58,6 +63,7 @@ const emptyFormData: BookmarkFormData = {
   url: '',
   title: '',
   note: '',
+  description: '',
   picture: '',
   tags: [],
   collectionId: undefined,
@@ -87,6 +93,7 @@ export default function BookmarkForm({
   }))
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [faviconError, setFaviconError] = useState(false)
+  const [isEditingDescription, setIsEditingDescription] = useState(false)
 
   // Apply only the fields of initialData that actually changed. Parents often
   // pass a fresh object on every render (e.g. after creating a tag saves the
@@ -170,6 +177,7 @@ export default function BookmarkForm({
       url: form.url?.trim(),
       title: form.title?.trim(),
       note: form.note?.trim(),
+      description: normalizeDescription(form.description),
       picture: form.picture?.trim(),
       tags: form.tags,
       collectionId: form.collectionId,
@@ -264,6 +272,33 @@ export default function BookmarkForm({
               }}
               placeholder='https://example.com'
             />
+            {isEditingDescription ? (
+              <textarea
+                aria-label='Description'
+                className={styles.descriptionInput}
+                value={form.description}
+                maxLength={MAX_DESCRIPTION_LENGTH}
+                rows={3}
+                autoFocus
+                onChange={(e) => {
+                  const next = e.target.value
+                  setForm((prev) => ({ ...prev, description: next }))
+                }}
+                onBlur={() => setIsEditingDescription(false)}
+                placeholder='A short description of the page'
+              />
+            ) : (
+              <button
+                type='button'
+                className={`${styles.description} ${
+                  form.description ? '' : styles.descriptionEmpty
+                }`}
+                onClick={() => setIsEditingDescription(true)}
+                title={form.description || undefined}
+              >
+                {form.description || 'Add a description'}
+              </button>
+            )}
           </div>
           {onRefreshMetadata && (
             <button
