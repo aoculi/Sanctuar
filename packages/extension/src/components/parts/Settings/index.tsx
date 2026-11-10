@@ -583,6 +583,50 @@ export default function Settings() {
                     you have opened Sanctuar since the browser started.
                   </Text>
                 </div>
+
+                <div className={styles.field}>
+                  <Text as='label' size='3' weight='medium'>
+                    When I open Sanctuar on a new page
+                  </Text>
+                  <Select
+                    value={settings.popupOpenAction ?? 'form'}
+                    onChange={(e) =>
+                      updateSettings({
+                        popupOpenAction: e.target.value as 'form' | 'save'
+                      })
+                    }
+                  >
+                    <option value='form'>Show the form</option>
+                    <option value='save'>Save immediately</option>
+                  </Select>
+                  <Text size='2' color='light'>
+                    {settings.popupOpenAction === 'save'
+                      ? 'The page is saved in your last collection as soon as the popup opens. Use Undo or Edit on the confirmation. Pages you already saved still open the form.'
+                      : 'Review the title, note, collection and tags before saving.'}
+                  </Text>
+                </div>
+
+                <div className={styles.field}>
+                  <Text as='label' size='3' weight='medium'>
+                    After saving
+                  </Text>
+                  <Select
+                    value={settings.afterSave ?? 'confirm'}
+                    onChange={(e) =>
+                      updateSettings({
+                        afterSave: e.target.value as 'confirm' | 'close'
+                      })
+                    }
+                  >
+                    <option value='confirm'>Show confirmation</option>
+                    <option value='close'>Close the popup automatically</option>
+                  </Select>
+                  <Text size='2' color='light'>
+                    {settings.afterSave === 'close'
+                      ? 'The confirmation closes itself after about a second, unless you move the mouse over it or press a key.'
+                      : 'The confirmation stays open until you click Done.'}
+                  </Text>
+                </div>
               </div>
             </Tabs.Content>
 

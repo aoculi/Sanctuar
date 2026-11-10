@@ -1,8 +1,16 @@
-import { Check, ExternalLink, Loader2, Trash2, Undo2 } from 'lucide-react'
+import {
+  Check,
+  ExternalLink,
+  Loader2,
+  Pencil,
+  Trash2,
+  Undo2
+} from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import { useManifest } from '@/components/hooks/providers/useManifestProvider'
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
+import { useSettings } from '@/components/hooks/providers/useSettingsProvider'
 import { useBookmarks } from '@/components/hooks/useBookmarks'
 import { useCollections } from '@/components/hooks/useCollections'
 import usePopupSize from '@/components/hooks/usePopupSize'
@@ -39,6 +47,9 @@ const toFormData = (b: BookmarkItem): Partial<BookmarkFormData> => ({
   hidden: b.hidden ?? false
 })
 
+/** How long the result screen stays before closing itself ("After saving: close") */
+const AUTO_CLOSE_MS = 1200
+
 const emptyBookmark = {
   id: '',
   created_at: 0,
@@ -55,7 +66,8 @@ const emptyBookmark = {
 export default function Bookmark() {
   usePopupSize('compact')
   const { selectedBookmark, setFlash } = useNavigation()
-  const { isSaving } = useManifest()
+  const { isSaving, isLoading: manifestLoading } = useManifest()
+  const { settings, isLoading: settingsLoading } = useSettings()
   const {
     addBookmark,
     updateBookmark,
@@ -85,6 +97,10 @@ export default function Bookmark() {
   const [existingBookmarkId, setExistingBookmarkId] = useState<string | null>(
     null
   )
+  // Editing a bookmark that was just saved, via "Edit" on the result screen
+  const [isEditingSaved, setIsEditingSaved] = useState(false)
+  const [autoCloseCancelled, setAutoCloseCancelled] = useState(false)
+  const pointerStartRef = useRef<{ x: number; y: number } | null>(null)
   const hasLoadedRef = useRef(false)
 
   // Find the bookmark being edited (by selectedBookmark ID or by URL match)
@@ -122,9 +138,17 @@ export default function Bookmark() {
 
   // Capture current page when creating a new bookmark
   useEffect(() => {
-    if (hasLoadedRef.current || selectedBookmark) {
+    if (
+      hasLoadedRef.current ||
+      selectedBookmark ||
+      manifestLoading ||
+      settingsLoading
+    ) {
       return
     }
+    // Mark as started right away: `bookmarks` changes on every render, and
+    // this must never run twice (it may create a bookmark in quick-save mode)
+    hasLoadedRef.current = true
 
     const loadCurrentPage = async () => {
       setIsLoading(true)
@@ -154,7 +178,7 @@ export default function Bookmark() {
           })
         } else {
           // New bookmark - use captured page data
-          setInitialFormData({
+          const captured: BookmarkFormData = {
             url: result.bookmark.url,
             title: result.bookmark.title,
             note: result.bookmark.note,
@@ -164,7 +188,13 @@ export default function Bookmark() {
             collectionId:
               result.bookmark.collectionId ?? (await getLastCollectionId()),
             hidden: false
-          })
+          }
+          // "Save immediately": create it now, then show the result screen
+          // (Undo / Edit / Done). Falls back to the form if saving fails.
+          if (settings.popupOpenAction === 'save') {
+            await createBookmark(captured)
+          }
+          setInitialFormData(captured)
         }
       } else {
         setFlash(result.error)
@@ -177,7 +207,7 @@ export default function Bookmark() {
     }
 
     loadCurrentPage()
-  }, [selectedBookmark, setFlash, bookmarks])
+  }, [selectedBookmark, setFlash, bookmarks, manifestLoading, settingsLoading])
 
   const handleRefreshMetadata = async () => {
     if (!initialFormData.url?.trim()) {
@@ -209,6 +239,36 @@ export default function Bookmark() {
     }
   }
 
+  /** Create a bookmark and show the result screen; returns false on failure */
+  const createBookmark = async (data: BookmarkFormData): Promise<boolean> => {
+    try {
+      const created = await addBookmark({
+        url: data.url,
+        title: data.title,
+        note: data.note,
+        description: data.description || undefined,
+        picture: data.picture,
+        tags: data.tags,
+        collectionId: data.collectionId,
+        hidden: data.hidden,
+        pinned: false
+      })
+      // Pre-select this collection next time (also remembers "No collection")
+      setStorageItem(
+        STORAGE_KEYS.LAST_COLLECTION,
+        data.collectionId ?? null
+      ).catch(() => {})
+      if (created) setOutcome({ kind: 'created', bookmark: created })
+      return !!created
+    } catch (error) {
+      setFlash(
+        'Failed to save bookmark: ' +
+          ((error as Error).message ?? 'Unknown error')
+      )
+      return false
+    }
+  }
+
   const handleSubmit = async (data: BookmarkFormData) => {
     setIsLoading(true)
 
@@ -227,22 +287,7 @@ export default function Bookmark() {
         })
         setOutcome({ kind: 'updated', previous })
       } else {
-        const created = await addBookmark({
-          url: data.url,
-          title: data.title,
-          note: data.note,
-          description: data.description || undefined,
-          picture: data.picture,
-          tags: data.tags,
-          collectionId: data.collectionId,
-          hidden: data.hidden,
-          pinned: false
-        })
-        // Pre-select this collection next time (also remembers "No collection")
-        setStorageItem(STORAGE_KEYS.LAST_COLLECTION, data.collectionId ?? null).catch(
-          () => {}
-        )
-        if (created) setOutcome({ kind: 'created', bookmark: created })
+        await createBookmark(data)
       }
     } catch (error) {
       setFlash(
@@ -281,10 +326,15 @@ export default function Bookmark() {
       if (outcome.kind === 'created') {
         await deleteBookmark(outcome.bookmark.id)
         setExistingBookmarkId(null)
+        setIsEditingSaved(false)
         setInitialFormData(toFormData(outcome.bookmark))
       } else if (outcome.kind === 'updated') {
         const { id, created_at, updated_at, ...fields } = outcome.previous
-        await updateBookmark(id, fields)
+        // Explicit description: an absent key would keep the edited value
+        await updateBookmark(id, {
+          ...fields,
+          description: outcome.previous.description
+        })
         setInitialFormData(toFormData(outcome.previous))
       } else {
         await restoreBookmark(outcome.bookmark)
@@ -301,6 +351,72 @@ export default function Bookmark() {
     }
   }
 
+  // "Edit" on the result screen: reopen the form on the saved bookmark, so
+  // submitting updates it instead of creating a second one
+  const handleEditSaved = () => {
+    if (!outcome || outcome.kind === 'removed') return
+    const target =
+      outcome.kind === 'created'
+        ? (bookmarks.find((b) => b.id === outcome.bookmark.id) ??
+          outcome.bookmark)
+        : bookmark
+    if (!target?.id) return
+    if (target.id !== selectedBookmark) {
+      setExistingBookmarkId(target.id)
+      setIsEditingSaved(true)
+    }
+    setInitialFormData(toFormData(target as BookmarkItem))
+    setOutcome(null)
+  }
+
+  // "After saving: close the popup automatically" — after AUTO_CLOSE_MS,
+  // unless the user interacts with the result screen (hover, focus, click, key)
+  const autoClose =
+    !!outcome &&
+    outcome.kind !== 'removed' &&
+    settings.afterSave === 'close' &&
+    !autoCloseCancelled
+
+  useEffect(() => {
+    setAutoCloseCancelled(false)
+    pointerStartRef.current = null
+  }, [outcome])
+
+  useEffect(() => {
+    if (!autoClose) return
+    const timer = setTimeout(() => window.close(), AUTO_CLOSE_MS)
+    return () => clearTimeout(timer)
+  }, [autoClose])
+
+  const cancelAutoClose = () => {
+    if (autoClose) setAutoCloseCancelled(true)
+  }
+
+  // Layout changes can fire a mousemove under a still cursor, so only a real
+  // movement counts as hovering
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!autoClose) return
+    const start = pointerStartRef.current
+    if (!start) {
+      pointerStartRef.current = { x: e.clientX, y: e.clientY }
+      return
+    }
+    if (Math.hypot(e.clientX - start.x, e.clientY - start.y) > 6) {
+      cancelAutoClose()
+    }
+  }
+
+  const outcomeCollection =
+    outcome && outcome.kind !== 'removed'
+      ? collections.find(
+          (c) =>
+            c.id ===
+            (outcome.kind === 'created'
+              ? outcome.bookmark.collectionId
+              : bookmark?.collectionId)
+        )
+      : undefined
+
   const outcomeMessage =
     outcome?.kind === 'removed'
       ? 'Bookmark removed'
@@ -310,7 +426,13 @@ export default function Bookmark() {
 
   // "Saved 3 weeks ago in Reading" for pages that are already bookmarked
   const existingInfo = (() => {
-    if (!existingBookmarkId || !bookmark?.id || !bookmark.created_at) return null
+    if (
+      isEditingSaved ||
+      !existingBookmarkId ||
+      !bookmark?.id ||
+      !bookmark.created_at
+    )
+      return null
     const collection = collections.find((c) => c.id === bookmark.collectionId)
     return `Saved ${formatRelativeTime(bookmark.created_at)}${
       collection ? ` in ${collection.name}` : ''
@@ -327,7 +449,13 @@ export default function Bookmark() {
       <Header />
 
       {outcome ? (
-        <div className={styles.successContainer}>
+        <div
+          className={styles.successContainer}
+          onPointerDown={cancelAutoClose}
+          onPointerMove={handlePointerMove}
+          onFocus={cancelAutoClose}
+          onKeyDown={cancelAutoClose}
+        >
           <div
             className={`${styles.successIcon} ${
               outcome.kind === 'removed' ? styles.removedIcon : ''
@@ -340,6 +468,11 @@ export default function Bookmark() {
             )}
           </div>
           <span className={styles.successMessage}>{outcomeMessage}</span>
+          {outcomeCollection && (
+            <span className={styles.successDetail}>
+              in {outcomeCollection.name}
+            </span>
+          )}
           <div className={styles.successActions}>
             <Button
               color='light'
@@ -355,22 +488,53 @@ export default function Bookmark() {
               Undo
             </Button>
             {outcome.kind !== 'removed' && (
+              <Button
+                color='light'
+                variant='ghost'
+                onClick={handleEditSaved}
+                disabled={isWorking}
+              >
+                <Pencil size={14} />
+                Edit
+              </Button>
+            )}
+            {outcome.kind !== 'removed' && (
               <Button color='light' variant='ghost' onClick={handleOpenLibrary}>
                 <ExternalLink size={14} />
                 Open my bookmarks
               </Button>
             )}
-            <Button autoFocus onClick={() => window.close()} disabled={isWorking}>
+            {/* No autofocus while auto-closing: focusing would cancel it */}
+            <Button
+              autoFocus={!autoClose}
+              onClick={() => window.close()}
+              disabled={isWorking}
+            >
               Done
             </Button>
           </div>
+          {autoClose && (
+            <div className={styles.autoClose} role='status'>
+              <div className={styles.autoCloseTrack}>
+                <span
+                  className={styles.autoCloseBar}
+                  style={{ animationDuration: `${AUTO_CLOSE_MS}ms` }}
+                />
+              </div>
+              <span className={styles.autoCloseText}>
+                Closing… move the mouse or press a key to keep it open
+              </span>
+            </div>
+          )}
         </div>
       ) : (
         <div className={styles.page}>
           {bookmark?.id && (
             <div className={styles.pageTitle}>
               <Text as='h1' size='1' weight='medium' className={styles.pageTitleText}>
-                {existingBookmarkId ? 'Already bookmarked' : 'Edit bookmark'}
+                {existingBookmarkId && !isEditingSaved
+                  ? 'Already bookmarked'
+                  : 'Edit bookmark'}
               </Text>
               {existingInfo && (
                 <span className={styles.pageTitleInfo}>{existingInfo}</span>

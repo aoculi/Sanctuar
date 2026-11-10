@@ -16,6 +16,10 @@ export interface Settings {
   theme: 'dark' | 'light'
   /** Show a ✓ badge on the toolbar icon when the current page is saved */
   showSavedBadge: boolean
+  /** Popup opened on a page that isn't saved yet: show the form or save at once */
+  popupOpenAction: 'form' | 'save'
+  /** After saving from the popup: show the confirmation or close automatically */
+  afterSave: 'confirm' | 'close'
 }
 
 /**
@@ -212,7 +216,9 @@ export function getDefaultSettings(): Settings {
     autoLockTimeout: DEFAULT_AUTO_LOCK_TIMEOUT,
     useCodePin: false,
     theme: 'dark',
-    showSavedBadge: true
+    showSavedBadge: true,
+    popupOpenAction: 'form',
+    afterSave: 'confirm'
   }
 }
 
