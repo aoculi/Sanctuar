@@ -1,4 +1,4 @@
-import { Loader2, RefreshCw } from 'lucide-react'
+import { Check, ExternalLink } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import { useManifest } from '@/components/hooks/providers/useManifestProvider'
@@ -6,6 +6,7 @@ import { useNavigation } from '@/components/hooks/providers/useNavigationProvide
 import { useBookmarks } from '@/components/hooks/useBookmarks'
 import usePopupSize from '@/components/hooks/usePopupSize'
 import { captureCurrentPage, refreshBookmarkMetadata } from '@/lib/pageCapture'
+import { openExtensionPage } from '@/lib/tabs'
 
 import BookmarkForm, {
   type BookmarkFormData
@@ -196,59 +197,59 @@ export default function Bookmark() {
 
   const submitLabel = bookmark?.id ? 'Save' : 'Create'
 
+  const handleOpenLibrary = () => {
+    openExtensionPage('app')
+    window.close()
+  }
+
   return (
     <div className={styles.component}>
-      <Header
-        rightContent={
-          bookmark && bookmark.id ? (
-            <Button
-              onClick={handleRefreshMetadata}
-              disabled={
-                !initialFormData.url?.trim() || isRefreshing || isLoading
-              }
-              asIcon
-              variant='ghost'
-              className={styles.refreshButton}
-              title='Refresh title and favicon from URL'
-            >
-              {isRefreshing ? (
-                <Loader2
-                  className={styles.refreshIcon}
-                  size={18}
-                  color='white'
-                />
-              ) : (
-                <RefreshCw
-                  className={styles.refreshIcon}
-                  size={18}
-                  color='white'
-                />
-              )}
-            </Button>
-          ) : null
-        }
-      />
+      <Header />
 
-      <div className={styles.page}>
-        {bookmark?.id && (
-          <div className={styles.pageTitle}>
-            <Text as='h1' size='2' weight='medium'>
-              {existingBookmarkId ? 'Already Bookmarked' : 'Edit Bookmark'}
-            </Text>
+      {isSuccess ? (
+        <div className={styles.successContainer}>
+          <div className={styles.successIcon}>
+            <Check size={32} />
           </div>
-        )}
+          <span className={styles.successMessage}>
+            {bookmark?.id ? 'Bookmark updated' : 'Bookmark saved'}
+          </span>
+          <div className={styles.successActions}>
+            <Button color='light' variant='ghost' onClick={handleOpenLibrary}>
+              <ExternalLink size={14} />
+              Open my bookmarks
+            </Button>
+            <Button autoFocus onClick={() => window.close()}>
+              Done
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className={styles.page}>
+          {bookmark?.id && (
+            <div className={styles.pageTitle}>
+              <Text as='h1' size='1' weight='medium' className={styles.pageTitleText}>
+                {existingBookmarkId ? 'Already bookmarked' : 'Edit bookmark'}
+              </Text>
+            </div>
+          )}
 
-        <BookmarkForm
-          initialData={initialFormData}
-          onSubmit={handleSubmit}
-          isSubmitting={isSaving}
-          submitLabel={submitLabel}
-          isSuccess={isSuccess}
-          successMessage={
-            bookmark?.id ? 'Bookmark updated!' : 'Bookmark saved!'
-          }
-        />
-      </div>
+          <BookmarkForm
+            initialData={initialFormData}
+            onSubmit={handleSubmit}
+            isSubmitting={isSaving}
+            submitLabel={submitLabel}
+            layout='popup'
+            autoFocusNote={!bookmark?.id}
+            onRefreshMetadata={
+              bookmark?.id && initialFormData.url?.trim()
+                ? handleRefreshMetadata
+                : undefined
+            }
+            isRefreshing={isRefreshing || isLoading}
+          />
+        </div>
+      )}
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import {
-  Bookmark,
+  ExternalLink,
   HelpCircle,
   LogOut,
   Menu,
@@ -9,19 +9,20 @@ import {
   StarIcon,
   Tag as TagIcon
 } from 'lucide-react'
-import React, { useCallback } from 'react'
+import React, { useCallback, useState } from 'react'
 
 import { useAuthSession } from '@/components/hooks/providers/useAuthSessionProvider'
 import { useManifest } from '@/components/hooks/providers/useManifestProvider'
 import { useNavigation } from '@/components/hooks/providers/useNavigationProvider'
 import { useQueryAuth } from '@/components/hooks/queries/useQueryAuth'
 import { useBookmarks } from '@/components/hooks/useBookmarks'
-import { captureAllTabs } from '@/lib/pageCapture'
+import { captureAllTabs, type BookmarkDraft } from '@/lib/pageCapture'
 import { openExtensionPage } from '@/lib/tabs'
 import type { Tag } from '@/lib/types'
 import { generateId } from '@/lib/utils'
 
 import Button from '@/components/ui/Button'
+import { Dialog } from '@/components/ui/Dialog'
 import { DropdownMenu } from '@/components/ui/DropdownMenu'
 import Logo from '@/components/ui/Logo'
 
@@ -44,20 +45,40 @@ export default function Header({
   const { addBookmark } = useBookmarks()
   const { manifest, save } = useManifest()
 
+  const [pendingTabs, setPendingTabs] = useState<BookmarkDraft[] | null>(
+    null
+  )
+  const [isSavingTabs, setIsSavingTabs] = useState(false)
+
+  // Step 1: count the tabs and ask for confirmation
+  const handlePrepareSaveAllTabs = useCallback(async () => {
+    try {
+      const tabBookmarks = await captureAllTabs()
+      if (tabBookmarks.length === 0) {
+        setFlash('No bookmarkable tabs found')
+        return
+      }
+      setPendingTabs(tabBookmarks)
+    } catch (error) {
+      console.error('Error reading open tabs:', error)
+      setFlash('Failed to read open tabs')
+    }
+  }, [setFlash])
+
+  // Step 2: save them once confirmed
   const handleSaveAllTabs = useCallback(async () => {
     if (!manifest) {
       setFlash('Manifest not loaded')
       return
     }
+    const tabBookmarks = pendingTabs
+    if (!tabBookmarks || tabBookmarks.length === 0) {
+      setPendingTabs(null)
+      return
+    }
 
+    setIsSavingTabs(true)
     try {
-      // Get all open tabs
-      const tabBookmarks = await captureAllTabs()
-
-      if (tabBookmarks.length === 0) {
-        setFlash('No bookmarkable tabs found')
-        return
-      }
 
       // Get current date as string (YYYY-MM-DD format)
       const today = new Date()
@@ -121,8 +142,13 @@ export default function Header({
     } catch (error) {
       console.error('Error saving all tabs:', error)
       setFlash('Failed to save tabs')
+    } finally {
+      setIsSavingTabs(false)
+      setPendingTabs(null)
     }
-  }, [addBookmark, manifest, save, setFlash])
+  }, [addBookmark, manifest, pendingTabs, save, setFlash])
+
+  const todayTag = new Date().toISOString().split('T')[0]
 
   return (
     <div className={styles.component}>
@@ -149,56 +175,64 @@ export default function Header({
 
           {isAuthenticated && (
             <Button
-              asIcon={true}
               variant='ghost'
-              title='Open bookmarks'
+              color='light'
+              className={styles.libraryButton}
+              title='Open all your bookmarks in a new tab'
               onClick={() => openExtensionPage('app')}
             >
-              <Bookmark strokeWidth={2} size={18} color='white' />
+              My bookmarks
+              <ExternalLink strokeWidth={2} size={14} />
             </Button>
           )}
 
           {canShowMenu && (
             <DropdownMenu.Root>
               <DropdownMenu.Trigger asChild>
-                <Button asIcon={true} variant='ghost' title='Menu'>
-                  <Menu strokeWidth={2} size={18} color='white' />
+                <Button
+                  asIcon={true}
+                  variant='ghost'
+                  color='light'
+                  title='Menu'
+                  aria-label='Menu'
+                >
+                  <Menu strokeWidth={2} size={18} />
                 </Button>
               </DropdownMenu.Trigger>
-              <DropdownMenu.Content>
+              <DropdownMenu.Content align='end' collisionPadding={8}>
                 {isAuthenticated && (
                   <DropdownMenu.Item
                     onClick={() => navigate('/bookmark', { bookmark: 'blank' })}
                   >
-                    <StarIcon strokeWidth={1} size={18} color='white' />
+                    <StarIcon strokeWidth={1} size={18} />
                     New blank bookmark
                   </DropdownMenu.Item>
                 )}
 
                 {isAuthenticated && (
-                  <DropdownMenu.Item onClick={handleSaveAllTabs}>
-                    <Save strokeWidth={1} size={18} color='white' /> Save all
-                    open tabs
+                  <DropdownMenu.Item onClick={handlePrepareSaveAllTabs}>
+                    <Save strokeWidth={1} size={18} /> Save all
+                    open tabs…
                   </DropdownMenu.Item>
                 )}
 
                 {isAuthenticated && (
                   <DropdownMenu.Item onClick={() => openExtensionPage('tags')}>
-                    <TagIcon strokeWidth={1} size={18} color='white' /> Tags
+                    <TagIcon strokeWidth={1} size={18} /> Tags
                   </DropdownMenu.Item>
                 )}
                 <DropdownMenu.Item
                   onClick={() => openExtensionPage('settings')}
                 >
-                  <Settings2 strokeWidth={1} size={18} color='white' /> Settings
+                  <Settings2 strokeWidth={1} size={18} /> Settings
                 </DropdownMenu.Item>
                 <DropdownMenu.Item onClick={() => openExtensionPage('help')}>
-                  <HelpCircle strokeWidth={1} size={18} color='white' /> Help
+                  <HelpCircle strokeWidth={1} size={18} /> Help
                 </DropdownMenu.Item>
                 {isAuthenticated && <DropdownMenu.Separator />}
                 {isAuthenticated && (
                   <DropdownMenu.Item onClick={() => logout.mutate()}>
-                    <LogOut strokeWidth={1} size={18} color='white' /> Logout
+                    <LogOut strokeWidth={1} size={18} /> Logout
                   </DropdownMenu.Item>
                 )}
               </DropdownMenu.Content>
@@ -206,6 +240,28 @@ export default function Header({
           )}
         </div>
       </div>
+
+      <Dialog
+        title={`Save ${pendingTabs?.length ?? 0} open tab${pendingTabs?.length === 1 ? '' : 's'}?`}
+        description={`Each tab becomes a bookmark tagged "${todayTag}".`}
+        open={pendingTabs !== null}
+        onClose={() => !isSavingTabs && setPendingTabs(null)}
+        width={340}
+      >
+        <div className={styles.dialogActions}>
+          <Button
+            variant='ghost'
+            color='light'
+            onClick={() => setPendingTabs(null)}
+            disabled={isSavingTabs}
+          >
+            Cancel
+          </Button>
+          <Button onClick={handleSaveAllTabs} disabled={isSavingTabs}>
+            {isSavingTabs ? 'Saving…' : 'Save tabs'}
+          </Button>
+        </div>
+      </Dialog>
     </div>
   )
 }

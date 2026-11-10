@@ -1,38 +1,59 @@
 .component {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  flex: 1;
+  min-height: 0;
 }
 
+/* Scrollable body; the form pins its own footer to the bottom */
 .page {
-  padding: 50px 50px 40px;
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 20px;
 }
 
 .pageTitle {
-  margin: 10px 0;
+  padding: 4px 16px 0;
+  flex-shrink: 0;
 }
 
-.cancelAction {
+.pageTitleText {
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 11px;
+}
+
+.successContainer {
+  flex: 1;
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px 16px;
 }
 
-.refreshButton {
-  margin-right: 8px;
+.successIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  background-color: var(--primary);
+  border-radius: 50%;
+  color: white;
 }
 
-.refreshIcon:global(.lucide-loader-2) {
-  animation: spin 1s linear infinite;
+.successMessage {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text);
 }
 
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.successActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
 }
